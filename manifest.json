@@ -1,0 +1,18 @@
+{
+  "name": "コエリアル - 音声日記",
+  "short_name": "コエリアル",
+  "description": "1日1回、いまの声をそのまま残す音声日記",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#fff7fb",
+  "theme_color": "#845ef7",
+  "lang": "ja",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

@@ -1,0 +1,731 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>コエリアル | 1日1回、いまの声を残す音声日記</title>
+  <meta name="description" content="1日1回、その瞬間の声を録音して残す音声版BeReal。加工なし、撮り直しは1日1回まで。あなたの毎日を声で記録しよう。">
+  <meta name="theme-color" content="#845ef7">
+  <link rel="manifest" href="/manifest.json">
+  <script defer src="/_vercel/insights/script.js"></script>
+  <style>
+    :root {
+      --purple:#845ef7; --pink:#ff5d8f; --yellow:#ffd43b; --teal:#20c997;
+      --bg:#fff7fb; --card:#ffffff; --ink:#2b2350; --muted:#8a82a8;
+      --line:#f0e4f2; --danger:#e03131; --r:20px; --r2:14px;
+      --grad:linear-gradient(135deg,#845ef7,#ff5d8f);
+    }
+    * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+    html { font-size:16px; }
+    body {
+      background:var(--bg); color:var(--ink);
+      font-family:'Hiragino Sans','Yu Gothic UI','Segoe UI',system-ui,sans-serif;
+      min-height:100dvh;
+    }
+    button { font-family:inherit; cursor:pointer; }
+    input, textarea { font-family:inherit; font-size:1rem; }
+    [hidden] { display:none !important; }
+    :focus-visible { outline:3px solid var(--purple); outline-offset:2px; border-radius:6px; }
+
+    /* ローディングオーバーレイ */
+    #loading {
+      position:fixed; inset:0; background:var(--bg); z-index:200;
+      display:flex; flex-direction:column; align-items:center; justify-content:center; gap:16px;
+    }
+    .spinner {
+      width:44px; height:44px; border-radius:50%;
+      border:4px solid var(--line); border-top-color:var(--purple);
+      animation:spin .8s linear infinite;
+    }
+    @keyframes spin { to { transform:rotate(360deg); } }
+    #loading p { color:var(--muted); font-size:.9rem; font-weight:600; }
+
+    /* トースト */
+    #toasts { position:fixed; top:max(12px, env(safe-area-inset-top)); left:50%; transform:translateX(-50%); z-index:300; display:flex; flex-direction:column; gap:8px; width:min(92vw,400px); }
+    .toast {
+      background:var(--ink); color:#fff; border-radius:12px; padding:12px 16px;
+      font-size:.88rem; font-weight:600; box-shadow:0 8px 24px rgba(43,35,80,.25);
+      animation:slideDown .25s ease; line-height:1.5;
+    }
+    .toast.error { background:var(--danger); }
+    .toast.ok { background:var(--teal); }
+    @keyframes slideDown { from { opacity:0; transform:translateY(-12px); } to { opacity:1; transform:none; } }
+
+    /* 認証画面 */
+    #view-auth { max-width:420px; margin:0 auto; padding:48px 20px; min-height:100dvh; display:flex; flex-direction:column; justify-content:center; }
+    .logo { text-align:center; margin-bottom:28px; }
+    .logo-mark {
+      width:84px; height:84px; margin:0 auto 14px; border-radius:28px;
+      background:var(--grad); display:flex; align-items:center; justify-content:center;
+      box-shadow:0 12px 32px rgba(132,94,247,.35);
+    }
+    .logo-mark svg { width:42px; height:42px; }
+    .logo h1 { font-size:1.7rem; font-weight:900; letter-spacing:.02em; }
+    .logo p { color:var(--muted); font-size:.88rem; margin-top:6px; line-height:1.6; }
+    .auth-card { background:var(--card); border-radius:var(--r); padding:24px 20px; box-shadow:0 10px 36px rgba(132,94,247,.12); }
+    .tabs { display:flex; background:var(--bg); border-radius:12px; padding:4px; margin-bottom:20px; }
+    .tab {
+      flex:1; border:none; background:none; padding:10px; border-radius:9px;
+      font-weight:800; font-size:.92rem; color:var(--muted); transition:all .2s;
+    }
+    .tab[aria-selected="true"] { background:#fff; color:var(--purple); box-shadow:0 2px 8px rgba(132,94,247,.18); }
+    .field { margin-bottom:14px; }
+    .field label { display:block; font-size:.8rem; font-weight:800; margin-bottom:6px; color:var(--ink); }
+    .field input, .field textarea {
+      width:100%; border:2px solid var(--line); border-radius:var(--r2);
+      padding:12px 14px; background:#fff; transition:border-color .15s; color:var(--ink);
+    }
+    .field input:focus, .field textarea:focus { border-color:var(--purple); outline:none; }
+    .field .err { color:var(--danger); font-size:.78rem; font-weight:700; margin-top:5px; display:none; }
+    .field.invalid input, .field.invalid textarea { border-color:var(--danger); }
+    .field.invalid .err { display:block; }
+    .btn {
+      width:100%; border:none; border-radius:var(--r2); padding:14px;
+      font-size:1rem; font-weight:800; color:#fff; background:var(--grad);
+      box-shadow:0 8px 20px rgba(255,93,143,.3); transition:transform .12s, opacity .15s;
+    }
+    .btn:active { transform:scale(.97); }
+    .btn:disabled { opacity:.55; }
+    .btn.ghost { background:none; color:var(--muted); box-shadow:none; font-size:.85rem; padding:10px; }
+
+    /* アプリ本体 */
+    #app { max-width:480px; margin:0 auto; padding-bottom:calc(76px + env(safe-area-inset-bottom)); }
+    header.bar {
+      position:sticky; top:0; z-index:50; background:rgba(255,247,251,.92); backdrop-filter:blur(10px);
+      padding:14px 18px calc(10px); display:flex; align-items:center; justify-content:space-between;
+      padding-top:max(14px, env(safe-area-inset-top));
+    }
+    .bar-title { font-size:1.15rem; font-weight:900; background:var(--grad); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
+    .bar-date { font-size:.78rem; color:var(--muted); font-weight:700; }
+    main { padding:6px 16px 24px; }
+
+    /* フィード */
+    .day-label { font-size:.8rem; font-weight:800; color:var(--muted); margin:18px 4px 10px; }
+    .post-card {
+      background:var(--card); border-radius:var(--r); padding:18px;
+      box-shadow:0 6px 24px rgba(132,94,247,.10); margin-bottom:12px;
+      animation:pop .3s ease;
+    }
+    @keyframes pop { from { opacity:0; transform:scale(.97); } to { opacity:1; transform:none; } }
+    .post-head { display:flex; align-items:center; gap:10px; margin-bottom:12px; }
+    .avatar {
+      width:40px; height:40px; border-radius:50%; background:var(--grad); flex-shrink:0;
+      color:#fff; font-weight:900; display:flex; align-items:center; justify-content:center; font-size:1rem;
+    }
+    .post-user { font-weight:800; font-size:.92rem; }
+    .post-time { font-size:.74rem; color:var(--muted); font-weight:600; }
+    .player { display:flex; align-items:center; gap:12px; background:var(--bg); border-radius:14px; padding:10px 14px; }
+    .play-btn {
+      width:46px; height:46px; border-radius:50%; border:none; background:var(--grad);
+      color:#fff; display:flex; align-items:center; justify-content:center; flex-shrink:0;
+      box-shadow:0 6px 14px rgba(132,94,247,.3); transition:transform .12s;
+    }
+    .play-btn:active { transform:scale(.92); }
+    .play-btn svg { width:18px; height:18px; }
+    .wave { flex:1; height:8px; background:var(--line); border-radius:999px; overflow:hidden; }
+    .wave > div { height:100%; width:0%; background:var(--grad); border-radius:999px; transition:width .2s linear; }
+    .dur { font-size:.76rem; color:var(--muted); font-weight:700; min-width:36px; text-align:right; }
+    .post-caption { margin-top:10px; font-size:.9rem; line-height:1.6; }
+    .post-del { border:none; background:none; color:var(--muted); font-size:.74rem; font-weight:700; margin-top:8px; padding:4px; }
+
+    .empty {
+      text-align:center; padding:48px 20px; color:var(--muted);
+      background:var(--card); border-radius:var(--r); border:2px dashed var(--line);
+    }
+    .empty b { display:block; color:var(--ink); font-size:1rem; margin-bottom:8px; }
+    .empty p { font-size:.85rem; line-height:1.7; }
+    .retry-box { text-align:center; padding:32px 20px; }
+    .retry-box p { color:var(--danger); font-weight:700; font-size:.9rem; margin-bottom:14px; line-height:1.6; }
+    .retry-btn { border:2px solid var(--purple); background:#fff; color:var(--purple); font-weight:800; border-radius:12px; padding:10px 28px; }
+
+    .skeleton { background:var(--card); border-radius:var(--r); padding:18px; margin-bottom:12px; }
+    .sk-line { height:14px; border-radius:8px; background:linear-gradient(90deg,var(--line) 25%,#faf0fb 50%,var(--line) 75%); background-size:200% 100%; animation:shimmer 1.3s infinite; margin-bottom:10px; }
+    @keyframes shimmer { to { background-position:-200% 0; } }
+
+    /* 録音画面 */
+    .rec-wrap { text-align:center; padding:28px 0 8px; }
+    .rec-status { font-weight:800; color:var(--muted); font-size:.9rem; margin-bottom:22px; line-height:1.7; }
+    .rec-btn {
+      width:128px; height:128px; border-radius:50%; border:none; margin:0 auto;
+      background:var(--grad); color:#fff; display:flex; flex-direction:column;
+      align-items:center; justify-content:center; gap:6px;
+      box-shadow:0 16px 40px rgba(255,93,143,.4); transition:transform .15s;
+      font-weight:800; font-size:.85rem;
+    }
+    .rec-btn svg { width:40px; height:40px; }
+    .rec-btn:active { transform:scale(.94); }
+    .rec-btn.recording { animation:pulse 1.2s ease infinite; background:linear-gradient(135deg,#e03131,#ff5d8f); }
+    @keyframes pulse { 0%,100% { box-shadow:0 0 0 0 rgba(224,49,49,.4); } 50% { box-shadow:0 0 0 22px rgba(224,49,49,0); } }
+    .rec-timer { font-size:2rem; font-weight:900; margin:18px 0 4px; font-variant-numeric:tabular-nums; }
+    .rec-limit { font-size:.76rem; color:var(--muted); font-weight:700; }
+    .rec-preview { margin-top:20px; }
+    .rec-actions { display:flex; gap:10px; margin-top:16px; }
+    .rec-actions .btn { flex:1; }
+    .btn.secondary { background:#fff; color:var(--purple); border:2px solid var(--purple); box-shadow:none; }
+    .done-card { background:linear-gradient(135deg,rgba(32,201,151,.12),rgba(132,94,247,.08)); border:2px solid rgba(32,201,151,.3); border-radius:var(--r); padding:24px 18px; text-align:center; }
+    .done-card b { font-size:1.05rem; display:block; margin-bottom:8px; }
+    .done-card p { font-size:.85rem; color:var(--muted); line-height:1.7; }
+
+    /* プロフィール */
+    .prof-head { text-align:center; padding:24px 0 10px; }
+    .prof-head .avatar { width:76px; height:76px; margin:0 auto 12px; font-size:1.8rem; }
+    .prof-email { font-size:.8rem; color:var(--muted); font-weight:600; }
+    .card { background:var(--card); border-radius:var(--r); padding:20px 18px; box-shadow:0 6px 24px rgba(132,94,247,.10); margin-bottom:14px; }
+    .card h2 { font-size:.95rem; font-weight:900; margin-bottom:14px; }
+    .stat-row { display:flex; gap:10px; }
+    .stat { flex:1; text-align:center; background:var(--bg); border-radius:14px; padding:14px 6px; }
+    .stat b { font-size:1.4rem; font-weight:900; display:block; }
+    .stat span { font-size:.72rem; color:var(--muted); font-weight:700; }
+
+    /* ボトムナビ */
+    nav.tabbar {
+      position:fixed; bottom:0; left:0; right:0; z-index:60;
+      background:rgba(255,255,255,.95); backdrop-filter:blur(12px);
+      border-top:1px solid var(--line); display:flex;
+      padding-bottom:env(safe-area-inset-bottom); max-width:480px; margin:0 auto;
+      border-radius:18px 18px 0 0; box-shadow:0 -6px 24px rgba(132,94,247,.08);
+    }
+    .tabbar button {
+      flex:1; border:none; background:none; padding:10px 0 8px;
+      display:flex; flex-direction:column; align-items:center; gap:3px;
+      font-size:.68rem; font-weight:800; color:var(--muted); transition:color .15s;
+    }
+    .tabbar button[aria-current="page"] { color:var(--purple); }
+    .tabbar svg { width:24px; height:24px; }
+    .tab-rec-icon {
+      width:50px; height:50px; border-radius:50%; background:var(--grad); color:#fff;
+      display:flex; align-items:center; justify-content:center; margin-top:-22px;
+      box-shadow:0 8px 20px rgba(255,93,143,.4); border:4px solid var(--bg);
+    }
+    .tab-rec-icon svg { width:22px; height:22px; }
+
+    @media (min-width:768px) { body { background:linear-gradient(160deg,#fff7fb,#f3ecff); } }
+  </style>
+</head>
+<body>
+
+<div id="loading" role="status" aria-live="polite"><div class="spinner"></div><p>読み込み中…</p></div>
+<div id="toasts" aria-live="assertive"></div>
+
+<!-- 認証画面 -->
+<section id="view-auth" hidden>
+  <div class="logo">
+    <div class="logo-mark" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0"/><path d="M12 18v3"/></svg>
+    </div>
+    <h1>コエリアル</h1>
+    <p>1日1回、いまの声をそのまま残す。<br>加工なしの音声日記。</p>
+  </div>
+  <div class="auth-card">
+    <div class="tabs" role="tablist" aria-label="ログインまたは新規登録">
+      <button class="tab" id="tabLogin" role="tab" aria-selected="true" onclick="switchAuthTab('login')">ログイン</button>
+      <button class="tab" id="tabSignup" role="tab" aria-selected="false" onclick="switchAuthTab('signup')">新規登録</button>
+    </div>
+    <form id="authForm" novalidate>
+      <div class="field" id="fUsername" hidden>
+        <label for="inUsername">ニックネーム</label>
+        <input id="inUsername" type="text" maxlength="20" autocomplete="nickname" placeholder="例: こえだ">
+        <p class="err" id="errUsername"></p>
+      </div>
+      <div class="field" id="fEmail">
+        <label for="inEmail">メールアドレス</label>
+        <input id="inEmail" type="email" autocomplete="email" placeholder="you@example.com" inputmode="email">
+        <p class="err" id="errEmail"></p>
+      </div>
+      <div class="field" id="fPassword">
+        <label for="inPassword">パスワード(8文字以上)</label>
+        <input id="inPassword" type="password" autocomplete="current-password" placeholder="********">
+        <p class="err" id="errPassword"></p>
+      </div>
+      <button class="btn" id="authSubmit" type="submit">ログイン</button>
+    </form>
+  </div>
+</section>
+
+<!-- アプリ本体 -->
+<div id="app" hidden>
+  <header class="bar">
+    <span class="bar-title">コエリアル</span>
+    <span class="bar-date" id="barDate"></span>
+  </header>
+  <main>
+    <!-- フィード -->
+    <section id="view-feed" aria-label="あなたの音声日記">
+      <div id="feedContent"></div>
+    </section>
+
+    <!-- 録音 -->
+    <section id="view-record" hidden aria-label="きょうの声を録音">
+      <div id="recArea"></div>
+    </section>
+
+    <!-- プロフィール -->
+    <section id="view-profile" hidden aria-label="プロフィールと設定">
+      <div class="prof-head">
+        <div class="avatar" id="profAvatar" aria-hidden="true"></div>
+        <p class="prof-email" id="profEmail"></p>
+      </div>
+      <div class="card">
+        <h2>記録</h2>
+        <div class="stat-row">
+          <div class="stat"><b id="statTotal">-</b><span>投稿数</span></div>
+          <div class="stat"><b id="statStreak">-</b><span>連続日数</span></div>
+          <div class="stat"><b id="statFirst">-</b><span>はじめた日</span></div>
+        </div>
+      </div>
+      <div class="card">
+        <h2>プロフィール編集</h2>
+        <form id="profForm" novalidate>
+          <div class="field" id="fPUsername">
+            <label for="inPUsername">ニックネーム</label>
+            <input id="inPUsername" type="text" maxlength="20">
+            <p class="err" id="errPUsername"></p>
+          </div>
+          <div class="field" id="fPBio">
+            <label for="inPBio">ひとこと(200文字まで)</label>
+            <textarea id="inPBio" rows="3" maxlength="200"></textarea>
+            <p class="err" id="errPBio"></p>
+          </div>
+          <button class="btn" id="profSave" type="submit">保存する</button>
+        </form>
+      </div>
+      <button class="btn ghost" onclick="doLogout()">ログアウト</button>
+    </section>
+  </main>
+
+  <nav class="tabbar" aria-label="メインナビゲーション">
+    <button id="navFeed" aria-current="page" onclick="showTab('feed')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg>
+      ホーム
+    </button>
+    <button id="navRecord" onclick="showTab('record')" aria-label="録音する">
+      <span class="tab-rec-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0"/><path d="M12 18v3"/></svg></span>
+      録音
+    </button>
+    <button id="navProfile" onclick="showTab('profile')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>
+      プロフィール
+    </button>
+  </nav>
+</div>
+
+<script type="module">
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+
+// ---- 設定(publishableキーは公開可能なキー。データはRLSで保護される) ----
+const SUPABASE_URL = 'https://ottnrxudnoqnwtpxxbgg.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_3fNJNb3KGQpjq97g9A00xg_DIeEt8rZ';
+const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+let me = null;          // ログイン中ユーザー
+let myProfile = null;   // プロフィール
+let authMode = 'login';
+let audioEl = null;     // 再生中のaudio
+let playingBtn = null;
+
+// ---- ユーティリティ ----
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function toast(msg, type='') {
+  const t = document.createElement('div');
+  t.className = `toast ${type}`; t.textContent = msg;
+  $('toasts').appendChild(t);
+  setTimeout(() => t.remove(), 4200);
+}
+function setLoading(on, msg='読み込み中…') {
+  $('loading').hidden = !on;
+  if (on) $('loading').querySelector('p').textContent = msg;
+}
+const todayJST = () => new Date(Date.now() + 9*3600e3).toISOString().slice(0,10);
+const fmtTime = iso => new Date(iso).toLocaleTimeString('ja-JP', {hour:'2-digit', minute:'2-digit'});
+const fmtDate = d => { const [y,m,dd] = d.split('-'); return `${Number(m)}月${Number(dd)}日`; };
+function netMsg(e) {
+  if (!navigator.onLine) return '通信できません。電波の良い場所でもう一度お試しください。';
+  return e?.message ? `エラー: ${e.message}` : '通信に失敗しました。時間をおいてもう一度お試しください。';
+}
+
+// ---- バリデーション ----
+function setFieldError(fieldId, errId, msg) {
+  $(fieldId).classList.toggle('invalid', !!msg);
+  $(errId).textContent = msg || '';
+}
+function validateAuth() {
+  let ok = true;
+  const email = $('inEmail').value.trim();
+  const pw = $('inPassword').value;
+  if (!email) { setFieldError('fEmail','errEmail','メールアドレスを入力してください'); ok = false; }
+  else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { setFieldError('fEmail','errEmail','メールアドレスの形式が正しくありません'); ok = false; }
+  else setFieldError('fEmail','errEmail','');
+  if (!pw) { setFieldError('fPassword','errPassword','パスワードを入力してください'); ok = false; }
+  else if (pw.length < 8) { setFieldError('fPassword','errPassword','パスワードは8文字以上にしてください'); ok = false; }
+  else setFieldError('fPassword','errPassword','');
+  if (authMode === 'signup') {
+    const name = $('inUsername').value.trim();
+    if (!name) { setFieldError('fUsername','errUsername','ニックネームを入力してください'); ok = false; }
+    else if (name.length > 20) { setFieldError('fUsername','errUsername','20文字以内にしてください'); ok = false; }
+    else setFieldError('fUsername','errUsername','');
+  }
+  return ok;
+}
+
+// ---- 認証 ----
+window.switchAuthTab = (mode) => {
+  authMode = mode;
+  $('tabLogin').setAttribute('aria-selected', mode === 'login');
+  $('tabSignup').setAttribute('aria-selected', mode === 'signup');
+  $('fUsername').hidden = mode !== 'signup';
+  $('authSubmit').textContent = mode === 'login' ? 'ログイン' : '登録してはじめる';
+};
+
+$('authForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  if (!validateAuth()) return;
+  const btn = $('authSubmit');
+  btn.disabled = true; btn.textContent = '処理中…';
+  try {
+    const email = $('inEmail').value.trim();
+    const password = $('inPassword').value;
+    if (authMode === 'signup') {
+      const { data, error } = await sb.auth.signUp({ email, password });
+      if (error) throw error;
+      if (data.user && !data.session) {
+        toast('確認メールを送りました。メール内のリンクを開いてからログインしてください。', 'ok');
+        switchAuthTab('login');
+        return;
+      }
+      await sb.from('profiles').upsert({ id: data.user.id, username: $('inUsername').value.trim() });
+      toast('ようこそ、コエリアルへ', 'ok');
+    } else {
+      const { error } = await sb.auth.signInWithPassword({ email, password });
+      if (error) {
+        if (/Invalid login credentials/i.test(error.message)) throw new Error('メールアドレスまたはパスワードが違います');
+        if (/Email not confirmed/i.test(error.message)) throw new Error('メールの確認が済んでいません。受信箱の確認リンクを開いてください');
+        throw error;
+      }
+    }
+  } catch (err) {
+    toast(netMsg(err), 'error');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = authMode === 'login' ? 'ログイン' : '登録してはじめる';
+  }
+});
+
+window.doLogout = async () => {
+  await sb.auth.signOut();
+  toast('ログアウトしました');
+};
+
+// ---- セッション管理 ----
+sb.auth.onAuthStateChange(async (event, session) => {
+  if (event === 'TOKEN_REFRESHED') return;
+  if (session?.user) {
+    me = session.user;
+    await ensureProfile();
+    enterApp();
+  } else {
+    me = null; myProfile = null;
+    if (event === 'SIGNED_OUT') stopAudio();
+    showAuth(event === 'SIGNED_OUT' ? null : 'セッションの有効期限が切れました。もう一度ログインしてください。');
+  }
+});
+
+async function ensureProfile() {
+  const { data } = await sb.from('profiles').select('*').eq('id', me.id).maybeSingle();
+  if (data) { myProfile = data; return; }
+  const fallback = (me.email || 'わたし').split('@')[0].slice(0, 20);
+  const { data: created } = await sb.from('profiles').upsert({ id: me.id, username: fallback }).select().maybeSingle();
+  myProfile = created || { id: me.id, username: fallback, bio: '' };
+}
+
+function showAuth(notice) {
+  setLoading(false);
+  $('app').hidden = true;
+  $('view-auth').hidden = false;
+  if (notice) toast(notice, 'error');
+}
+function enterApp() {
+  setLoading(false);
+  $('view-auth').hidden = true;
+  $('app').hidden = false;
+  $('barDate').textContent = fmtDate(todayJST());
+  renderProfileView();
+  showTab('feed');
+}
+
+// ---- タブ切り替え ----
+window.showTab = (tab) => {
+  stopAudio();
+  for (const t of ['feed','record','profile']) {
+    $(`view-${t}`).hidden = t !== tab;
+    $(`nav${t[0].toUpperCase()+t.slice(1)}`).removeAttribute('aria-current');
+  }
+  $(`nav${tab[0].toUpperCase()+tab.slice(1)}`).setAttribute('aria-current','page');
+  if (tab === 'feed') loadFeed();
+  if (tab === 'record') renderRecord();
+  if (tab === 'profile') renderProfileView();
+  window.scrollTo({ top: 0 });
+};
+
+// ---- フィード ----
+async function loadFeed() {
+  const box = $('feedContent');
+  box.innerHTML = `<div class="skeleton"><div class="sk-line" style="width:40%"></div><div class="sk-line" style="width:100%;height:40px"></div></div>`.repeat(3);
+  try {
+    const { data: posts, error } = await sb.from('posts')
+      .select('*').eq('user_id', me.id)
+      .order('created_at', { ascending: false }).limit(60);
+    if (error) throw error;
+    if (!posts.length) {
+      box.innerHTML = `<div class="empty" style="margin-top:20px"><b>まだ声がありません</b><p>下の録音ボタンから、きょうの声を残してみましょう。<br>1日1回、30秒まで。加工なしのリアルな記録です。</p></div>`;
+      return;
+    }
+    box.innerHTML = '';
+    let lastDate = '';
+    for (const p of posts) {
+      if (p.post_date !== lastDate) {
+        lastDate = p.post_date;
+        const lbl = document.createElement('p');
+        lbl.className = 'day-label';
+        lbl.textContent = p.post_date === todayJST() ? `きょう ${fmtDate(p.post_date)}` : fmtDate(p.post_date);
+        box.appendChild(lbl);
+      }
+      box.appendChild(renderPostCard(p));
+    }
+  } catch (e) {
+    box.innerHTML = `<div class="retry-box"><p>${esc(netMsg(e))}</p><button class="retry-btn" id="feedRetry">もう一度読み込む</button></div>`;
+    $('feedRetry').onclick = loadFeed;
+  }
+}
+
+function renderPostCard(p) {
+  const card = document.createElement('article');
+  card.className = 'post-card';
+  const initial = esc((myProfile?.username || '?')[0]);
+  card.innerHTML = `
+    <div class="post-head">
+      <div class="avatar" aria-hidden="true">${initial}</div>
+      <div><div class="post-user">${esc(myProfile?.username || '')}</div><div class="post-time">${fmtTime(p.created_at)}</div></div>
+    </div>
+    <div class="player">
+      <button class="play-btn" aria-label="再生する"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></button>
+      <div class="wave" aria-hidden="true"><div></div></div>
+      <span class="dur">${p.duration_sec ? p.duration_sec + '秒' : ''}</span>
+    </div>
+    ${p.caption ? `<p class="post-caption">${esc(p.caption)}</p>` : ''}
+    <button class="post-del">この投稿を削除</button>`;
+  card.querySelector('.play-btn').onclick = (e) => togglePlay(p, e.currentTarget, card.querySelector('.wave > div'));
+  card.querySelector('.post-del').onclick = async () => {
+    if (!confirm('この声の記録を削除しますか?')) return;
+    try {
+      await sb.storage.from('voices').remove([p.audio_path]);
+      const { error } = await sb.from('posts').delete().eq('id', p.id);
+      if (error) throw error;
+      toast('削除しました', 'ok');
+      loadFeed();
+    } catch (e) { toast(netMsg(e), 'error'); }
+  };
+  return card;
+}
+
+function stopAudio() {
+  if (audioEl) { audioEl.pause(); audioEl = null; }
+  if (playingBtn) { playingBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>'; playingBtn = null; }
+}
+async function togglePlay(post, btn, bar) {
+  if (playingBtn === btn) { stopAudio(); bar.style.width = '0%'; return; }
+  stopAudio();
+  try {
+    const { data, error } = await sb.storage.from('voices').createSignedUrl(post.audio_path, 300);
+    if (error) throw error;
+    audioEl = new Audio(data.signedUrl);
+    playingBtn = btn;
+    btn.innerHTML = '<svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="5" width="4" height="14"/><rect x="14" y="5" width="4" height="14"/></svg>';
+    audioEl.ontimeupdate = () => { if (audioEl?.duration) bar.style.width = (audioEl.currentTime / audioEl.duration * 100) + '%'; };
+    audioEl.onended = () => { stopAudio(); bar.style.width = '0%'; };
+    await audioEl.play();
+  } catch (e) { stopAudio(); toast('音声を再生できませんでした。' + netMsg(e), 'error'); }
+}
+
+// ---- 録音 ----
+let mediaRec = null, chunks = [], recTimerId = null, recSec = 0, recBlob = null, recMime = '';
+const MAX_SEC = 30;
+
+async function renderRecord() {
+  const area = $('recArea');
+  // 今日すでに投稿済みか確認
+  area.innerHTML = `<div class="skeleton"><div class="sk-line" style="width:60%"></div><div class="sk-line" style="width:100%;height:60px"></div></div>`;
+  try {
+    const { data, error } = await sb.from('posts').select('id').eq('user_id', me.id).eq('post_date', todayJST()).maybeSingle();
+    if (error) throw error;
+    if (data) {
+      area.innerHTML = `<div class="done-card" style="margin-top:24px"><b>きょうの声は記録済みです</b><p>コエリアルは1日1回だけ。また明日、そのときの声を聞かせてください。<br>(削除すれば撮り直しできます)</p></div>`;
+      return;
+    }
+  } catch (e) {
+    area.innerHTML = `<div class="retry-box"><p>${esc(netMsg(e))}</p><button class="retry-btn" id="recRetry">もう一度読み込む</button></div>`;
+    $('recRetry').onclick = renderRecord;
+    return;
+  }
+  renderRecIdle();
+}
+
+function renderRecIdle() {
+  recBlob = null;
+  $('recArea').innerHTML = `
+    <div class="rec-wrap">
+      <p class="rec-status">いまの気持ち、いまの場所の音。<br>ボタンを押して、そのまま話してみて。</p>
+      <button class="rec-btn" id="recStart" aria-label="録音をはじめる">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0"/><path d="M12 18v3"/></svg>
+        録音する
+      </button>
+      <p class="rec-timer" aria-hidden="true">0:00</p>
+      <p class="rec-limit">最長${MAX_SEC}秒・1日1回</p>
+    </div>`;
+  $('recStart').onclick = startRecording;
+}
+
+async function startRecording() {
+  let stream;
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+  } catch {
+    toast('マイクを使用できません。ブラウザの設定でマイクの使用を許可してください。', 'error');
+    return;
+  }
+  recMime = ['audio/webm;codecs=opus','audio/webm','audio/mp4'].find(t => MediaRecorder.isTypeSupported(t)) || '';
+  mediaRec = new MediaRecorder(stream, recMime ? { mimeType: recMime } : undefined);
+  chunks = []; recSec = 0;
+  mediaRec.ondataavailable = e => chunks.push(e.data);
+  mediaRec.onstop = () => {
+    stream.getTracks().forEach(t => t.stop());
+    recBlob = new Blob(chunks, { type: recMime || 'audio/webm' });
+    renderRecPreview();
+  };
+  mediaRec.start();
+  const btn = $('recStart');
+  btn.classList.add('recording');
+  btn.innerHTML = `<svg viewBox="0 0 24 24" fill="#fff"><rect x="7" y="7" width="10" height="10" rx="2"/></svg>とめる`;
+  btn.setAttribute('aria-label','録音をとめる');
+  btn.onclick = stopRecording;
+  const timerEl = document.querySelector('.rec-timer');
+  recTimerId = setInterval(() => {
+    recSec++;
+    timerEl.textContent = `0:${String(recSec).padStart(2,'0')}`;
+    if (recSec >= MAX_SEC) stopRecording();
+  }, 1000);
+}
+
+function stopRecording() {
+  clearInterval(recTimerId);
+  if (mediaRec && mediaRec.state !== 'inactive') mediaRec.stop();
+}
+
+function renderRecPreview() {
+  const url = URL.createObjectURL(recBlob);
+  $('recArea').innerHTML = `
+    <div class="rec-wrap">
+      <p class="rec-status">録音できました(${recSec}秒)。聴いてみて、よければ投稿しましょう。</p>
+      <div class="rec-preview"><audio controls src="${url}" style="width:100%"></audio></div>
+      <div class="field" id="fCaption" style="margin-top:16px; text-align:left">
+        <label for="inCaption">ひとこと(任意・100文字まで)</label>
+        <input id="inCaption" type="text" maxlength="100" placeholder="例: 学校からの帰り道">
+        <p class="err" id="errCaption"></p>
+      </div>
+      <div class="rec-actions">
+        <button class="btn secondary" id="recRedo">録り直す</button>
+        <button class="btn" id="recPost">きょうの声として投稿</button>
+      </div>
+    </div>`;
+  $('recRedo').onclick = renderRecIdle;
+  $('recPost').onclick = uploadPost;
+}
+
+async function uploadPost() {
+  const btn = $('recPost');
+  btn.disabled = true; btn.textContent = '投稿中…';
+  try {
+    const ext = recMime.includes('mp4') ? 'm4a' : 'webm';
+    const path = `${me.id}/${todayJST()}-${Date.now()}.${ext}`;
+    const { error: upErr } = await sb.storage.from('voices').upload(path, recBlob, { contentType: recBlob.type });
+    if (upErr) throw upErr;
+    const { error: insErr } = await sb.from('posts').insert({
+      user_id: me.id, audio_path: path,
+      caption: $('inCaption').value.trim(), duration_sec: recSec, post_date: todayJST(),
+    });
+    if (insErr) {
+      await sb.storage.from('voices').remove([path]);
+      if (insErr.code === '23505') throw new Error('きょうはすでに投稿済みです');
+      throw insErr;
+    }
+    toast('きょうの声を記録しました', 'ok');
+    showTab('feed');
+  } catch (e) {
+    toast(netMsg(e), 'error');
+    btn.disabled = false; btn.textContent = 'きょうの声として投稿';
+  }
+}
+
+// ---- プロフィール ----
+async function renderProfileView() {
+  if (!myProfile) return;
+  $('profAvatar').textContent = (myProfile.username || '?')[0];
+  $('profEmail').textContent = me.email || '';
+  $('inPUsername').value = myProfile.username || '';
+  $('inPBio').value = myProfile.bio || '';
+  try {
+    const { data: posts } = await sb.from('posts').select('post_date').eq('user_id', me.id).order('post_date', { ascending: false });
+    if (posts) {
+      $('statTotal').textContent = posts.length;
+      $('statFirst').textContent = posts.length ? fmtDate(posts[posts.length-1].post_date) : '-';
+      // 連続日数(今日または昨日から遡る)
+      let streak = 0;
+      const dates = new Set(posts.map(p => p.post_date));
+      let d = new Date(Date.now() + 9*3600e3);
+      if (!dates.has(d.toISOString().slice(0,10))) d.setDate(d.getDate() - 1);
+      while (dates.has(d.toISOString().slice(0,10))) { streak++; d.setDate(d.getDate() - 1); }
+      $('statStreak').textContent = streak + '日';
+    }
+  } catch { /* 統計は失敗しても致命的でない */ }
+}
+
+$('profForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const name = $('inPUsername').value.trim();
+  const bio = $('inPBio').value.trim();
+  let ok = true;
+  if (!name) { setFieldError('fPUsername','errPUsername','ニックネームを入力してください'); ok = false; }
+  else if (name.length > 20) { setFieldError('fPUsername','errPUsername','20文字以内にしてください'); ok = false; }
+  else setFieldError('fPUsername','errPUsername','');
+  if (bio.length > 200) { setFieldError('fPBio','errPBio','200文字以内にしてください'); ok = false; }
+  else setFieldError('fPBio','errPBio','');
+  if (!ok) return;
+  const btn = $('profSave');
+  btn.disabled = true; btn.textContent = '保存中…';
+  try {
+    const { error } = await sb.from('profiles').update({ username: name, bio, updated_at: new Date().toISOString() }).eq('id', me.id);
+    if (error) throw error;
+    myProfile.username = name; myProfile.bio = bio;
+    toast('プロフィールを保存しました', 'ok');
+    renderProfileView();
+  } catch (e2) { toast(netMsg(e2), 'error'); }
+  finally { btn.disabled = false; btn.textContent = '保存する'; }
+});
+
+// ---- オフライン検知 ----
+window.addEventListener('offline', () => toast('オフラインになりました。通信が回復すると再び使えます。', 'error'));
+window.addEventListener('online', () => toast('通信が回復しました', 'ok'));
+
+// ---- PWA ----
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
+
+// ---- 起動 ----
+(async () => {
+  setLoading(true, '起動中…');
+  const { data: { session } } = await sb.auth.getSession();
+  if (!session) showAuth();
+  // セッションがある場合は onAuthStateChange が enterApp を呼ぶ
+})();
+</script>
+</body>
+</html>
