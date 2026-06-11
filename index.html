@@ -7,6 +7,9 @@
   <meta name="description" content="1日1回、その瞬間の声を録音して残す音声版BeReal。加工なし、撮り直しは1日1回まで。あなたの毎日を声で記録しよう。">
   <meta name="theme-color" content="#845ef7">
   <link rel="manifest" href="/manifest.json">
+  <link rel="preconnect" href="https://cdn.jsdelivr.net">
+  <link rel="preconnect" href="https://ottnrxudnoqnwtpxxbgg.supabase.co">
+  <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
   <script defer src="/_vercel/insights/script.js"></script>
   <style>
     :root {
@@ -310,11 +313,11 @@
 </div>
 
 <script type="module">
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 // ---- 設定(publishableキーは公開可能なキー。データはRLSで保護される) ----
 const SUPABASE_URL = 'https://ottnrxudnoqnwtpxxbgg.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_3fNJNb3KGQpjq97g9A00xg_DIeEt8rZ';
+const { createClient } = window.supabase;
 const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 let me = null;          // ログイン中ユーザー
@@ -424,9 +427,11 @@ sb.auth.onAuthStateChange(async (event, session) => {
     await ensureProfile();
     enterApp();
   } else {
+    const wasLoggedIn = !!me;
     me = null; myProfile = null;
     if (event === 'SIGNED_OUT') stopAudio();
-    showAuth(event === 'SIGNED_OUT' ? null : 'セッションの有効期限が切れました。もう一度ログインしてください。');
+    // 期限切れの通知は「ログイン中だった人」にだけ出す(初回訪問では出さない)
+    showAuth(event !== 'SIGNED_OUT' && wasLoggedIn ? 'セッションの有効期限が切れました。もう一度ログインしてください。' : null);
   }
 });
 
@@ -722,7 +727,12 @@ if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').cat
 // ---- 起動 ----
 (async () => {
   setLoading(true, '起動中…');
+  const watchdog = setTimeout(() => {
+    const l = $('loading');
+    if (!l.hidden) l.innerHTML = '<p style="color:var(--danger);font-weight:700;padding:0 24px;text-align:center;line-height:1.8">読み込みに時間がかかっています。<br>通信環境を確認してください。</p><button class="retry-btn" onclick="location.reload()" style="margin-top:14px">再読み込み</button>';
+  }, 12000);
   const { data: { session } } = await sb.auth.getSession();
+  clearTimeout(watchdog);
   if (!session) showAuth();
   // セッションがある場合は onAuthStateChange が enterApp を呼ぶ
 })();
