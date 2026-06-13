@@ -1,0 +1,7 @@
+{
+  "private": true,
+  "dependencies": {
+    "@supabase/supabase-js": "^2",
+    "web-push": "^3"
+  }
+}

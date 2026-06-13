@@ -292,6 +292,11 @@
           <button class="btn" id="profSave" type="submit">保存する</button>
         </form>
       </div>
+      <div class="card" id="pushCard" hidden>
+        <h2>通知</h2>
+        <p id="pushDesc" style="font-size:.85rem;color:var(--muted);line-height:1.7;margin-bottom:12px">毎日ランダムな時刻に「声を残そう」とお知らせします。</p>
+        <button class="btn" id="pushBtn" onclick="togglePush()">通知をオンにする</button>
+      </div>
       <button class="btn ghost" onclick="doLogout()">ログアウト</button>
     </section>
   </main>
@@ -430,7 +435,6 @@ sb.auth.onAuthStateChange(async (event, session) => {
     const wasLoggedIn = !!me;
     me = null; myProfile = null;
     if (event === 'SIGNED_OUT') stopAudio();
-    // 期限切れの通知は「ログイン中だった人」にだけ出す(初回訪問では出さない)
     showAuth(event !== 'SIGNED_OUT' && wasLoggedIn ? 'セッションの有効期限が切れました。もう一度ログインしてください。' : null);
   }
 });
@@ -468,7 +472,7 @@ window.showTab = (tab) => {
   $(`nav${tab[0].toUpperCase()+tab.slice(1)}`).setAttribute('aria-current','page');
   if (tab === 'feed') loadFeed();
   if (tab === 'record') renderRecord();
-  if (tab === 'profile') renderProfileView();
+  if (tab === 'profile') { renderProfileView(); initPushUI(); }
   window.scrollTo({ top: 0 });
 };
 
@@ -558,7 +562,6 @@ const MAX_SEC = 30;
 
 async function renderRecord() {
   const area = $('recArea');
-  // 今日すでに投稿済みか確認
   area.innerHTML = `<div class="skeleton"><div class="sk-line" style="width:60%"></div><div class="sk-line" style="width:100%;height:60px"></div></div>`;
   try {
     const { data, error } = await sb.from('posts').select('id').eq('user_id', me.id).eq('post_date', todayJST()).maybeSingle();
@@ -683,7 +686,6 @@ async function renderProfileView() {
     if (posts) {
       $('statTotal').textContent = posts.length;
       $('statFirst').textContent = posts.length ? fmtDate(posts[posts.length-1].post_date) : '-';
-      // 連続日数(今日または昨日から遡る)
       let streak = 0;
       const dates = new Set(posts.map(p => p.post_date));
       let d = new Date(Date.now() + 9*3600e3);
@@ -717,6 +719,70 @@ $('profForm').addEventListener('submit', async (e) => {
   finally { btn.disabled = false; btn.textContent = '保存する'; }
 });
 
+// ---- Push通知 ----
+let _vapidKey = null;
+async function _getVapidKey() {
+  if (_vapidKey) return _vapidKey;
+  try {
+    const r = await fetch('/api/vapid-public-key');
+    if (!r.ok) return null;
+    const { key } = await r.json();
+    return (_vapidKey = key);
+  } catch { return null; }
+}
+function _b64ToU8(b64) {
+  const p = '='.repeat((4 - b64.length % 4) % 4);
+  const raw = atob((b64 + p).replace(/-/g, '+').replace(/_/g, '/'));
+  return Uint8Array.from([...raw].map(c => c.charCodeAt(0)));
+}
+async function initPushUI() {
+  const card = $('pushCard'), btn = $('pushBtn'), desc = $('pushDesc');
+  if (!('PushManager' in window)) { card.hidden = true; return; }
+  const key = await _getVapidKey();
+  if (!key) { card.hidden = true; return; }
+  card.hidden = false;
+  if (Notification.permission === 'denied') {
+    desc.textContent = '通知がブロックされています。ブラウザの設定から許可してください。';
+    btn.hidden = true; return;
+  }
+  btn.hidden = false;
+  const reg = await navigator.serviceWorker.ready;
+  const sub = await reg.pushManager.getSubscription();
+  if (sub) {
+    btn.textContent = '通知をオフにする'; btn.className = 'btn secondary';
+    desc.textContent = '通知は有効です。毎日ランダムな時刻にお知らせします。';
+  } else {
+    btn.textContent = '通知をオンにする'; btn.className = 'btn';
+    desc.textContent = '毎日ランダムな時刻に「声を残そう」とお知らせします。';
+  }
+}
+window.togglePush = async () => {
+  const btn = $('pushBtn'); btn.disabled = true;
+  try {
+    const reg = await navigator.serviceWorker.ready;
+    const sub = await reg.pushManager.getSubscription();
+    if (sub) {
+      const ep = sub.endpoint;
+      await sub.unsubscribe();
+      await sb.from('push_subscriptions').delete().eq('user_id', me.id).eq('endpoint', ep);
+      toast('通知をオフにしました', 'ok');
+    } else {
+      const key = await _getVapidKey();
+      const s = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: _b64ToU8(key) });
+      const j = s.toJSON();
+      const { error } = await sb.from('push_subscriptions').upsert(
+        { user_id: me.id, endpoint: j.endpoint, p256dh: j.keys.p256dh, auth: j.keys.auth },
+        { onConflict: 'user_id,endpoint' }
+      );
+      if (error) { await s.unsubscribe(); throw new Error(error.message); }
+      toast('通知をオンにしました', 'ok');
+    }
+    await initPushUI();
+  } catch (err) {
+    toast('通知の設定に失敗しました: ' + (err?.message ?? ''), 'error');
+  } finally { btn.disabled = false; }
+};
+
 // ---- オフライン検知 ----
 window.addEventListener('offline', () => toast('オフラインになりました。通信が回復すると再び使えます。', 'error'));
 window.addEventListener('online', () => toast('通信が回復しました', 'ok'));
@@ -734,7 +800,6 @@ if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').cat
   const { data: { session } } = await sb.auth.getSession();
   clearTimeout(watchdog);
   if (!session) showAuth();
-  // セッションがある場合は onAuthStateChange が enterApp を呼ぶ
 })();
 </script>
 </body>
