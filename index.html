@@ -203,6 +203,29 @@
     .tab-rec-icon svg { width:22px; height:22px; }
 
     @media (min-width:768px) { body { background:linear-gradient(160deg,#fff7fb,#f3ecff); } }
+
+    /* オンボーディング */
+    #onboarding {
+      position:fixed; inset:0; z-index:150; background:rgba(43,35,80,.6);
+      backdrop-filter:blur(6px); display:flex; align-items:flex-end;
+    }
+    .obd-sheet {
+      background:#fff; border-radius:28px 28px 0 0;
+      padding:28px 24px calc(28px + env(safe-area-inset-bottom));
+      width:100%; max-height:82dvh; overflow-y:auto;
+      animation:slideUp .35s ease;
+    }
+    @keyframes slideUp { from { transform:translateY(100%); } to { transform:none; } }
+    .obd-title { font-size:1.2rem; font-weight:900; margin-bottom:6px; }
+    .obd-sub { color:var(--muted); font-size:.88rem; line-height:1.6; margin-bottom:24px; }
+    .obd-steps { display:flex; flex-direction:column; gap:12px; margin-bottom:24px; }
+    .obd-step { display:flex; align-items:flex-start; gap:14px; background:var(--bg); border-radius:var(--r2); padding:14px; }
+    .obd-num {
+      width:28px; height:28px; border-radius:50%; background:var(--grad); color:#fff;
+      font-weight:900; font-size:.82rem; display:flex; align-items:center; justify-content:center; flex-shrink:0; margin-top:2px;
+    }
+    .obd-step-text b { display:block; font-size:.9rem; font-weight:800; margin-bottom:3px; }
+    .obd-step-text p { font-size:.82rem; color:var(--muted); line-height:1.6; }
   </style>
 </head>
 <body>
@@ -297,6 +320,11 @@
         <p id="pushDesc" style="font-size:.85rem;color:var(--muted);line-height:1.7;margin-bottom:12px">毎日ランダムな時刻に「声を残そう」とお知らせします。</p>
         <button class="btn" id="pushBtn" onclick="togglePush()">通知をオンにする</button>
       </div>
+      <div class="card">
+        <h2>アプリとして使う</h2>
+        <p style="font-size:.85rem;color:var(--muted);line-height:1.7;margin-bottom:12px">ホーム画面に追加すると、アプリのようにすぐ開けます。</p>
+        <button class="btn secondary" onclick="reopenOnboarding()">使い方を確認する</button>
+      </div>
       <button class="btn ghost" onclick="doLogout()">ログアウト</button>
     </section>
   </main>
@@ -315,6 +343,17 @@
       プロフィール
     </button>
   </nav>
+</div>
+
+<!-- オンボーディングオーバーレイ -->
+<div id="onboarding" hidden role="dialog" aria-modal="true" aria-labelledby="obdTitle">
+  <div class="obd-sheet">
+    <h2 class="obd-title" id="obdTitle">コエリアルをもっと便利に</h2>
+    <p class="obd-sub">ホーム画面に追加すると、アプリのようにすぐ開けます。通知も届くようになります。</p>
+    <div id="obdSteps" class="obd-steps"></div>
+    <button class="btn" onclick="closeOnboarding()">OK、はじめよう</button>
+    <button class="btn ghost" onclick="closeOnboarding()">スキップ</button>
+  </div>
 </div>
 
 <script type="module">
@@ -460,6 +499,7 @@ function enterApp() {
   $('barDate').textContent = fmtDate(todayJST());
   renderProfileView();
   showTab('feed');
+  maybeShowOnboarding();
 }
 
 // ---- タブ切り替え ----
@@ -782,6 +822,42 @@ window.togglePush = async () => {
     toast('通知の設定に失敗しました: ' + (err?.message ?? ''), 'error');
   } finally { btn.disabled = false; }
 };
+
+// ---- オンボーディング ----
+const OBD_KEY = 'coereal_obd_done';
+const OBD_STEPS = {
+  ios: [
+    { n:'Safari の共有ボタンをタップ', d:'画面下中央、四角から矢印が出ているボタンをタップします。' },
+    { n:'「ホーム画面に追加」を選択', d:'リストをスクロールして「ホーム画面に追加」をタップし、右上の「追加」を押します。' },
+    { n:'通知をオンにする', d:'ホーム画面から起動後、プロフィール画面で通知を有効にできます。' },
+  ],
+  android: [
+    { n:'ブラウザのメニューをタップ', d:'画面右上の「...」アイコンをタップします。' },
+    { n:'「ホーム画面に追加」を選択', d:'「アプリをインストール」または「ホーム画面に追加」を選択します。' },
+    { n:'通知をオンにする', d:'インストール後にプロフィール画面から通知を有効にできます。' },
+  ],
+  other: [
+    { n:'ブラウザのメニューを開く', d:'iPhoneはSafariの共有ボタン、AndroidはChromeのメニューを使います。' },
+    { n:'「ホーム画面に追加」を選択', d:'「ホーム画面に追加」または「アプリをインストール」を選択します。' },
+    { n:'通知をオンにする', d:'プロフィール画面から通知を有効にすると、毎日お知らせが届きます。' },
+  ],
+};
+function _detectOS() {
+  const ua = navigator.userAgent;
+  if (/iphone|ipad|ipod/i.test(ua)) return 'ios';
+  if (/android/i.test(ua)) return 'android';
+  return 'other';
+}
+function showOnboarding() {
+  const steps = OBD_STEPS[_detectOS()];
+  $('obdSteps').innerHTML = steps.map((s, i) =>
+    `<div class="obd-step"><div class="obd-num">${i+1}</div><div class="obd-step-text"><b>${esc(s.n)}</b><p>${esc(s.d)}</p></div></div>`
+  ).join('');
+  $('onboarding').hidden = false;
+}
+window.closeOnboarding = () => { $('onboarding').hidden = true; localStorage.setItem(OBD_KEY,'1'); };
+window.reopenOnboarding = () => showOnboarding();
+function maybeShowOnboarding() { if (!localStorage.getItem(OBD_KEY)) showOnboarding(); }
 
 // ---- オフライン検知 ----
 window.addEventListener('offline', () => toast('オフラインになりました。通信が回復すると再び使えます。', 'error'));
