@@ -226,6 +226,21 @@
     }
     .obd-step-text b { display:block; font-size:.9rem; font-weight:800; margin-bottom:3px; }
     .obd-step-text p { font-size:.82rem; color:var(--muted); line-height:1.6; }
+
+    /* 毎日のお題時刻 */
+    .challenge-time-box {
+      background:linear-gradient(135deg,rgba(132,94,247,.08),rgba(255,93,143,.06));
+      border:2px solid rgba(132,94,247,.18);
+      border-radius:var(--r); padding:14px 18px; margin-bottom:4px;
+      display:flex; align-items:center; justify-content:space-between;
+    }
+    .ct-label { font-size:.75rem; font-weight:800; color:var(--muted); margin-bottom:2px; }
+    .ct-time { font-size:1.25rem; font-weight:900; color:var(--purple); }
+    .on-time-badge {
+      display:inline-block; background:var(--grad); color:#fff;
+      font-size:.67rem; font-weight:800; padding:1px 7px;
+      border-radius:999px; margin-left:6px; vertical-align:middle;
+    }
   </style>
 </head>
 <body>
@@ -268,7 +283,7 @@
     </form>
     <!-- パスワードリセット申請 -->
     <div id="auth-panel-reset" hidden>
-      <button class="btn ghost" type="button" onclick="showMainAuth()" style="padding-left:0;text-align:left;width:auto;margin-bottom:10px">← ログインに戻る</button>
+      <button class="btn ghost" type="button" onclick="showMainAuth()" style="padding-left:0;text-align:left;width:auto;margin-bottom:10px">&larr; ログインに戻る</button>
       <p style="font-size:1rem;font-weight:900;margin-bottom:6px">パスワードをリセット</p>
       <p style="font-size:.85rem;color:var(--muted);line-height:1.6;margin-bottom:14px">登録したメールアドレスに再設定リンクを送ります。</p>
       <form id="resetForm" novalidate>
@@ -419,6 +434,16 @@ function setLoading(on, msg='読み込み中…') {
 const todayJST = () => new Date(Date.now() + 9*3600e3).toISOString().slice(0,10);
 const fmtTime = iso => new Date(iso).toLocaleTimeString('ja-JP', {hour:'2-digit', minute:'2-digit'});
 const fmtDate = d => { const [y,m,dd] = d.split('-'); return `${Number(m)}月${Number(dd)}日`; };
+function dailyChallengeMins(dateStr) {
+  let h = 0;
+  for (let i = 0; i < dateStr.length; i++) h = Math.imul(31, h) + dateStr.charCodeAt(i) | 0;
+  return 660 + Math.abs(h) % 600;
+}
+const fmtMins = m => `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`;
+function isOnTime(createdAt, postDate) {
+  const d = new Date(createdAt), cm = dailyChallengeMins(postDate);
+  return Math.abs(((d.getUTCHours() + 9) % 24) * 60 + d.getUTCMinutes() - cm) <= 10;
+}
 function netMsg(e) {
   if (!navigator.onLine) return '通信できません。電波の良い場所でもう一度お試しください。';
   return e?.message ? `エラー: ${e.message}` : '通信に失敗しました。時間をおいてもう一度お試しください。';
@@ -629,11 +654,20 @@ async function loadFeed() {
       .select('*').eq('user_id', me.id)
       .order('created_at', { ascending: false }).limit(60);
     if (error) throw error;
+    box.innerHTML = '';
+    const cm = dailyChallengeMins(todayJST());
+    const banner = document.createElement('div');
+    banner.className = 'challenge-time-box';
+    banner.innerHTML = `<div><p class="ct-label">きょうのお題時刻</p><p class="ct-time">${fmtMins(cm)}</p></div><p style="font-size:.75rem;color:var(--muted);font-weight:700;text-align:right;line-height:1.7">この時刻から10分以内の<br>投稿にバッジが付きます</p>`;
+    box.appendChild(banner);
     if (!posts.length) {
-      box.innerHTML = `<div class="empty" style="margin-top:20px"><b>まだ声がありません</b><p>下の録音ボタンから、きょうの声を残してみましょう。<br>1日1回、30秒まで。加工なしのリアルな記録です。</p></div>`;
+      const empty = document.createElement('div');
+      empty.className = 'empty';
+      empty.style.marginTop = '16px';
+      empty.innerHTML = '<b>まだ声がありません</b><p>下の録音ボタンから、きょうの声を残してみましょう。<br>1日1回、30秒まで。加工なしのリアルな記録です。</p>';
+      box.appendChild(empty);
       return;
     }
-    box.innerHTML = '';
     let lastDate = '';
     for (const p of posts) {
       if (p.post_date !== lastDate) {
@@ -655,10 +689,11 @@ function renderPostCard(p) {
   const card = document.createElement('article');
   card.className = 'post-card';
   const initial = esc((myProfile?.username || '?')[0]);
+  const badge = isOnTime(p.created_at, p.post_date) ? '<span class="on-time-badge">お題時刻</span>' : '';
   card.innerHTML = `
     <div class="post-head">
       <div class="avatar" aria-hidden="true">${initial}</div>
-      <div><div class="post-user">${esc(myProfile?.username || '')}</div><div class="post-time">${fmtTime(p.created_at)}</div></div>
+      <div><div class="post-user">${esc(myProfile?.username || '')}</div><div class="post-time">${fmtTime(p.created_at)}${badge}</div></div>
     </div>
     <div class="player">
       <button class="play-btn" aria-label="再生する"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></button>
