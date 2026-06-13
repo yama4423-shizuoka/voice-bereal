@@ -243,7 +243,7 @@
     <p>1日1回、いまの声をそのまま残す。<br>加工なしの音声日記。</p>
   </div>
   <div class="auth-card">
-    <div class="tabs" role="tablist" aria-label="ログインまたは新規登録">
+    <div id="authTabs" class="tabs" role="tablist" aria-label="ログインまたは新規登録">
       <button class="tab" id="tabLogin" role="tab" aria-selected="true" onclick="switchAuthTab('login')">ログイン</button>
       <button class="tab" id="tabSignup" role="tab" aria-selected="false" onclick="switchAuthTab('signup')">新規登録</button>
     </div>
@@ -264,7 +264,40 @@
         <p class="err" id="errPassword"></p>
       </div>
       <button class="btn" id="authSubmit" type="submit">ログイン</button>
+      <button class="btn ghost" id="forgotLink" type="button" onclick="showResetRequest()" style="margin-top:2px">パスワードを忘れた場合</button>
     </form>
+    <!-- パスワードリセット申請 -->
+    <div id="auth-panel-reset" hidden>
+      <button class="btn ghost" type="button" onclick="showMainAuth()" style="padding-left:0;text-align:left;width:auto;margin-bottom:10px">← ログインに戻る</button>
+      <p style="font-size:1rem;font-weight:900;margin-bottom:6px">パスワードをリセット</p>
+      <p style="font-size:.85rem;color:var(--muted);line-height:1.6;margin-bottom:14px">登録したメールアドレスに再設定リンクを送ります。</p>
+      <form id="resetForm" novalidate>
+        <div class="field" id="fResetEmail">
+          <label for="inResetEmail">メールアドレス</label>
+          <input id="inResetEmail" type="email" autocomplete="email" placeholder="you@example.com" inputmode="email">
+          <p class="err" id="errResetEmail"></p>
+        </div>
+        <button class="btn" id="resetSubmit" type="submit">再設定メールを送る</button>
+      </form>
+    </div>
+    <!-- 新しいパスワード設定 -->
+    <div id="auth-panel-update" hidden>
+      <p style="font-size:1rem;font-weight:900;margin-bottom:6px">新しいパスワードを設定</p>
+      <p style="font-size:.85rem;color:var(--muted);line-height:1.6;margin-bottom:14px">8文字以上の新しいパスワードを入力してください。</p>
+      <form id="updatePwForm" novalidate>
+        <div class="field" id="fNewPw">
+          <label for="inNewPw">新しいパスワード(8文字以上)</label>
+          <input id="inNewPw" type="password" autocomplete="new-password" placeholder="********">
+          <p class="err" id="errNewPw"></p>
+        </div>
+        <div class="field" id="fNewPwConfirm">
+          <label for="inNewPwConfirm">確認用パスワード</label>
+          <input id="inNewPwConfirm" type="password" autocomplete="new-password" placeholder="********">
+          <p class="err" id="errNewPwConfirm"></p>
+        </div>
+        <button class="btn" id="updatePwSubmit" type="submit">パスワードを更新する</button>
+      </form>
+    </div>
   </div>
 </section>
 
@@ -415,12 +448,23 @@ function validateAuth() {
   return ok;
 }
 
-// ---- 認証 ----
+// ---- 認証パネル切り替え ----
+function showAuthPanel(which) {
+  $('authTabs').hidden = which !== 'main';
+  $('authForm').hidden = which !== 'main';
+  $('auth-panel-reset').hidden = which !== 'reset';
+  $('auth-panel-update').hidden = which !== 'update';
+}
+window.showResetRequest = () => showAuthPanel('reset');
+window.showMainAuth = () => showAuthPanel('main');
+
+// ---- 認証タブ ----
 window.switchAuthTab = (mode) => {
   authMode = mode;
   $('tabLogin').setAttribute('aria-selected', mode === 'login');
   $('tabSignup').setAttribute('aria-selected', mode === 'signup');
   $('fUsername').hidden = mode !== 'signup';
+  $('forgotLink').hidden = mode !== 'login';
   $('authSubmit').textContent = mode === 'login' ? 'ログイン' : '登録してはじめる';
 };
 
@@ -458,6 +502,57 @@ $('authForm').addEventListener('submit', async (e) => {
   }
 });
 
+// ---- パスワードリセット申請 ----
+$('resetForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const email = $('inResetEmail').value.trim();
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    setFieldError('fResetEmail', 'errResetEmail', 'メールアドレスを正しく入力してください');
+    return;
+  }
+  setFieldError('fResetEmail', 'errResetEmail', '');
+  const btn = $('resetSubmit');
+  btn.disabled = true; btn.textContent = '送信中…';
+  try {
+    const { error } = await sb.auth.resetPasswordForEmail(email, {
+      redirectTo: window.location.origin + '/',
+    });
+    if (error) throw error;
+    toast('再設定メールを送りました。受信箱を確認してください。', 'ok');
+    showMainAuth();
+  } catch (err) {
+    toast(netMsg(err), 'error');
+  } finally {
+    btn.disabled = false; btn.textContent = '再設定メールを送る';
+  }
+});
+
+// ---- 新しいパスワード設定 ----
+$('updatePwForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const pw = $('inNewPw').value;
+  const pw2 = $('inNewPwConfirm').value;
+  let ok = true;
+  if (pw.length < 8) { setFieldError('fNewPw', 'errNewPw', '8文字以上にしてください'); ok = false; }
+  else setFieldError('fNewPw', 'errNewPw', '');
+  if (pw !== pw2) { setFieldError('fNewPwConfirm', 'errNewPwConfirm', 'パスワードが一致しません'); ok = false; }
+  else setFieldError('fNewPwConfirm', 'errNewPwConfirm', '');
+  if (!ok) return;
+  const btn = $('updatePwSubmit');
+  btn.disabled = true; btn.textContent = '更新中…';
+  try {
+    const { error } = await sb.auth.updateUser({ password: pw });
+    if (error) throw error;
+    toast('パスワードを更新しました。もう一度ログインしてください。', 'ok');
+    await sb.auth.signOut();
+    showAuthPanel('main');
+  } catch (err) {
+    toast(netMsg(err), 'error');
+  } finally {
+    btn.disabled = false; btn.textContent = 'パスワードを更新する';
+  }
+});
+
 window.doLogout = async () => {
   await sb.auth.signOut();
   toast('ログアウトしました');
@@ -466,6 +561,14 @@ window.doLogout = async () => {
 // ---- セッション管理 ----
 sb.auth.onAuthStateChange(async (event, session) => {
   if (event === 'TOKEN_REFRESHED') return;
+  if (event === 'PASSWORD_RECOVERY') {
+    // メール内の再設定リンクから戻ってきた場合
+    setLoading(false);
+    $('app').hidden = true;
+    $('view-auth').hidden = false;
+    showAuthPanel('update');
+    return;
+  }
   if (session?.user) {
     me = session.user;
     await ensureProfile();
@@ -490,6 +593,7 @@ function showAuth(notice) {
   setLoading(false);
   $('app').hidden = true;
   $('view-auth').hidden = false;
+  showAuthPanel('main');
   if (notice) toast(notice, 'error');
 }
 function enterApp() {
