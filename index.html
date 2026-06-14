@@ -161,6 +161,7 @@
     @keyframes pulse { 0%,100% { box-shadow:0 0 0 0 rgba(224,49,49,.4); } 50% { box-shadow:0 0 0 22px rgba(224,49,49,0); } }
     .rec-timer { font-size:2rem; font-weight:900; margin:18px 0 4px; font-variant-numeric:tabular-nums; }
     .rec-limit { font-size:.76rem; color:var(--muted); font-weight:700; }
+    .rec-viz { display:block; width:100%; height:56px; border-radius:12px; background:rgba(132,94,247,.07); margin:14px 0 0; }
     .rec-preview { margin-top:20px; }
     .rec-actions { display:flex; gap:10px; margin-top:16px; }
     .rec-actions .btn { flex:1; }
@@ -880,7 +881,54 @@ async function togglePlay(post, btn, bar) {
 
 // ---- 録音 ----
 let mediaRec = null, chunks = [], recTimerId = null, recSec = 0, recBlob = null, recMime = '';
+let vizRafId = null, vizAudioCtx = null;
 const MAX_SEC = 30;
+
+function startViz(stream) {
+  const canvas = $('recViz');
+  if (!canvas) return;
+  canvas.hidden = false;
+  const dpr = window.devicePixelRatio || 1;
+  canvas.width = canvas.offsetWidth * dpr;
+  canvas.height = canvas.offsetHeight * dpr;
+  try {
+    vizAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const analyser = vizAudioCtx.createAnalyser();
+    analyser.fftSize = 128;
+    vizAudioCtx.createMediaStreamSource(stream).connect(analyser);
+    const data = new Uint8Array(analyser.frequencyBinCount);
+    const ctx2d = canvas.getContext('2d');
+    const barCount = 40;
+    function draw() {
+      vizRafId = requestAnimationFrame(draw);
+      analyser.getByteTimeDomainData(data);
+      ctx2d.clearRect(0, 0, canvas.width, canvas.height);
+      const gap = 3 * dpr;
+      const barW = (canvas.width - gap * (barCount - 1)) / barCount;
+      for (let i = 0; i < barCount; i++) {
+        const idx = Math.floor(i * data.length / barCount);
+        const amp = Math.abs(data[idx] / 128 - 1);
+        const barH = Math.max(3 * dpr, amp * canvas.height * 0.9);
+        const alpha = 0.35 + amp * 0.65;
+        ctx2d.fillStyle = `rgba(132,94,247,${alpha})`;
+        ctx2d.roundRect(
+          i * (barW + gap),
+          (canvas.height - barH) / 2,
+          barW, barH, 3 * dpr
+        );
+        ctx2d.fill();
+      }
+    }
+    draw();
+  } catch {
+    canvas.hidden = true;
+  }
+}
+
+function stopViz() {
+  if (vizRafId) { cancelAnimationFrame(vizRafId); vizRafId = null; }
+  if (vizAudioCtx) { vizAudioCtx.close().catch(() => {}); vizAudioCtx = null; }
+}
 
 async function renderRecord() {
   const area = $('recArea');
@@ -910,6 +958,7 @@ function renderRecIdle() {
         録音する
       </button>
       <p class="rec-timer" aria-hidden="true">0:00</p>
+      <canvas class="rec-viz" id="recViz" aria-hidden="true" hidden></canvas>
       <p class="rec-limit">最長${MAX_SEC}秒・1日1回</p>
     </div>`;
   $('recStart').onclick = startRecording;
@@ -933,6 +982,7 @@ async function startRecording() {
     renderRecPreview();
   };
   mediaRec.start();
+  startViz(stream);
   const btn = $('recStart');
   btn.classList.add('recording');
   btn.innerHTML = `<svg viewBox="0 0 24 24" fill="#fff"><rect x="7" y="7" width="10" height="10" rx="2"/></svg>とめる`;
@@ -948,6 +998,7 @@ async function startRecording() {
 
 function stopRecording() {
   clearInterval(recTimerId);
+  stopViz();
   if (mediaRec && mediaRec.state !== 'inactive') mediaRec.stop();
 }
 
