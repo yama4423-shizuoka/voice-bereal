@@ -180,6 +180,15 @@
     .stat b { font-size:1.4rem; font-weight:900; display:block; }
     .stat span { font-size:.72rem; color:var(--muted); font-weight:700; }
 
+    /* フレンドコード */
+    .friend-code-display {
+      display:flex; align-items:center; gap:12px; margin-bottom:12px;
+    }
+    .friend-code {
+      font-size:1.5rem; font-weight:900; letter-spacing:.14em;
+      color:var(--purple); font-variant-numeric:tabular-nums;
+    }
+
     /* ボトムナビ */
     nav.tabbar {
       position:fixed; bottom:0; left:0; right:0; z-index:60;
@@ -346,6 +355,21 @@
           <div class="stat"><b id="statStreak">-</b><span>連続日数</span></div>
           <div class="stat"><b id="statFirst">-</b><span>はじめた日</span></div>
         </div>
+      </div>
+      <div class="card" id="friendCard">
+        <h2>フレンド</h2>
+        <p style="font-size:.77rem;font-weight:800;color:var(--muted);margin-bottom:4px">あなたのフレンドコード</p>
+        <div class="friend-code-display">
+          <span class="friend-code" id="myFriendCode">------</span>
+          <button class="btn secondary" id="copyCodeBtn" style="padding:7px 14px;font-size:.78rem;width:auto" onclick="copyFriendCode()">コピー</button>
+        </div>
+        <p style="font-size:.82rem;color:var(--muted);line-height:1.6;margin-bottom:16px">このコードを友達に伝えましょう。相手のコードを入力するとお互いフレンドになれます。</p>
+        <div class="field" id="fFriendCode">
+          <label for="inFriendCode">友達のフレンドコード</label>
+          <input id="inFriendCode" type="text" maxlength="6" placeholder="例: ab12cd" autocomplete="off" spellcheck="false">
+          <p class="err" id="errFriendCode"></p>
+        </div>
+        <button class="btn" id="addFriendBtn" onclick="addFriend()">フレンドになる</button>
       </div>
       <div class="card">
         <h2>プロフィール編集</h2>
@@ -587,7 +611,6 @@ window.doLogout = async () => {
 sb.auth.onAuthStateChange(async (event, session) => {
   if (event === 'TOKEN_REFRESHED') return;
   if (event === 'PASSWORD_RECOVERY') {
-    // メール内の再設定リンクから戻ってきた場合
     setLoading(false);
     $('app').hidden = true;
     $('view-auth').hidden = false;
@@ -611,7 +634,7 @@ async function ensureProfile() {
   if (data) { myProfile = data; return; }
   const fallback = (me.email || 'わたし').split('@')[0].slice(0, 20);
   const { data: created } = await sb.from('profiles').upsert({ id: me.id, username: fallback }).select().maybeSingle();
-  myProfile = created || { id: me.id, username: fallback, bio: '' };
+  myProfile = created || { id: me.id, username: fallback, bio: '', friend_code: null };
 }
 
 function showAuth(notice) {
@@ -853,6 +876,47 @@ async function uploadPost() {
   }
 }
 
+// ---- フレンドコード ----
+function showFriendCode() {
+  const code = myProfile?.friend_code;
+  $('myFriendCode').textContent = code ? code.toUpperCase() : '準備中';
+  $('copyCodeBtn').hidden = !code;
+}
+window.copyFriendCode = () => {
+  const code = myProfile?.friend_code;
+  if (!code) return;
+  navigator.clipboard.writeText(code.toUpperCase()).then(
+    () => toast('フレンドコードをコピーしました', 'ok'),
+    () => toast('コピーに失敗しました。手動でコピーしてください。', 'error')
+  );
+};
+window.addFriend = async () => {
+  const raw = $('inFriendCode').value.trim();
+  if (!raw) { setFieldError('fFriendCode','errFriendCode','フレンドコードを入力してください'); return; }
+  setFieldError('fFriendCode','errFriendCode','');
+  const btn = $('addFriendBtn');
+  btn.disabled = true; btn.textContent = '処理中…';
+  try {
+    const { data, error } = await sb.rpc('add_friend_by_code', { target_code: raw.toLowerCase() });
+    if (error) {
+      const m = error.message || '';
+      const msg = m.includes('code_not_found') ? 'そのコードのユーザーが見つかりません'
+        : m.includes('cannot_friend_self') ? '自分のコードは入力できません'
+        : m.includes('not_authenticated') ? 'ログインが必要です'
+        : m.includes('does not exist') ? 'フレンド機能はまだ準備中です(管理者作業待ち)'
+        : netMsg(error);
+      setFieldError('fFriendCode','errFriendCode', msg);
+      return;
+    }
+    $('inFriendCode').value = '';
+    toast(`${data?.username || '相手'}さんとフレンドになりました`, 'ok');
+  } catch (e) {
+    setFieldError('fFriendCode','errFriendCode', netMsg(e));
+  } finally {
+    btn.disabled = false; btn.textContent = 'フレンドになる';
+  }
+};
+
 // ---- プロフィール ----
 async function renderProfileView() {
   if (!myProfile) return;
@@ -860,6 +924,7 @@ async function renderProfileView() {
   $('profEmail').textContent = me.email || '';
   $('inPUsername').value = myProfile.username || '';
   $('inPBio').value = myProfile.bio || '';
+  showFriendCode();
   try {
     const { data: posts } = await sb.from('posts').select('post_date').eq('user_id', me.id).order('post_date', { ascending: false });
     if (posts) {
