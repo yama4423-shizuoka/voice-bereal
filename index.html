@@ -250,6 +250,17 @@
       font-size:.67rem; font-weight:800; padding:1px 7px;
       border-radius:999px; margin-left:6px; vertical-align:middle;
     }
+
+    /* リアクション */
+    .reaction-row { margin-top:10px; display:flex; align-items:center; gap:8px; }
+    .reaction-btn {
+      border:2px solid var(--line); background:#fff; border-radius:999px;
+      padding:6px 14px; font-size:.82rem; font-weight:800; color:var(--muted);
+      display:inline-flex; align-items:center; gap:5px; transition:all .15s;
+    }
+    .reaction-btn.reacted { border-color:var(--purple); color:var(--purple); background:rgba(132,94,247,.08); }
+    .reaction-btn:active { transform:scale(.93); }
+    .reaction-count { font-size:.78rem; font-weight:700; }
   </style>
 </head>
 <body>
@@ -269,7 +280,7 @@
   <div class="auth-card">
     <div id="authTabs" class="tabs" role="tablist" aria-label="ログインまたは新規登録">
       <button class="tab" id="tabLogin" role="tab" aria-selected="true" onclick="switchAuthTab('login')">ログイン</button>
-      <button class="tab" id="tabSignup" role="tab" aria-selected="false" onclick="switchAuthTab('signup')">新規登録</button>
+      <button class="tab" id="tabSignup" role="tab" aria-selected="false" onclick="switchAuthTab('signup')"新規登録</button>
     </div>
     <form id="authForm" novalidate>
       <div class="field" id="fUsername" hidden>
@@ -539,7 +550,7 @@ $('authForm').addEventListener('submit', async (e) => {
       const { error } = await sb.auth.signInWithPassword({ email, password });
       if (error) {
         if (/Invalid login credentials/i.test(error.message)) throw new Error('メールアドレスまたはパスワードが違います');
-        if (/Email not confirmed/i.test(error.message)) throw new Error('メールの確認が済んでいません。受信箱の確認リンクを開いてください');
+        if (/Email not confirmed/i.test(error.message)) throw new Error('メールの確認が済んでいません。受信箔の確認リンクを開いてください');
         throw error;
       }
     }
@@ -567,7 +578,7 @@ $('resetForm').addEventListener('submit', async (e) => {
       redirectTo: window.location.origin + '/',
     });
     if (error) throw error;
-    toast('再設定メールを送りました。受信箱を確認してください。', 'ok');
+    toast('再設定メールを送りました。受信箔を確認してください。', 'ok');
     showMainAuth();
   } catch (err) {
     toast(netMsg(err), 'error');
@@ -695,12 +706,22 @@ async function loadFeed() {
       const profileMap = {};
       (profResult.data || []).forEach(p => { profileMap[p.id] = p; });
       friendFeedItems = (fpResult.data || []).map(p => ({ ...p, _profile: profileMap[p.user_id] || { username: 'フレンド' } }));
+      if (friendFeedItems.length > 0) {
+        try {
+          const ids = friendFeedItems.map(p => p.id);
+          const { data: rxData } = await sb.from('reactions').select('post_id, user_id').in('post_id', ids);
+          const myReacted = new Set((rxData || []).filter(r => r.user_id === me.id).map(r => r.post_id));
+          const rxCounts = {};
+          (rxData || []).forEach(r => { rxCounts[r.post_id] = (rxCounts[r.post_id] || 0) + 1; });
+          friendFeedItems = friendFeedItems.map(p => ({ ...p, _reacted: myReacted.has(p.id), _reactionCount: rxCounts[p.id] || 0 }));
+        } catch { /* reactionsテーブル未作成時はスキップ */ }
+      }
     }
 
     box.innerHTML = '';
     const banner = document.createElement('div');
     banner.className = 'challenge-time-box';
-    banner.innerHTML = `<div><p class="ct-label">きょうのお題時刻</p><p class="ct-time">${fmtMins(cm)}</p></div><p style="font-size:.75rem;color:var(--muted);font-weight:700;text-align:right;line-height:1.7">この時刻から10分以内の<br>投稿にバッジが付きます</p>`;
+    banner.innerHTML = `<div><p class="ct-label">きょうのお題時刻</p><p class="ct-time">${fmtMins(cm)}</p></div><p style="font-size:.75rem;color:var(--muted);font-weight:700;text-align:right;line-height:1.7">この時刻から００分以内の<br>投稿にバッジが付きます</p>`;
     box.appendChild(banner);
 
     // フレンドのきょうの声(自分の投稿より上に表示)
@@ -722,7 +743,7 @@ async function loadFeed() {
       const empty = document.createElement('div');
       empty.className = 'empty';
       empty.style.marginTop = '16px';
-      empty.innerHTML = '<b>まだ声がありません</b><p>下の録音ボタンから、きょうの声を残してみましょう。<br>1日1回、30秒まで。加工なしのリアルな記録です。</p>';
+      empty.innerHTML = '<b>まだ声がありません</b><p>下の録音ボタンから、きょうの声を残してみましょう。<br>1日1回、３０秒まで。加工なしのリアルな記録です。</p>';
       box.appendChild(empty);
       return;
     }
@@ -780,6 +801,8 @@ function renderFriendPostCard(p) {
   const name = p._profile?.username || 'フレンド';
   const initial = esc(name[0] || '?');
   const badge = isOnTime(p.created_at, p.post_date) ? '<span class="on-time-badge">お題時刻</span>' : '';
+  const reacted = p._reacted || false;
+  const count = p._reactionCount || 0;
   card.innerHTML = `
     <div class="post-head">
       <div class="avatar" aria-hidden="true">${initial}</div>
@@ -790,9 +813,50 @@ function renderFriendPostCard(p) {
       <div class="wave" aria-hidden="true"><div></div></div>
       <span class="dur">${p.duration_sec ? p.duration_sec + '秒' : ''}</span>
     </div>
-    ${p.caption ? `<p class="post-caption">${esc(p.caption)}</p>` : ''}`;
+    ${p.caption ? `<p class="post-caption">${esc(p.caption)}</p>` : ''}
+    <div class="reaction-row">
+      <button class="reaction-btn${reacted ? ' reacted' : ''}" aria-pressed="${reacted}" aria-label="${reacted ? '「聴いたよ」を取り消す' : '「聴いたよ」と伝える'}">聴いたよ${count > 0 ? `<span class="reaction-count">${count}</span>` : ''}</button>
+    </div>`;
   card.querySelector('.play-btn').onclick = (e) => togglePlay(p, e.currentTarget, card.querySelector('.wave > div'));
+  card.querySelector('.reaction-btn').onclick = (e) => toggleReaction(p.id, e.currentTarget);
   return card;
+}
+
+async function toggleReaction(postId, btn) {
+  const reacted = btn.classList.contains('reacted');
+  btn.disabled = true;
+  try {
+    if (reacted) {
+      const { error } = await sb.from('reactions').delete().eq('post_id', postId).eq('user_id', me.id);
+      if (error) throw error;
+      btn.classList.remove('reacted');
+      btn.setAttribute('aria-pressed', 'false');
+      btn.setAttribute('aria-label', '「聴いたよ」と伝える');
+    } else {
+      const { error } = await sb.from('reactions').insert({ post_id: postId, user_id: me.id });
+      if (error) {
+        if (error.code === '23505') { btn.classList.add('reacted'); btn.setAttribute('aria-pressed', 'true'); return; }
+        throw error;
+      }
+      btn.classList.add('reacted');
+      btn.setAttribute('aria-pressed', 'true');
+      btn.setAttribute('aria-label', '「聴いたよ」を取り消す');
+    }
+    const countEl = btn.querySelector('.reaction-count');
+    const cur = countEl ? parseInt(countEl.textContent) || 0 : 0;
+    const next = reacted ? Math.max(0, cur - 1) : cur + 1;
+    if (next > 0) {
+      if (countEl) countEl.textContent = next;
+      else btn.insertAdjacentHTML('beforeend', `<span class="reaction-count">${next}</span>`);
+    } else if (countEl) {
+      countEl.remove();
+    }
+  } catch (e) {
+    const msg = e?.message || '';
+    toast(msg.includes('does not exist') ? 'リアクション機能はまだ準備中です(管理者作業待ち)' : netMsg(e), 'error');
+  } finally {
+    btn.disabled = false;
+  }
 }
 
 function stopAudio() {
@@ -825,7 +889,7 @@ async function renderRecord() {
     const { data, error } = await sb.from('posts').select('id').eq('user_id', me.id).eq('post_date', todayJST()).maybeSingle();
     if (error) throw error;
     if (data) {
-      area.innerHTML = `<div class="done-card" style="margin-top:24px"><b>きょうの声は記録済みです</b><p>コエリアルは1日1回だけ。また明日、そのときの声を聞かせてください。<br>(削除すれば撮り直しできます)</p></div>`;
+      area.innerHTML = `<div class="done-card" style="margin-top:24px"><b>きょうの声は記録済みです</b><p>コエリアルは1日1回だけ。また明日、そのときの声を聴かせてください。<br>(削除すれば撮り直しできます)</p></div>`;
       return;
     }
   } catch (e) {
