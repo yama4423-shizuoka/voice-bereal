@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" width="1200" height="630">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1200" y2="630" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#845ef7"/>
+      <stop offset="100%" stop-color="#ff5d8f"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="630" fill="url(#bg)"/>
+  <circle cx="1020" cy="120" r="260" fill="#fff" fill-opacity="0.06"/>
+  <circle cx="1120" cy="560" r="170" fill="#fff" fill-opacity="0.06"/>
+  <circle cx="60" cy="560" r="140" fill="#fff" fill-opacity="0.06"/>
+  <rect x="108" y="130" width="44" height="80" rx="22" fill="rgba(255,255,255,0.9)"/>
+  <path d="M98 210a32 32 0 0 0 64 0" fill="none" stroke="rgba(255,255,255,0.9)" stroke-width="8" stroke-linecap="round"/>
+  <line x1="130" y1="242" x2="130" y2="266" stroke="rgba(255,255,255,0.9)" stroke-width="8" stroke-linecap="round"/>
+  <rect x="760" y="255" width="28" height="120" rx="14" fill="rgba(255,255,255,0.3)"/>
+  <rect x="806" y="225" width="28" height="180" rx="14" fill="rgba(255,255,255,0.3)"/>
+  <rect x="852" y="195" width="28" height="240" rx="14" fill="rgba(255,255,255,0.3)"/>
+  <rect x="898" y="215" width="28" height="200" rx="14" fill="rgba(255,255,255,0.3)"/>
+  <rect x="944" y="180" width="28" height="270" rx="14" fill="rgba(255,255,255,0.3)"/>
+  <rect x="990" y="200" width="28" height="230" rx="14" fill="rgba(255,255,255,0.3)"/>
+  <rect x="1036" y="210" width="28" height="210" rx="14" fill="rgba(255,255,255,0.3)"/>
+  <rect x="1082" y="235" width="28" height="160" rx="14" fill="rgba(255,255,255,0.3)"/>
+  <rect x="1128" y="255" width="28" height="120" rx="14" fill="rgba(255,255,255,0.3)"/>
+  <text x="90" y="350" font-family="'Hiragino Sans','Yu Gothic UI','Noto Sans JP',sans-serif" font-size="100" font-weight="900" fill="#fff" letter-spacing="8">&#12467;&#12456;&#12522;&#12450;&#12523;</text>
+  <text x="92" y="430" font-family="'Hiragino Sans','Yu Gothic UI','Noto Sans JP',sans-serif" font-size="34" fill="rgba(255,255,255,0.88)">1&#26085;1&#22238;&#12289;&#12356;&#12414;&#12398;&#22768;&#12434;&#27531;&#12377;&#38899;&#22768;&#26085;&#35352;</text>
+  <text x="92" y="568" font-family="monospace,sans-serif" font-size="22" fill="rgba(255,255,255,0.55)">voice-bereal.vercel.app</text>
+</svg>
