@@ -288,24 +288,24 @@
   </div>
   <div class="auth-card">
     <div id="authTabs" class="tabs" role="tablist" aria-label="ログインまたは新規登録">
-      <button class="tab" id="tabLogin" role="tab" aria-selected="true" onclick="switchAuthTab('login')">ログイン</button>
-      <button class="tab" id="tabSignup" role="tab" aria-selected="false" onclick="switchAuthTab('signup')">新規登録</button>
+      <button class="tab" id="tabLogin" role="tab" aria-selected="true" aria-controls="authForm" onclick="switchAuthTab('login')">ログイン</button>
+      <button class="tab" id="tabSignup" role="tab" aria-selected="false" aria-controls="authForm" onclick="switchAuthTab('signup')">新規登録</button>
     </div>
-    <form id="authForm" novalidate>
+    <form id="authForm" role="tabpanel" aria-labelledby="tabLogin" novalidate>
       <div class="field" id="fUsername" hidden>
         <label for="inUsername">ニックネーム</label>
-        <input id="inUsername" type="text" maxlength="20" autocomplete="nickname" placeholder="例: こえだ">
-        <p class="err" id="errUsername"></p>
+        <input id="inUsername" type="text" maxlength="20" autocomplete="nickname" placeholder="例: こえだ" aria-describedby="errUsername">
+        <p class="err" role="alert" id="errUsername"></p>
       </div>
       <div class="field" id="fEmail">
         <label for="inEmail">メールアドレス</label>
-        <input id="inEmail" type="email" autocomplete="email" placeholder="you@example.com" inputmode="email">
-        <p class="err" id="errEmail"></p>
+        <input id="inEmail" type="email" autocomplete="email" placeholder="you@example.com" inputmode="email" aria-describedby="errEmail">
+        <p class="err" role="alert" id="errEmail"></p>
       </div>
       <div class="field" id="fPassword">
         <label for="inPassword">パスワード(8文字以上)</label>
-        <input id="inPassword" type="password" autocomplete="current-password" placeholder="********">
-        <p class="err" id="errPassword"></p>
+        <input id="inPassword" type="password" autocomplete="current-password" placeholder="********" aria-describedby="errPassword">
+        <p class="err" role="alert" id="errPassword"></p>
       </div>
       <button class="btn" id="authSubmit" type="submit">ログイン</button>
       <button class="btn ghost" id="forgotLink" type="button" onclick="showResetRequest()" style="margin-top:2px">パスワードを忘れた場合</button>
@@ -318,8 +318,8 @@
       <form id="resetForm" novalidate>
         <div class="field" id="fResetEmail">
           <label for="inResetEmail">メールアドレス</label>
-          <input id="inResetEmail" type="email" autocomplete="email" placeholder="you@example.com" inputmode="email">
-          <p class="err" id="errResetEmail"></p>
+          <input id="inResetEmail" type="email" autocomplete="email" placeholder="you@example.com" inputmode="email" aria-describedby="errResetEmail">
+          <p class="err" role="alert" id="errResetEmail"></p>
         </div>
         <button class="btn" id="resetSubmit" type="submit">再設定メールを送る</button>
       </form>
@@ -331,13 +331,13 @@
       <form id="updatePwForm" novalidate>
         <div class="field" id="fNewPw">
           <label for="inNewPw">新しいパスワード(8文字以上)</label>
-          <input id="inNewPw" type="password" autocomplete="new-password" placeholder="********">
-          <p class="err" id="errNewPw"></p>
+          <input id="inNewPw" type="password" autocomplete="new-password" placeholder="********" aria-describedby="errNewPw">
+          <p class="err" role="alert" id="errNewPw"></p>
         </div>
         <div class="field" id="fNewPwConfirm">
           <label for="inNewPwConfirm">確認用パスワード</label>
-          <input id="inNewPwConfirm" type="password" autocomplete="new-password" placeholder="********">
-          <p class="err" id="errNewPwConfirm"></p>
+          <input id="inNewPwConfirm" type="password" autocomplete="new-password" placeholder="********" aria-describedby="errNewPwConfirm">
+          <p class="err" role="alert" id="errNewPwConfirm"></p>
         </div>
         <button class="btn" id="updatePwSubmit" type="submit">パスワードを更新する</button>
       </form>
@@ -347,7 +347,7 @@
 
 <!-- アプリ本体 -->
 <div id="app" hidden>
-  <header class="bar">
+  <header class="bar" role="banner">
     <span class="bar-title">コエリアル</span>
     <span class="bar-date" id="barDate"></span>
   </header>
@@ -386,8 +386,8 @@
         <p style="font-size:.82rem;color:var(--muted);line-height:1.6;margin-bottom:16px">このコードを友達に伝えましょう。相手のコードを入力するとお互いフレンドになれます。</p>
         <div class="field" id="fFriendCode">
           <label for="inFriendCode">友達のフレンドコード</label>
-          <input id="inFriendCode" type="text" maxlength="6" placeholder="例: ab12cd" autocomplete="off" spellcheck="false">
-          <p class="err" id="errFriendCode"></p>
+          <input id="inFriendCode" type="text" maxlength="6" placeholder="例: ab12cd" autocomplete="off" spellcheck="false" aria-describedby="errFriendCode">
+          <p class="err" role="alert" id="errFriendCode"></p>
         </div>
         <button class="btn" id="addFriendBtn" onclick="addFriend()">フレンドになる</button>
       </div>
@@ -396,13 +396,13 @@
         <form id="profForm" novalidate>
           <div class="field" id="fPUsername">
             <label for="inPUsername">ニックネーム</label>
-            <input id="inPUsername" type="text" maxlength="20">
-            <p class="err" id="errPUsername"></p>
+            <input id="inPUsername" type="text" maxlength="20" aria-describedby="errPUsername">
+            <p class="err" role="alert" id="errPUsername"></p>
           </div>
           <div class="field" id="fPBio">
             <label for="inPBio">ひとこと(200文字まで)</label>
-            <textarea id="inPBio" rows="3" maxlength="200"></textarea>
-            <p class="err" id="errPBio"></p>
+            <textarea id="inPBio" rows="3" maxlength="200" aria-describedby="errPBio"></textarea>
+            <p class="err" role="alert" id="errPBio"></p>
           </div>
           <button class="btn" id="profSave" type="submit">保存する</button>
         </form>
@@ -535,6 +535,7 @@ window.switchAuthTab = (mode) => {
   $('fUsername').hidden = mode !== 'signup';
   $('forgotLink').hidden = mode !== 'login';
   $('authSubmit').textContent = mode === 'login' ? 'ログイン' : '登録してはじめる';
+  $('authForm').setAttribute('aria-labelledby', mode === 'login' ? 'tabLogin' : 'tabSignup');
 };
 
 $('authForm').addEventListener('submit', async (e) => {
@@ -870,7 +871,7 @@ async function toggleReaction(postId, btn) {
 
 function stopAudio() {
   if (audioEl) { audioEl.pause(); audioEl = null; }
-  if (playingBtn) { playingBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>'; playingBtn = null; }
+  if (playingBtn) { playingBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>'; playingBtn.setAttribute('aria-label', '再生する'); playingBtn = null; }
 }
 async function togglePlay(post, btn, bar) {
   if (playingBtn === btn) { stopAudio(); bar.style.width = '0%'; return; }
@@ -880,7 +881,7 @@ async function togglePlay(post, btn, bar) {
     if (error) throw error;
     audioEl = new Audio(data.signedUrl);
     playingBtn = btn;
-    btn.innerHTML = '<svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="5" width="4" height="14"/><rect x="14" y="5" width="4" height="14"/></svg>';
+    btn.innerHTML = '<svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="5" width="4" height="14"/><rect x="14" y="5" width="4" height="14"/></svg>'; btn.setAttribute('aria-label', '一時停止する');
     audioEl.ontimeupdate = () => { if (audioEl?.duration) bar.style.width = (audioEl.currentTime / audioEl.duration * 100) + '%'; };
     audioEl.onended = () => { stopAudio(); bar.style.width = '0%'; };
     await audioEl.play();
@@ -1018,8 +1019,8 @@ function renderRecPreview() {
       <div class="rec-preview"><audio controls src="${url}" style="width:100%"></audio></div>
       <div class="field" id="fCaption" style="margin-top:16px; text-align:left">
         <label for="inCaption">ひとこと(任意・100文字まで)</label>
-        <input id="inCaption" type="text" maxlength="100" placeholder="例: 学校からの帰り道">
-        <p class="err" id="errCaption"></p>
+        <input id="inCaption" type="text" maxlength="100" placeholder="例: 学校からの帰り道" aria-describedby="errCaption">
+        <p class="err" role="alert" id="errCaption"></p>
       </div>
       <div class="rec-actions">
         <button class="btn secondary" id="recRedo">録り直す</button>
