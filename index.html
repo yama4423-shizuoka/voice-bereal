@@ -270,6 +270,17 @@
     .reaction-btn.reacted { border-color:var(--purple); color:var(--purple); background:rgba(132,94,247,.08); }
     .reaction-btn:active { transform:scale(.93); }
     .reaction-count { font-size:.78rem; font-weight:700; }
+
+    /* 月別アーカイブカレンダー */
+    .cal-hdr { display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; }
+    .cal-month-lbl { font-size:.92rem; font-weight:900; }
+    .cal-nav { border:none; background:none; color:var(--purple); font-size:1.4rem; font-weight:800; padding:0 8px; line-height:1; cursor:pointer; }
+    .cal-nav:disabled { opacity:.25; pointer-events:none; }
+    .cal-grid { display:grid; grid-template-columns:repeat(7,1fr); gap:3px; text-align:center; }
+    .cal-dow { font-size:.6rem; font-weight:800; color:var(--muted); padding-bottom:4px; }
+    .cal-day { aspect-ratio:1; display:flex; align-items:center; justify-content:center; border-radius:50%; font-size:.78rem; font-weight:600; color:var(--muted); }
+    .cal-day.posted { background:var(--grad); color:#fff; font-weight:900; }
+    .cal-day.today:not(.posted) { outline:2px solid var(--purple); outline-offset:-1px; color:var(--purple); font-weight:800; }
   </style>
 </head>
 <body>
@@ -376,6 +387,10 @@
           <div class="stat"><b id="statFirst">-</b><span>はじめた日</span></div>
         </div>
       </div>
+      <div class="card" id="archiveCalCard" hidden>
+        <h2>月別アーカイブ</h2>
+        <div id="archiveCal"></div>
+      </div>
       <div class="card" id="friendCard">
         <h2>フレンド</h2>
         <p style="font-size:.77rem;font-weight:800;color:var(--muted);margin-bottom:4px">あなたのフレンドコード</p>
@@ -461,6 +476,8 @@ let myProfile = null;   // プロフィール
 let authMode = 'login';
 let audioEl = null;     // 再生中のaudio
 let playingBtn = null;
+let archiveMonth = null;
+let archivePostDates = new Set();
 
 // ---- ユーティリティ ----
 const $ = id => document.getElementById(id);
@@ -1097,6 +1114,62 @@ window.addFriend = async () => {
   }
 };
 
+// ---- 月別アーカイブカレンダー ----
+function renderCalendar(postDates) {
+  archivePostDates = new Set(postDates);
+  if (!archiveMonth) {
+    const now = new Date(Date.now() + 9*3600e3);
+    archiveMonth = { y: now.getFullYear(), m: now.getMonth() };
+  }
+  const card = $('archiveCalCard');
+  if (card) card.hidden = false;
+  renderCalendarMonth();
+}
+
+function renderCalendarMonth() {
+  const cal = $('archiveCal');
+  if (!cal) return;
+  const { y, m } = archiveMonth;
+  const firstDay = new Date(y, m, 1);
+  const daysInMonth = new Date(y, m + 1, 0).getDate();
+  const todayStr = todayJST();
+  const now = new Date(Date.now() + 9*3600e3);
+  const isCurrent = y === now.getFullYear() && m === now.getMonth();
+  const monthPrefix = `${String(y).padStart(4,'0')}-${String(m+1).padStart(2,'0')}-`;
+  const count = [...archivePostDates].filter(d => d.startsWith(monthPrefix)).length;
+
+  let html = `<div class="cal-hdr">
+    <button class="cal-nav" id="calPrev" aria-label="前の月">&#8249;</button>
+    <span class="cal-month-lbl">${y}年${m+1}月<span style="color:var(--muted);font-size:.72rem;font-weight:700;margin-left:8px">${count}件</span></span>
+    <button class="cal-nav" id="calNext"${isCurrent ? ' disabled' : ''} aria-label="次の月">&#8250;</button>
+  </div>
+  <div class="cal-grid">
+    ${['日','月','火','水','木','金','土'].map(d => `<span class="cal-dow">${d}</span>`).join('')}`;
+
+  const startDow = firstDay.getDay();
+  for (let i = 0; i < startDow; i++) html += `<span aria-hidden="true"></span>`;
+  for (let d = 1; d <= daysInMonth; d++) {
+    const ds = `${String(y).padStart(4,'0')}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const posted = archivePostDates.has(ds);
+    const today = ds === todayStr;
+    let cls = 'cal-day';
+    if (posted) cls += ' posted';
+    if (today) cls += ' today';
+    html += `<span class="${cls}" aria-label="${m+1}月${d}日${posted?'・投稿あり':''}${today?'・今日':''}">${d}</span>`;
+  }
+  html += '</div>';
+  cal.innerHTML = html;
+
+  $('calPrev').onclick = () => {
+    archiveMonth = m === 0 ? { y: y-1, m: 11 } : { y, m: m-1 };
+    renderCalendarMonth();
+  };
+  if (!isCurrent) $('calNext').onclick = () => {
+    archiveMonth = m === 11 ? { y: y+1, m: 0 } : { y, m: m+1 };
+    renderCalendarMonth();
+  };
+}
+
 // ---- プロフィール ----
 async function renderProfileView() {
   if (!myProfile) return;
@@ -1116,6 +1189,7 @@ async function renderProfileView() {
       if (!dates.has(d.toISOString().slice(0,10))) d.setDate(d.getDate() - 1);
       while (dates.has(d.toISOString().slice(0,10))) { streak++; d.setDate(d.getDate() - 1); }
       $('statStreak').textContent = streak + '日';
+      renderCalendar(posts.map(p => p.post_date));
     }
   } catch { /* 統計は失敗しても致命的でない */ }
 }
