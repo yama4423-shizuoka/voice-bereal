@@ -281,6 +281,16 @@
     .cal-day { aspect-ratio:1; display:flex; align-items:center; justify-content:center; border-radius:50%; font-size:.78rem; font-weight:600; color:var(--muted); }
     .cal-day.posted { background:var(--grad); color:#fff; font-weight:900; }
     .cal-day.today:not(.posted) { outline:2px solid var(--purple); outline-offset:-1px; color:var(--purple); font-weight:800; }
+
+    /* フレンド一覧 */
+    .friend-list { display:flex; flex-direction:column; gap:0; }
+    .friend-item { display:flex; align-items:center; gap:12px; padding:10px 0; border-bottom:1px solid var(--line); }
+    .friend-item:last-child { border-bottom:none; }
+    .friend-item .avatar { width:36px; height:36px; font-size:.9rem; flex-shrink:0; }
+    .friend-item-name { flex:1; font-weight:800; font-size:.88rem; }
+    .friend-remove { border:1px solid var(--line); background:#fff; border-radius:8px; padding:5px 12px; font-size:.75rem; font-weight:700; color:var(--danger); }
+    .friend-remove:active { transform:scale(.94); }
+    .friend-empty { font-size:.83rem; color:var(--muted); font-weight:700; line-height:1.7; }
   </style>
 </head>
 <body>
@@ -406,6 +416,10 @@
         </div>
         <button class="btn" id="addFriendBtn" onclick="addFriend()">フレンドになる</button>
       </div>
+      <div class="card" id="friendListCard" hidden>
+        <h2>フレンド一覧</h2>
+        <div id="friendList"></div>
+      </div>
       <div class="card">
         <h2>プロフィール編集</h2>
         <form id="profForm" novalidate>
@@ -471,10 +485,10 @@ const SUPABASE_KEY = 'sb_publishable_3fNJNb3KGQpjq97g9A00xg_DIeEt8rZ';
 const { createClient } = window.supabase;
 const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
 
-let me = null;          // ログイン中ユーザー
-let myProfile = null;   // プロフィール
+let me = null;
+let myProfile = null;
 let authMode = 'login';
-let audioEl = null;     // 再生中のaudio
+let audioEl = null;
 let playingBtn = null;
 let archiveMonth = null;
 let archivePostDates = new Set();
@@ -713,8 +727,6 @@ async function loadFeed() {
   try {
     const today = todayJST();
     const cm = dailyChallengeMins(today);
-
-    // 自分の投稿とフレンドシップを並行取得
     const [myResult, fsResult] = await Promise.all([
       sb.from('posts').select('*').eq('user_id', me.id).order('created_at', { ascending: false }).limit(60),
       sb.from('friendships').select('user_a, user_b')
@@ -722,8 +734,6 @@ async function loadFeed() {
     if (myResult.error) throw myResult.error;
     const myPosts = myResult.data || [];
     const friendIds = (fsResult.data || []).map(f => f.user_a === me.id ? f.user_b : f.user_a);
-
-    // フレンドのきょうの投稿とプロフィールを並行取得
     let friendFeedItems = [];
     if (friendIds.length > 0) {
       const [fpResult, profResult] = await Promise.all([
@@ -744,14 +754,11 @@ async function loadFeed() {
         } catch { /* reactionsテーブル未作成時はスキップ */ }
       }
     }
-
     box.innerHTML = '';
     const banner = document.createElement('div');
     banner.className = 'challenge-time-box';
     banner.innerHTML = `<div><p class="ct-label">きょうのお題時刻</p><p class="ct-time">${fmtMins(cm)}</p></div><p style="font-size:.75rem;color:var(--muted);font-weight:700;text-align:right;line-height:1.7">この時刻から００分以内の<br>投稿にバッジが付きます</p>`;
     box.appendChild(banner);
-
-    // フレンドのきょうの声(自分の投稿より上に表示)
     if (friendFeedItems.length > 0) {
       const lbl = document.createElement('p');
       lbl.className = 'day-label';
@@ -764,8 +771,6 @@ async function loadFeed() {
       notice.textContent = 'フレンドはまだきょうの声を残していません';
       box.appendChild(notice);
     }
-
-    // 自分の投稿
     if (!myPosts.length) {
       const empty = document.createElement('div');
       empty.className = 'empty';
@@ -1107,12 +1112,62 @@ window.addFriend = async () => {
     }
     $('inFriendCode').value = '';
     toast(`${data?.username || '相手'}さんとフレンドになりました`, 'ok');
+    renderFriendList();
   } catch (e) {
     setFieldError('fFriendCode','errFriendCode', netMsg(e));
   } finally {
     btn.disabled = false; btn.textContent = 'フレンドになる';
   }
 };
+
+// ---- フレンド一覧 ----
+async function renderFriendList() {
+  const card = $('friendListCard');
+  const list = $('friendList');
+  if (!card || !list) return;
+  try {
+    const { data: fs } = await sb.from('friendships').select('user_a, user_b');
+    const friendIds = (fs || []).map(f => f.user_a === me.id ? f.user_b : f.user_a);
+    card.hidden = false;
+    if (!friendIds.length) {
+      list.innerHTML = '<p class="friend-empty">まだフレンドがいません。フレンドコードを交換して繋がりましょう。</p>';
+      return;
+    }
+    const { data: profs } = await sb.from('profiles').select('id, username').in('id', friendIds);
+    if (!profs || !profs.length) {
+      list.innerHTML = '<p class="friend-empty">フレンド情報を読み込めませんでした。</p>';
+      return;
+    }
+    list.innerHTML = '<div class="friend-list">' + profs.map(p =>
+      `<div class="friend-item">
+        <div class="avatar" aria-hidden="true">${esc((p.username || '?')[0])}</div>
+        <span class="friend-item-name">${esc(p.username)}</span>
+        <button class="friend-remove" data-id="${esc(p.id)}" data-name="${esc(p.username)}" aria-label="${esc(p.username)}さんとのフレンドを解除">解除</button>
+      </div>`
+    ).join('') + '</div>';
+    list.querySelectorAll('.friend-remove').forEach(btn => {
+      btn.onclick = () => removeFriend(btn.dataset.id, btn.dataset.name);
+    });
+  } catch { /* フレンド一覧取得失敗は致命的でない */ }
+}
+
+async function removeFriend(friendId, name) {
+  if (!confirm(`${name}さんとのフレンドを解除しますか?`)) return;
+  try {
+    const { error } = await sb.rpc('remove_friend', { target_id: friendId });
+    if (error) {
+      if (error.message?.includes('does not exist')) {
+        toast('フレンド解除機能はまだ準備中です(管理者作業待ち)', 'error');
+        return;
+      }
+      throw error;
+    }
+    toast(`${name}さんとのフレンドを解除しました`, 'ok');
+    await renderFriendList();
+  } catch (e) {
+    toast(netMsg(e), 'error');
+  }
+}
 
 // ---- 月別アーカイブカレンダー ----
 function renderCalendar(postDates) {
@@ -1178,6 +1233,7 @@ async function renderProfileView() {
   $('inPUsername').value = myProfile.username || '';
   $('inPBio').value = myProfile.bio || '';
   showFriendCode();
+  renderFriendList();
   try {
     const { data: posts } = await sb.from('posts').select('post_date').eq('user_id', me.id).order('post_date', { ascending: false });
     if (posts) {
