@@ -291,6 +291,9 @@
     .friend-remove { border:1px solid var(--line); background:#fff; border-radius:8px; padding:5px 12px; font-size:.75rem; font-weight:700; color:var(--danger); }
     .friend-remove:active { transform:scale(.94); }
     .friend-empty { font-size:.83rem; color:var(--muted); font-weight:700; line-height:1.7; }
+    .speed-btns { display:flex; gap:4px; margin-top:6px; }
+    .speed-btn { font-size:.72rem; font-weight:800; padding:2px 8px; border-radius:8px; border:1.5px solid var(--line); background:var(--bg); color:var(--muted); cursor:pointer; line-height:1.7; transition:all .12s; }
+    .speed-btn.active { background:var(--purple); color:#fff; border-color:var(--purple); }
   </style>
 </head>
 <body>
@@ -490,6 +493,7 @@ let myProfile = null;
 let authMode = 'login';
 let audioEl = null;
 let playingBtn = null;
+let currentSpeed = 1;
 let archiveMonth = null;
 let archivePostDates = new Set();
 
@@ -811,9 +815,15 @@ function renderPostCard(p) {
       <div class="wave" aria-hidden="true"><div></div></div>
       <span class="dur">${p.duration_sec ? p.duration_sec + '秒' : ''}</span>
     </div>
+    <div class="speed-btns" role="group" aria-label="再生速度">
+      <button class="speed-btn${currentSpeed===0.75?' active':''}" data-speed="0.75">x0.75</button>
+      <button class="speed-btn${currentSpeed===1?' active':''}" data-speed="1">x1</button>
+      <button class="speed-btn${currentSpeed===1.5?' active':''}" data-speed="1.5">x1.5</button>
+    </div>
     ${p.caption ? `<p class="post-caption">${esc(p.caption)}</p>` : ''}
     <button class="post-del">この投稿を削除</button>`;
   card.querySelector('.play-btn').onclick = (e) => togglePlay(p, e.currentTarget, card.querySelector('.wave > div'));
+  card.querySelectorAll('.speed-btn').forEach(b => { b.onclick = () => setSpeed(parseFloat(b.dataset.speed)); });
   card.querySelector('.post-del').onclick = async () => {
     if (!confirm('この声の記録を削除しますか?')) return;
     try {
@@ -845,11 +855,17 @@ function renderFriendPostCard(p) {
       <div class="wave" aria-hidden="true"><div></div></div>
       <span class="dur">${p.duration_sec ? p.duration_sec + '秒' : ''}</span>
     </div>
+    <div class="speed-btns" role="group" aria-label="再生速度">
+      <button class="speed-btn${currentSpeed===0.75?' active':''}" data-speed="0.75">x0.75</button>
+      <button class="speed-btn${currentSpeed===1?' active':''}" data-speed="1">x1</button>
+      <button class="speed-btn${currentSpeed===1.5?' active':''}" data-speed="1.5">x1.5</button>
+    </div>
     ${p.caption ? `<p class="post-caption">${esc(p.caption)}</p>` : ''}
     <div class="reaction-row">
       <button class="reaction-btn${reacted ? ' reacted' : ''}" aria-pressed="${reacted}" aria-label="${reacted ? '「聴いたよ」を取り消す' : '「聴いたよ」と伝える'}">聴いたよ${count > 0 ? `<span class="reaction-count">${count}</span>` : ''}</button>
     </div>`;
   card.querySelector('.play-btn').onclick = (e) => togglePlay(p, e.currentTarget, card.querySelector('.wave > div'));
+  card.querySelectorAll('.speed-btn').forEach(b => { b.onclick = () => setSpeed(parseFloat(b.dataset.speed)); });
   card.querySelector('.reaction-btn').onclick = (e) => toggleReaction(p.id, e.currentTarget);
   return card;
 }
@@ -895,6 +911,11 @@ function stopAudio() {
   if (audioEl) { audioEl.pause(); audioEl = null; }
   if (playingBtn) { playingBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>'; playingBtn.setAttribute('aria-label', '再生する'); playingBtn = null; }
 }
+function setSpeed(speed) {
+  currentSpeed = speed;
+  document.querySelectorAll('.speed-btn').forEach(b => b.classList.toggle('active', parseFloat(b.dataset.speed) === speed));
+  if (audioEl) audioEl.playbackRate = speed;
+}
 async function togglePlay(post, btn, bar) {
   if (playingBtn === btn) { stopAudio(); bar.style.width = '0%'; return; }
   stopAudio();
@@ -902,6 +923,7 @@ async function togglePlay(post, btn, bar) {
     const { data, error } = await sb.storage.from('voices').createSignedUrl(post.audio_path, 300);
     if (error) throw error;
     audioEl = new Audio(data.signedUrl);
+    audioEl.playbackRate = currentSpeed;
     playingBtn = btn;
     btn.innerHTML = '<svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="5" width="4" height="14"/><rect x="14" y="5" width="4" height="14"/></svg>'; btn.setAttribute('aria-label', '一時停止する');
     audioEl.ontimeupdate = () => { if (audioEl?.duration) bar.style.width = (audioEl.currentTime / audioEl.duration * 100) + '%'; };
