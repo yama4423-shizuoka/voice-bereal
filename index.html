@@ -253,6 +253,7 @@
         <div class="profile-bio" id="profBioDisp"></div>
       </div>
     </div>
+    <button class="btn btn-ghost" id="btnCopyInvite" style="display:none;margin-bottom:8px">招待文をコピー</button>
     <p class="section-label">プロフィール編集</p>
     <input type="text" id="inPName" placeholder="表示名" maxlength="20" aria-label="表示名">
     <input type="text" id="inPBio" placeholder="ひとこと(任意)" maxlength="40" style="margin-top:8px" aria-label="ひとこと">
@@ -634,6 +635,7 @@ async function loadProfile(){
   $('profName').textContent=u;
   $('profCodeDisp').textContent=myProfile?.friend_code ? `フレンドコード: ${myProfile.friend_code}` : '';
   $('profBioDisp').textContent=myProfile?.bio||'';
+  $('btnCopyInvite').style.display=myProfile?.friend_code?'':'none';
   $('inPName').value=u;
   $('inPBio').value=myProfile?.bio||'';
   renderCalendar();
@@ -996,6 +998,14 @@ document.addEventListener('DOMContentLoaded', ()=>{
   $('btnShowOnboard').addEventListener('click', showOnboarding);
   // friend add
   $('btnAddFriend').addEventListener('click', addFriend);
+  // copy invite
+  $('btnCopyInvite').addEventListener('click', async ()=>{
+    const code=myProfile?.friend_code;
+    if(!code){ showToast('フレンドコードがありません'); return; }
+    const text=`コエリアルで一緒に声を残そう！\nフレンドコード: ${code}\nhttps://voice-bereal.vercel.app/`;
+    try{ await navigator.clipboard.writeText(text); showToast('招待文をコピーしました'); }
+    catch(e){ showToast('コピーできませんでした'); }
+  });
   // logout
   $('btnLogout').addEventListener('click', async ()=>{
     await sb.auth.signOut(); me=null; myProfile=null;
