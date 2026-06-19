@@ -155,6 +155,10 @@
     .cal-cell{aspect-ratio:1;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:.75rem;font-weight:700;color:var(--muted)}
     .cal-cell.posted{background:var(--accent);color:#000}
     .cal-cell.today{outline:1.5px solid var(--accent)}
+    .cal-cell.posted{cursor:pointer;}
+    .cal-cell.posted:focus{outline:2px solid var(--accent);outline-offset:2px;}
+    #calPlayer{background:var(--card);border-radius:var(--radius);padding:14px 16px;margin-top:10px;}
+    .cal-player-date{font-size:.75rem;color:var(--muted);font-weight:700;margin-bottom:10px;}
     .cal-dow{text-align:center;font-size:.65rem;color:var(--muted);font-weight:700;padding-bottom:2px}
     .cal-nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
     .cal-nav button{background:none;border:none;color:#fff;font-size:1.1rem;cursor:pointer;padding:4px 10px}
@@ -266,6 +270,15 @@
     <button class="btn btn-ghost" id="btnShowOnboard">ガイドを表示する</button>
     <p class="section-label">投稿記録</p>
     <div id="calendarWrap"></div>
+    <div id="calPlayer" style="display:none">
+      <p class="cal-player-date" id="calPlayerDate"></p>
+      <div class="player">
+        <button class="play-btn" id="calPlayBtn" aria-label="再生する"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg></button>
+        <div class="wave" aria-hidden="true"><div></div></div>
+        <span class="dur" id="calDur"></span>
+      </div>
+      <p id="calCaption" style="display:none;font-size:.85rem;color:#ccc;margin-top:8px;line-height:1.5"></p>
+    </div>
     <p class="section-label">アカウント</p>
     <button class="btn btn-danger" id="btnLogout">ログアウト</button>
   </section>
@@ -315,6 +328,7 @@ let me = null, myProfile = null, mediaRecorder = null, audioChunks = [];
 let recInterval = null, recSeconds = 0;
 let currentAudio = null;
 let currentSpeed = 1;
+let calAudio = null;
 
 // ---- toast ----
 let toastTimer;
@@ -654,6 +668,37 @@ async function loadFriendList(){
   } catch(e){ box.innerHTML='<p style="font-size:.8rem;color:var(--muted);font-weight:600">読み込みエラー</p>'; }
 }
 
+// ---- calendar player ----
+function openCalPlayer(post, dateStr) {
+  if(calAudio){ calAudio.pause(); calAudio=null; }
+  $('calPlayerDate').textContent=fmtDate(dateStr);
+  $('calDur').textContent=post.duration_sec?post.duration_sec+'秒':'';
+  const capEl=$('calCaption');
+  if(post.caption){ capEl.textContent=post.caption; capEl.style.display=''; }
+  else { capEl.style.display='none'; }
+  const old=$('calPlayBtn');
+  const btn=old.cloneNode(true);
+  btn.innerHTML='<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>';
+  btn.setAttribute('aria-label','再生する');
+  old.parentNode.replaceChild(btn,old);
+  $('calPlayer').style.display='';
+  btn.addEventListener('click',async()=>{
+    if(calAudio&&!calAudio.paused){ calAudio.pause(); return; }
+    if(!calAudio){
+      const {data}=await sb.storage.from('voices').createSignedUrl(post.storage_path,300);
+      if(!data?.signedUrl){ showToast('再生できませんでした'); return; }
+      calAudio=new Audio(data.signedUrl);
+      calAudio.playbackRate=currentSpeed;
+      calAudio.onended=()=>{ btn.innerHTML='<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>'; btn.setAttribute('aria-label','再生する'); };
+    }
+    if(currentAudio&&currentAudio!==calAudio) currentAudio.pause();
+    currentAudio=calAudio;
+    calAudio.play();
+    btn.innerHTML='<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>';
+    btn.setAttribute('aria-label','一時停止');
+  });
+}
+
 // ---- calendar ----
 let calYear, calMonth;
 function renderCalendar(){
@@ -671,10 +716,14 @@ function renderCalendar(){
   wrap.appendChild(nav);
   prevBtn.addEventListener('click',()=>{
     calMonth--; if(calMonth<1){calMonth=12;calYear--;}
+    if(calAudio){calAudio.pause();calAudio=null;}
+    $('calPlayer').style.display='none';
     renderCalendar();
   });
   nextBtn.addEventListener('click',()=>{
     calMonth++; if(calMonth>12){calMonth=1;calYear++;}
+    if(calAudio){calAudio.pause();calAudio=null;}
+    $('calPlayer').style.display='none';
     renderCalendar();
   });
   const dows=['日','月','火','水','木','金','土'];
@@ -689,15 +738,26 @@ function renderCalendar(){
   for(let i=0;i<firstDay;i++){
     const cell=document.createElement('div'); cell.className='cal-cell'; grid.appendChild(cell);
   }
-  sb.from('posts').select('post_date').eq('user_id',me.id)
+  sb.from('posts').select('id,storage_path,duration_sec,caption,created_at,post_date').eq('user_id',me.id)
     .gte('post_date',`${yearStr}-${monthStr}-01`)
     .lte('post_date',`${yearStr}-${monthStr}-${String(daysInMonth).padStart(2,'0')}`)
+    .order('created_at',{ascending:false})
     .then(({data})=>{
-      const posted=new Set((data||[]).map(p=>p.post_date));
+      const postMap={};
+      (data||[]).forEach(p=>{ if(!postMap[p.post_date]) postMap[p.post_date]=p; });
       for(let d=1;d<=daysInMonth;d++){
         const cell=document.createElement('div'); cell.className='cal-cell';
         const ds=`${yearStr}-${monthStr}-${String(d).padStart(2,'0')}`;
-        if(posted.has(ds)) cell.classList.add('posted');
+        if(postMap[ds]){
+          cell.classList.add('posted');
+          cell.setAttribute('role','button');
+          cell.setAttribute('tabindex','0');
+          cell.setAttribute('aria-label',`${+calMonth}月${d}日の音声を再生`);
+          const post=postMap[ds];
+          const onTap=()=>openCalPlayer(post,ds);
+          cell.addEventListener('click',onTap);
+          cell.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' ')onTap();});
+        }
         if(ds===todayStr) cell.classList.add('today');
         cell.textContent=d;
         grid.appendChild(cell);
