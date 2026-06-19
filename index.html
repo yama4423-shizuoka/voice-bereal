@@ -163,6 +163,10 @@
     .friend-item{display:flex;align-items:center;justify-content:space-between;background:var(--card);border-radius:14px;padding:12px 14px;margin-bottom:8px}
     .friend-item-name{font-weight:700;font-size:.9rem}
     .friend-remove-btn{background:none;border:1px solid #444;color:var(--muted);border-radius:8px;padding:5px 12px;font-size:.75rem;font-weight:700;cursor:pointer}
+    /* ---- streak banner ---- */
+    .streak-banner{background:linear-gradient(135deg,#1a1a00,#222200);border:1.5px solid var(--accent);border-radius:var(--radius);padding:14px 16px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between}
+    .streak-count{font-size:1.6rem;font-weight:900;color:var(--accent);letter-spacing:-1px}
+    .streak-label{font-size:.72rem;color:#aaa;font-weight:700;margin-top:2px}
   </style>
 </head>
 <body>
@@ -360,6 +364,23 @@ function isOnTime(isoCreated, postDate){
   return Math.abs(jstMins - cm) <= 10;
 }
 
+// ---- streak ----
+function calcStreak(posts) {
+  const dates = [...new Set(posts.map(p => p.post_date))].sort().reverse();
+  if (!dates.length) return 0;
+  const today = todayJST();
+  const yDate = new Date(Date.now() + 9*3600*1000 - 86400*1000);
+  const yesterday = yDate.toISOString().slice(0,10);
+  if (dates[0] !== today && dates[0] !== yesterday) return 0;
+  let streak = 1;
+  for (let i = 1; i < dates.length; i++) {
+    const diff = (new Date(dates[i-1]+'T00:00:00Z') - new Date(dates[i]+'T00:00:00Z')) / 86400000;
+    if (diff === 1) streak++;
+    else break;
+  }
+  return streak;
+}
+
 // ---- escape helper for template literals ----
 
 // ---- profile ----
@@ -545,6 +566,15 @@ async function loadFeed(){
     banner.className='challenge-time-box';
     banner.innerHTML=`<div><p class="ct-label">きょうのお題時刻</p><p class="ct-time">${fmtMins(cm)}</p></div><p style="font-size:.75rem;color:var(--muted);font-weight:700;text-align:right;line-height:1.7">この時刻から００分以内の<br>投稿にバッジが付きます</p>`;
     box.appendChild(banner);
+    const streak = calcStreak(myPosts);
+    if (streak >= 3) {
+      const streakBanner = document.createElement('div');
+      streakBanner.className = 'streak-banner';
+      streakBanner.setAttribute('role', 'status');
+      streakBanner.setAttribute('aria-label', `${streak}日連続投稿中`);
+      streakBanner.innerHTML = `<div><div class="streak-count">${streak}日連続！</div><div class="streak-label">毎日続いています。この調子で！</div></div>`;
+      box.appendChild(streakBanner);
+    }
     if(friendFeedItems.length>0){
       const lbl=document.createElement('p');
       lbl.className='day-label';
