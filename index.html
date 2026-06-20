@@ -186,7 +186,10 @@
   <div id="screenFeed" class="screen" role="main" aria-label="フィード">
     <div class="feed-header">
       <span class="feed-title">コエリアル</span>
-      <span class="time-badge" id="todayTimeBadge" aria-live="polite"></span>
+      <div style="display:flex;align-items:center;gap:8px">
+        <span class="time-badge" id="todayTimeBadge" aria-live="polite"></span>
+        <button id="btnRefreshFeed" class="btn btn-ghost" style="width:auto;padding:6px 12px;font-size:.78rem" aria-label="フィードを更新">更新</button>
+      </div>
     </div>
     <div id="streakBanner"></div>
     <div id="feedList" aria-live="polite" aria-label="投稿一覧"></div>
@@ -941,6 +944,13 @@ window.addEventListener('load',()=>{
     const text=`コエリアルで一緒に声を残そう！\nフレンドコード: ${code}\nhttps://voice-bereal.vercel.app/`;
     try{ await navigator.clipboard.writeText(text); showToast('招待文をコピーしました'); }
     catch(e){ showToast('コピーできませんでした'); }
+  });
+  // feed refresh
+  $('btnRefreshFeed').addEventListener('click', async ()=>{
+    const btn=$('btnRefreshFeed');
+    btn.disabled=true; btn.textContent='読み込み中';
+    await loadFeed();
+    btn.disabled=false; btn.textContent='更新';
   });
   // logout
   $('btnLogout').addEventListener('click', async ()=>{
