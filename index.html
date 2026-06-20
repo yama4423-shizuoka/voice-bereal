@@ -171,6 +171,9 @@
     .streak-banner{background:linear-gradient(135deg,#1a1a00,#222200);border:1.5px solid var(--accent);border-radius:var(--radius);padding:14px 16px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between}
     .streak-count{font-size:1.6rem;font-weight:900;color:var(--accent);letter-spacing:-1px}
     .streak-label{font-size:.72rem;color:#aaa;font-weight:700;margin-top:2px}
+    /* ---- rec preview ---- */
+    #recPreview{display:none;flex-direction:column;align-items:center;gap:14px;width:80%}
+    #recPreview.show{display:flex}
   </style>
 </head>
 <body>
@@ -294,8 +297,14 @@
     <div class="rec-caption-wrap">
       <input type="text" id="inCaption" placeholder="ひとことメモ(任意)" maxlength="50" aria-label="ひとことメモ">
     </div>
-    <button class="btn btn-danger" style="width:80%" id="btnStopRec">録音を止めて投稿</button>
+    <button class="btn btn-danger" style="width:80%" id="btnStopRec">録音を止める</button>
     <button class="btn btn-ghost" style="width:80%" id="btnCancelRec">キャンセル</button>
+    <div id="recPreview">
+      <p style="color:var(--muted);font-size:.85rem;font-weight:700">録音を確認してください</p>
+      <button class="btn btn-ghost" style="width:100%" id="btnPreviewPlay" aria-label="録音を再生して確認する">再生して確認</button>
+      <button class="btn btn-primary" style="width:100%" id="btnPostConfirm">この声で投稿する</button>
+      <button class="btn btn-ghost" style="width:100%" id="btnReRecord">撮り直す</button>
+    </div>
   </div>
 
   <!-- NAV -->
@@ -330,6 +339,7 @@ let recInterval = null, recSeconds = 0;
 let currentAudio = null;
 let currentSpeed = 1;
 let calAudio = null;
+let previewBlob = null, previewAudio = null, previewDur = 0;
 
 // ---- toast ----
 let toastTimer;
@@ -824,18 +834,39 @@ async function startRecording(){
 async function stopRecording(){
   clearInterval(recInterval);
   stopViz();
-  $('recModal').classList.remove('open');
   if(!mediaRecorder||mediaRecorder.state==='inactive') return;
   const dur=recSeconds;
   mediaRecorder.stop();
   mediaRecorder.stream.getTracks().forEach(t=>t.stop());
   await new Promise(r=>mediaRecorder.onstop=r);
-  const blob=new Blob(audioChunks,{type:'audio/webm'});
-  const path=`${me.id}/${Date.now()}.webm`;
+  previewBlob=new Blob(audioChunks,{type:'audio/webm'});
+  previewDur=dur;
+  previewAudio=null;
+  $('recTimer').style.display='none';
+  $('vizCanvas').style.display='none';
+  $('recProgress').style.display='none';
+  $('btnStopRec').style.display='none';
+  $('btnCancelRec').style.display='none';
+  $('recPreview').classList.add('show');
+}
+
+async function uploadAndPost(){
+  if(!previewBlob) return;
+  if(previewAudio){ previewAudio.pause(); previewAudio=null; }
+  $('recPreview').classList.remove('show');
+  $('recTimer').style.display='';
+  $('vizCanvas').style.display='';
+  $('recProgress').style.display='';
+  $('btnStopRec').style.display='';
+  $('btnCancelRec').style.display='';
+  $('btnPreviewPlay').textContent='再生して確認';
+  $('recModal').classList.remove('open');
+  const dur=previewDur;
   const today=todayJST();
   const caption=($('inCaption').value||'').trim();
   showToast('アップロード中...',10000);
-  const {error:upErr}=await sb.storage.from('voices').upload(path,blob,{contentType:'audio/webm'});
+  const path=`${me.id}/${Date.now()}.webm`;
+  const {error:upErr}=await sb.storage.from('voices').upload(path,previewBlob,{contentType:'audio/webm'});
   if(upErr){ showToast('アップロード失敗: '+upErr.message); return; }
   const {error:dbErr}=await sb.from('posts').insert({user_id:me.id,storage_path:path,duration_sec:dur,post_date:today,caption:caption||null});
   if(dbErr){
@@ -843,6 +874,7 @@ async function stopRecording(){
     showToast('投稿失敗: '+dbErr.message); return;
   }
   showToast('投稿しました');
+  previewBlob=null;
   loadFeed();
 }
 
@@ -972,6 +1004,32 @@ document.addEventListener('DOMContentLoaded', ()=>{
   $('fabRecord').addEventListener('click',()=>{
     if(mediaRecorder&&mediaRecorder.state==='recording'){ stopRecording(); return; }
     startRecording();
+  });
+  $('btnPreviewPlay').addEventListener('click', ()=>{
+    if(!previewBlob) return;
+    if(previewAudio && !previewAudio.paused){ previewAudio.pause(); $('btnPreviewPlay').textContent='再生して確認'; return; }
+    if(!previewAudio){
+      const url=URL.createObjectURL(previewBlob);
+      previewAudio=new Audio(url);
+      previewAudio.playbackRate=currentSpeed;
+      previewAudio.onended=()=>{ $('btnPreviewPlay').textContent='再生して確認'; };
+    }
+    previewAudio.play();
+    $('btnPreviewPlay').textContent='一時停止';
+  });
+  $('btnPostConfirm').addEventListener('click', uploadAndPost);
+  $('btnReRecord').addEventListener('click', ()=>{
+    if(previewAudio){ previewAudio.pause(); previewAudio=null; }
+    previewBlob=null;
+    $('recPreview').classList.remove('show');
+    $('recTimer').style.display='';
+    $('vizCanvas').style.display='';
+    $('recProgress').style.display='';
+    $('btnStopRec').style.display='';
+    $('btnCancelRec').style.display='';
+    $('btnPreviewPlay').textContent='再生して確認';
+    $('inCaption').value='';
+    $('recModal').classList.remove('open');
   });
   $('btnStopRec').addEventListener('click', stopRecording);
   $('btnCancelRec').addEventListener('click',()=>{
