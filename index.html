@@ -109,6 +109,9 @@
     .friend-card{background:var(--card);border-radius:14px;padding:14px 16px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between}
     .friend-info{display:flex;align-items:center;gap:10px}
     .friend-name{font-weight:700;font-size:.95rem}
+    .friend-status{font-size:.65rem;border-radius:8px;padding:2px 7px;margin-top:3px;display:inline-block}
+    .friend-status.posted{background:#1a2a00;border:1px solid var(--accent);color:var(--accent)}
+    .friend-status.not-posted{background:#1a1a1a;color:var(--muted)}
     /* ---- preview ---- */
     #recPreview{display:none;flex-direction:column;gap:10px;width:80%}
     #recPreview.show{display:flex}
@@ -359,7 +362,7 @@ async function loadFeed(){
   if(friendPosts&&friendPosts.length){
     html+='<p class="section-label">フレンドの声</p>';
     friendPosts.forEach(p=>{
-      const postMins=(() =>{
+      const postMins=(()=>{
         const d=new Date(p.created_at);
         const jst=new Date(d.toLocaleString('en-US',{timeZone:'Asia/Tokyo'}));
         return jst.getHours()*60+jst.getMinutes();
@@ -395,7 +398,7 @@ async function loadFeed(){
   }
   html+='<p class="section-label">自分の声</p>';
   if(mine){
-    const postMins=(() =>{
+    const postMins=(()=>{
       const d=new Date(mine.created_at);
       const jst=new Date(d.toLocaleString('en-US',{timeZone:'Asia/Tokyo'}));
       return jst.getHours()*60+jst.getMinutes();
@@ -668,16 +671,22 @@ async function loadFriends(posts){
     $('friendList').innerHTML='<p style="color:var(--muted);font-size:.85rem">まだフレンドがいません</p>';
     return;
   }
+  // 今日投稿済みフレンドのuser_idセット(friend_feedビュー経由)
+  const postedToday=new Set();
+  const {data:todayPosts}=await sb.from('friend_feed').select('user_id').eq('post_date',todayStr);
+  if(todayPosts) todayPosts.forEach(p=>postedToday.add(p.user_id));
   let html='';
   friends.forEach(f=>{
     const name=f.profiles?.username||'名無し';
     const code=f.profiles?.friend_code||'';
+    const posted=postedToday.has(f.friend_id);
     html+=`<div class="friend-card">
       <div class="friend-info">
         <div class="avatar" aria-hidden="true">${esc(name[0]||'?')}</div>
         <div>
           <p class="friend-name">${esc(name)}</p>
           <p style="font-size:.7rem;color:var(--muted)">${esc(code)}</p>
+          <span class="friend-status ${posted?'posted':'not-posted'}" aria-label="${posted?'今日投稿済み':'今日未投稿'}">${posted?'投稿済み':'未投稿'}</span>
         </div>
       </div>
       <button class="btn btn-ghost" style="width:auto;padding:6px 12px;font-size:.78rem" data-fid="${f.friend_id}" aria-label="${esc(name)}をフレンド解除">解除</button>
