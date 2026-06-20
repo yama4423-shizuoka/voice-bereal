@@ -26,99 +26,70 @@
     html,body{height:100%;background:var(--bg);color:#fff;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;overscroll-behavior:none}
     #app{display:flex;flex-direction:column;height:100%;max-width:430px;margin:0 auto}
     /* ---- screens ---- */
-    .screen{display:none;flex:1;overflow-y:auto;padding:20px 16px calc(80px + var(--safe-bottom));}
-    .screen.active{display:block}
+    .screen{display:none;flex:1;overflow-y:auto;padding:20px 16px;padding-bottom:calc(80px + var(--safe-bottom))}
+    .screen.active{display:flex;flex-direction:column}
     /* ---- auth ---- */
-    #screenAuth{display:flex;flex-direction:column;justify-content:center;min-height:100%;gap:12px;padding-bottom:40px}
-    #screenAuth.active{display:flex}
-    .auth-logo{font-size:2rem;font-weight:900;letter-spacing:-1px;margin-bottom:8px}
-    .auth-sub{font-size:.85rem;color:var(--muted);margin-bottom:16px;font-weight:600}
-    .tab-row{display:flex;gap:8px;margin-bottom:4px}
-    .tab-btn{flex:1;padding:10px;border-radius:12px;border:none;background:var(--card);color:var(--muted);font-weight:700;font-size:.9rem;cursor:pointer}
-    .tab-btn.active{background:var(--accent);color:#000}
-    .auth-panel{display:none;flex-direction:column;gap:10px}
-    .auth-panel.active{display:flex}
+    .auth-logo{font-size:2rem;font-weight:900;text-align:center;margin-bottom:8px}
+    .auth-tagline{font-size:.85rem;color:var(--muted);text-align:center;margin-bottom:32px}
+    .input-group{display:flex;flex-direction:column;gap:10px;margin-bottom:16px}
     input[type=email],input[type=password],input[type=text]{
-      background:var(--card);border:none;border-radius:12px;padding:14px 16px;
-      color:#fff;font-size:1rem;width:100%;outline:none;
+      background:#1a1a1a;border:1px solid #2a2a2a;border-radius:12px;
+      color:#fff;font-size:1rem;padding:14px 16px;width:100%;
+      -webkit-appearance:none;
     }
-    input::placeholder{color:var(--muted)}
-    .btn{padding:14px;border-radius:14px;border:none;font-size:1rem;font-weight:800;cursor:pointer;width:100%;transition:opacity .15s}
+    input:focus{outline:2px solid var(--accent);border-color:transparent}
+    .btn{border:none;border-radius:14px;cursor:pointer;font-size:1rem;font-weight:700;padding:16px;width:100%;transition:opacity .15s}
     .btn:active{opacity:.7}
     .btn-primary{background:var(--accent);color:#000}
-    .btn-ghost{background:var(--card);color:#fff}
+    .btn-secondary{background:#1e1e1e;color:#fff}
     .btn-danger{background:var(--danger);color:#fff}
-    .forgot-link{font-size:.8rem;color:var(--muted);text-align:center;margin-top:2px;cursor:pointer;font-weight:600;text-decoration:underline}
-    /* ---- nav ---- */
-    #nav{display:none;position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:430px;
-      background:rgba(10,10,10,.95);backdrop-filter:blur(12px);
-      padding:10px 0 calc(10px + var(--safe-bottom));
-      display:flex;justify-content:space-around;z-index:100;border-top:1px solid #1a1a1a}
-    #nav.visible{display:flex}
-    .nav-btn{background:none;border:none;color:var(--muted);font-size:.7rem;font-weight:700;display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;padding:4px 12px}
-    .nav-btn.active{color:var(--accent)}
-    .nav-btn svg{width:22px;height:22px}
-    /* ---- record fab ---- */
-    #fabRecord{position:fixed;bottom:calc(60px + var(--safe-bottom));left:50%;transform:translateX(-50%);
-      width:62px;height:62px;border-radius:50%;border:3px solid var(--accent);
-      background:#000;cursor:pointer;display:none;align-items:center;justify-content:center;
-      box-shadow:0 0 0 0 rgba(232,255,90,.4);transition:box-shadow .2s}
-    #fabRecord.visible{display:flex}
-    #fabRecord.recording{box-shadow:0 0 0 10px rgba(232,255,90,.15);animation:pulse 1.2s infinite}
-    @keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(232,255,90,.4)}50%{box-shadow:0 0 0 14px rgba(232,255,90,.05)}}
-    #fabRecord svg{width:28px;height:28px}
-    /* ---- cards ---- */
+    .btn-ghost{background:transparent;border:1px solid #333;color:#fff}
+    .tab-switch{display:flex;background:#1a1a1a;border-radius:12px;padding:4px;margin-bottom:24px}
+    .tab-switch button{flex:1;background:none;border:none;color:var(--muted);font-size:.9rem;font-weight:600;padding:10px;border-radius:10px;cursor:pointer;transition:all .2s}
+    .tab-switch button.active{background:#2a2a2a;color:#fff}
+    .auth-link{background:none;border:none;color:var(--accent);font-size:.85rem;cursor:pointer;text-align:center;padding:8px;width:100%}
+    /* ---- onboarding ---- */
+    #screenOnboard{align-items:center;justify-content:center;text-align:center;gap:20px}
+    .onboard-title{font-size:1.4rem;font-weight:900}
+    .onboard-steps{display:flex;flex-direction:column;gap:12px;text-align:left;width:100%}
+    .onboard-step{background:var(--card);border-radius:14px;padding:14px 16px;display:flex;gap:12px;align-items:flex-start}
+    .onboard-step-num{background:var(--accent);color:#000;font-weight:900;border-radius:50%;width:26px;height:26px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:.85rem}
+    .onboard-step-text{font-size:.9rem;line-height:1.5}
+    /* ---- feed ---- */
+    .feed-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+    .feed-title{font-size:1.1rem;font-weight:800}
+    .time-badge{background:var(--accent);color:#000;border-radius:20px;padding:4px 12px;font-size:.8rem;font-weight:700}
     .post-card{background:var(--card);border-radius:var(--radius);padding:16px;margin-bottom:12px}
-    .post-head{display:flex;align-items:center;gap:12px;margin-bottom:12px}
-    .avatar{width:40px;height:40px;border-radius:50%;background:var(--accent);color:#000;font-weight:800;display:flex;align-items:center;
-    justify-content:center; font-size:1rem;
-    }
-    .post-user { font-weight:800; font-size:.92rem; }
-    .post-bio { font-size:.75rem; color:var(--muted); font-weight:600; line-height:1.3; }
-    .post-time { font-size:.74rem; color:var(--muted); font-weight:600; }
-    .player { display:flex; align-items:center; gap:12px; background:var(--bg); border-radius:14px; padding:10px 14px; }
-    .play-btn {
-      width:46px; height:46px; border-radius:50%; border:none; background:var(--accent);
-      color:#000; cursor:pointer; display:flex; align-items:center; justify-content:center; flex-shrink:0;
-    }
-    .play-btn svg{width:22px;height:22px}
-    .wave{flex:1;height:32px;display:flex;align-items:center;gap:2px;overflow:hidden}
-    .wave div{width:3px;border-radius:2px;background:var(--muted);height:8px}
-    .dur{font-size:.75rem;color:var(--muted);font-weight:700;flex-shrink:0}
+    .post-header{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+    .avatar{width:36px;height:36px;border-radius:50%;background:var(--accent);color:#000;font-weight:900;font-size:.9rem;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+    .post-name{font-weight:700;font-size:.95rem}
+    .post-time{font-size:.75rem;color:var(--muted);margin-top:2px}
+    .post-bio{font-size:.78rem;color:var(--muted);margin-top:2px;font-style:italic}
     .post-caption{font-size:.85rem;color:#ccc;margin-top:10px;line-height:1.5}
-    .post-del{margin-top:12px;font-size:.75rem;color:var(--muted);background:none;border:none;cursor:pointer;font-weight:600;text-decoration:underline;padding:0}
-    .on-time-badge{display:inline-block;background:var(--accent);color:#000;font-size:.62rem;font-weight:800;padding:1px 6px;border-radius:6px;margin-left:6px;vertical-align:middle}
-    /* speed */
-    .speed-btns{display:flex;gap:6px;margin-top:10px}
-    .speed-btn{background:var(--bg);border:1.5px solid #333;color:var(--muted);border-radius:8px;padding:4px 10px;font-size:.75rem;font-weight:700;cursor:pointer}
-    .speed-btn.active{border-color:var(--accent);color:var(--accent)}
-    /* reaction */
+    .play-row{display:flex;gap:8px;align-items:center}
+    .play-btn{background:var(--accent);border:none;border-radius:50%;width:44px;height:44px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;transition:opacity .15s}
+    .play-btn:active{opacity:.7}
+    .play-btn svg{width:20px;height:20px;fill:#000}
+    .waveform{flex:1;height:36px;background:#1e1e1e;border-radius:8px;overflow:hidden;position:relative}
+    .waveform-bar{position:absolute;bottom:0;width:3px;background:#333;border-radius:2px 2px 0 0}
+    .waveform-progress{position:absolute;bottom:0;left:0;height:100%;background:rgba(232,255,90,.08);pointer-events:none;transition:width .1s linear}
+    .duration-label{font-size:.75rem;color:var(--muted);flex-shrink:0}
+    .speed-btn{background:#222;border:1px solid #333;color:#aaa;border-radius:8px;padding:4px 8px;font-size:.75rem;font-weight:700;cursor:pointer;flex-shrink:0}
+    .speed-btn:active{opacity:.7}
     .reaction-row{display:flex;align-items:center;gap:8px;margin-top:10px}
-    .reaction-btn{background:var(--bg);border:1.5px solid #333;color:var(--muted);border-radius:10px;padding:6px 14px;font-size:.82rem;font-weight:700;cursor:pointer;transition:background .15s,border-color .15s,color .15s}
-    .reaction-btn.reacted{background:rgba(232,255,90,.12);border-color:var(--accent);color:var(--accent)}
-    .reaction-count{margin-left:6px;font-size:.8rem}
-    /* ---- skeleton ---- */
-    .skeleton{background:var(--card);border-radius:var(--radius);padding:16px;margin-bottom:12px}
-    .sk-line{height:14px;background:#222;border-radius:6px;margin-bottom:10px;animation:sk 1.2s infinite}
-    @keyframes sk{0%,100%{opacity:.4}50%{opacity:1}}
-    /* ---- empty / day label ---- */
-    .empty{text-align:center;padding:60px 20px;color:var(--muted)}
-    .empty b{display:block;color:#fff;font-size:1.1rem;margin-bottom:8px}
-    .empty p{font-size:.85rem;line-height:1.7}
-    .day-label{font-size:.75rem;color:var(--muted);font-weight:700;margin:16px 0 8px;letter-spacing:.05em}
-    /* ---- toast ---- */
-    #toast{position:fixed;bottom:calc(90px + var(--safe-bottom));left:50%;transform:translateX(-50%) translateY(20px);
-      background:#fff;color:#000;padding:10px 20px;border-radius:99px;font-size:.85rem;font-weight:700;
-      opacity:0;transition:opacity .25s,transform .25s;pointer-events:none;z-index:999;white-space:nowrap}
-    #toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
-    /* ---- record modal ---- */
-    #recModal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:200;flex-direction:column;align-items:center;justify-content:center;gap:20px}
+    .reaction-btn{background:#1e1e1e;border:1px solid #2a2a2a;border-radius:20px;color:#aaa;font-size:.78rem;font-weight:600;padding:5px 12px;cursor:pointer;transition:all .2s}
+    .reaction-btn.reacted{background:#2a2a1a;border-color:var(--accent);color:var(--accent)}
+    .on-time-badge{background:#1a2a00;border:1px solid var(--accent);color:var(--accent);border-radius:10px;padding:2px 8px;font-size:.7rem;font-weight:700}
+    .streak-banner{background:#1a2a00;border:1px solid var(--accent);border-radius:14px;padding:12px 16px;margin-bottom:16px;text-align:center;font-weight:700;font-size:.95rem;color:var(--accent)}
+    /* ---- rec modal ---- */
+    #recModal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.96);z-index:100;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:24px}
     #recModal.open{display:flex}
     .rec-timer{font-size:3rem;font-weight:900;letter-spacing:-2px}
     .rec-bar{width:80%;height:6px;background:#222;border-radius:3px;overflow:hidden}
     .rec-bar-fill{height:100%;background:var(--accent);width:0%;transition:width .5s linear}
     .rec-caption-wrap{width:80%}
     .rec-caption-wrap input{background:#1a1a1a;border:1px solid #333}
+    .rec-caption-counter{font-size:.75rem;color:var(--muted);text-align:right;margin-top:4px}
     /* visualizer */
     #vizCanvas{width:80%;height:48px;border-radius:8px;background:#1a1a1a}
     /* ---- profile ---- */
@@ -128,166 +99,146 @@
     .profile-code{font-size:.75rem;color:var(--muted);font-weight:600;margin-top:2px}
     .profile-bio{font-size:.85rem;color:#aaa;margin-top:4px}
     .section-label{font-size:.75rem;color:var(--muted);font-weight:700;margin:20px 0 10px;letter-spacing:.05em}
-    /* ---- friend code input ---- */
-    .friend-input-row{display:flex;gap:8px}
-    .friend-input-row input{flex:1}
-    .friend-input-row button{flex-shrink:0;padding:14px 18px;border-radius:14px;border:none;background:var(--accent);color:#000;font-weight:800;cursor:pointer}
-    /* ---- retry ---- */
-    .retry-box{text-align:center;padding:40px 20px;color:var(--muted)}
-    .retry-box p{margin-bottom:12px;font-size:.9rem}
-    .retry-btn{background:var(--card);border:none;color:#fff;padding:10px 24px;border-radius:12px;font-weight:700;cursor:pointer}
-    /* ---- challenge time ---- */
-    .challenge-time-box{background:var(--card);border-radius:var(--radius);padding:14px 16px;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center}
-    .ct-label{font-size:.7rem;color:var(--muted);font-weight:700;margin-bottom:2px}
-    .ct-time{font-size:1.6rem;font-weight:900;letter-spacing:-1px}
-    /* ---- onboarding ---- */
-    #screenOnboard{display:none;flex-direction:column;justify-content:center;min-height:100%;gap:16px;padding-bottom:40px}
-    #screenOnboard.active{display:flex}
-    .onboard-step{display:flex;align-items:flex-start;gap:14px;background:var(--card);border-radius:var(--radius);padding:16px}
-    .onboard-num{width:28px;height:28px;border-radius:50%;background:var(--accent);color:#000;font-weight:900;font-size:.9rem;display:flex;align-items:center;justify-content:center;flex-shrink:0}
-    .onboard-title{font-weight:800;font-size:.95rem;margin-bottom:4px}
-    .onboard-desc{font-size:.8rem;color:#aaa;line-height:1.6}
-    /* ---- password reset ---- */
-    #screenReset{display:none;flex-direction:column;justify-content:center;min-height:100%;gap:12px;padding-bottom:40px}
-    #screenReset.active{display:flex}
+    .profile-stat{font-size:.85rem;color:#aaa;margin-bottom:8px}
     /* ---- calendar ---- */
-    .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-bottom:8px}
-    .cal-cell{aspect-ratio:1;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:.75rem;font-weight:700;color:var(--muted)}
-    .cal-cell.posted{background:var(--accent);color:#000}
-    .cal-cell.today{outline:1.5px solid var(--accent)}
-    .cal-cell.posted{cursor:pointer;}
-    .cal-cell.posted:focus{outline:2px solid var(--accent);outline-offset:2px;}
-    #calPlayer{background:var(--card);border-radius:var(--radius);padding:14px 16px;margin-top:10px;}
-    .cal-player-date{font-size:.75rem;color:var(--muted);font-weight:700;margin-bottom:10px;}
-    .cal-dow{text-align:center;font-size:.65rem;color:var(--muted);font-weight:700;padding-bottom:2px}
-    .cal-nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
-    .cal-nav button{background:none;border:none;color:#fff;font-size:1.1rem;cursor:pointer;padding:4px 10px}
-    .cal-nav span{font-size:.85rem;font-weight:700}
-    /* ---- friend list ---- */
-    .friend-item{display:flex;align-items:center;justify-content:space-between;background:var(--card);border-radius:14px;padding:12px 14px;margin-bottom:8px}
-    .friend-item-name{font-weight:700;font-size:.9rem}
-    .friend-remove-btn{background:none;border:1px solid #444;color:var(--muted);border-radius:8px;padding:5px 12px;font-size:.75rem;font-weight:700;cursor:pointer}
-    /* ---- streak banner ---- */
-    .streak-banner{background:linear-gradient(135deg,#1a1a00,#222200);border:1.5px solid var(--accent);border-radius:var(--radius);padding:14px 16px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between}
-    .streak-count{font-size:1.6rem;font-weight:900;color:var(--accent);letter-spacing:-1px}
-    .streak-label{font-size:.72rem;color:#aaa;font-weight:700;margin-top:2px}
-    /* ---- rec preview ---- */
-    #recPreview{display:none;flex-direction:column;align-items:center;gap:14px;width:80%}
+    .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-bottom:16px}
+    .cal-day{aspect-ratio:1;border-radius:8px;background:#1a1a1a;display:flex;align-items:center;justify-content:center;font-size:.7rem;color:var(--muted)}
+    .cal-day.posted{background:var(--accent);color:#000;font-weight:700;cursor:pointer}
+    .cal-day.empty{background:transparent}
+    /* ---- friends ---- */
+    .friend-card{background:var(--card);border-radius:14px;padding:14px 16px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between}
+    .friend-info{display:flex;align-items:center;gap:10px}
+    .friend-name{font-weight:700;font-size:.95rem}
+    /* ---- preview ---- */
+    #recPreview{display:none;flex-direction:column;gap:10px;width:80%}
     #recPreview.show{display:flex}
+    /* ---- toast ---- */
+    #toast{position:fixed;bottom:calc(90px + var(--safe-bottom));left:50%;transform:translateX(-50%) translateY(20px);background:#222;border:1px solid #333;border-radius:12px;padding:10px 20px;font-size:.875rem;opacity:0;transition:opacity .3s,transform .3s;pointer-events:none;white-space:nowrap;z-index:200}
+    #toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+    /* ---- record fab ---- */
+    #fabRec{position:fixed;bottom:calc(72px + var(--safe-bottom));left:50%;transform:translateX(-50%);width:64px;height:64px;border-radius:50%;background:var(--accent);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 20px rgba(232,255,90,.3);z-index:10}
+    #fabRec svg{width:28px;height:28px;fill:#000}
+    #fabRec:active{transform:translateX(-50%) scale(.92)}
+    /* ---- nav ---- */
+    nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:430px;background:rgba(10,10,10,.95);backdrop-filter:blur(10px);border-top:1px solid #1a1a1a;display:flex;justify-content:space-around;padding:8px 0;padding-bottom:calc(8px + var(--safe-bottom));z-index:10}
+    .nav-btn{background:none;border:none;color:var(--muted);font-size:.65rem;font-weight:600;display:flex;flex-direction:column;align-items:center;gap:4px;padding:4px 16px;cursor:pointer;transition:color .15s}
+    .nav-btn.active,.nav-btn:focus-visible{color:#fff}
+    .nav-btn svg{width:22px;height:22px}
+    /* ---- push setup ---- */
+    .push-card{background:var(--card);border-radius:var(--radius);padding:20px;margin-bottom:16px}
+    /* ---- reset screen ---- */
+    #screenReset{align-items:stretch}
   </style>
 </head>
 <body>
-<div id="app" role="main">
+<div id="app">
   <!-- AUTH -->
-  <section id="screenAuth" class="screen" aria-label="ログイン・新規登録">
-    <div class="auth-logo" aria-label="コエリアル">コエリアル</div>
-    <p class="auth-sub">声のBeReal。毎日ランダムな時刻に、そのときの声を30秒残す。</p>
-    <div class="tab-row" role="tablist">
-      <button class="tab-btn active" id="tabLogin" role="tab" aria-selected="true" aria-controls="panelLogin">ログイン</button>
-      <button class="tab-btn" id="tabSignup" role="tab" aria-selected="false" aria-controls="panelSignup">新規登録</button>
-    </div>
-    <div class="auth-panel active" id="panelLogin" role="tabpanel">
-      <input type="email" id="inLoginEmail" placeholder="メールアドレス" autocomplete="email" aria-label="メールアドレス">
-      <input type="password" id="inLoginPw" placeholder="パスワード" autocomplete="current-password" aria-label="パスワード">
-      <button class="btn btn-primary" id="btnLogin">ログイン</button>
-      <span class="forgot-link" id="forgotLink" role="button" tabindex="0">パスワードを忘れた場合</span>
-    </div>
-    <div class="auth-panel" id="panelSignup" role="tabpanel">
-      <input type="email" id="inSignupEmail" placeholder="メールアドレス" autocomplete="email" aria-label="メールアドレス">
-      <input type="password" id="inSignupPw" placeholder="パスワード(8文字以上)" autocomplete="new-password" aria-label="パスワード">
-      <button class="btn btn-primary" id="btnSignup">登録する</button>
-    </div>
-  </section>
-
-  <!-- ONBOARDING -->
-  <section id="screenOnboard" aria-label="使い方ガイド">
-    <h2 style="font-size:1.1rem;font-weight:900;margin-bottom:4px">ホーム画面に追加しよう</h2>
-    <p style="font-size:.8rem;color:var(--muted);margin-bottom:8px;font-weight:600">通知を受け取るために3ステップで設定してください</p>
-    <div class="onboard-step">
-      <div class="onboard-num" aria-hidden="true">1</div>
-      <div>
-        <div class="onboard-title" id="obStep1Title">共有ボタンをタップ</div>
-        <div class="onboard-desc" id="obStep1Desc">ブラウザ下部の共有アイコン(四角から矢印が出ているアイコン)をタップします</div>
+  <div id="screenAuth" class="screen active" role="main" aria-label="認証">
+    <div style="flex:1;display:flex;flex-direction:column;justify-content:center">
+      <p class="auth-logo">コエリアル</p>
+      <p class="auth-tagline">声のBeReal</p>
+      <div class="tab-switch" role="tablist">
+        <button id="tabLogin" role="tab" aria-selected="true" aria-controls="panelLogin" class="active">ログイン</button>
+        <button id="tabSignup" role="tab" aria-selected="false" aria-controls="panelSignup">新規登録</button>
+      </div>
+      <div id="panelLogin" role="tabpanel" aria-labelledby="tabLogin">
+        <div class="input-group">
+          <input type="email" id="inEmail" placeholder="メールアドレス" autocomplete="email" aria-label="メールアドレス">
+          <input type="password" id="inPass" placeholder="パスワード" autocomplete="current-password" aria-label="パスワード">
+        </div>
+        <button class="btn btn-primary" id="btnLogin">ログイン</button>
+        <button class="auth-link" id="btnForgotPw" aria-label="パスワードを忘れた場合はこちら">パスワードを忘れた場合</button>
+      </div>
+      <div id="panelSignup" role="tabpanel" aria-labelledby="tabSignup" hidden>
+        <div class="input-group">
+          <input type="text" id="inName" placeholder="表示名" maxlength="20" autocomplete="nickname" aria-label="表示名">
+          <input type="email" id="inEmail2" placeholder="メールアドレス" autocomplete="email" aria-label="メールアドレス">
+          <input type="password" id="inPass2" placeholder="パスワード(6文字以上)" autocomplete="new-password" aria-label="パスワード">
+        </div>
+        <button class="btn btn-primary" id="btnSignup">アカウントを作成</button>
       </div>
     </div>
-    <div class="onboard-step">
-      <div class="onboard-num" aria-hidden="true">2</div>
-      <div>
-        <div class="onboard-title">「ホーム画面に追加」を選択</div>
-        <div class="onboard-desc">メニューをスクロールして「ホーム画面に追加」をタップし、「追加」で完了です</div>
-      </div>
-    </div>
-    <div class="onboard-step">
-      <div class="onboard-num" aria-hidden="true">3</div>
-      <div>
-        <div class="onboard-title">通知を許可する</div>
-        <div class="onboard-desc">ホーム画面のアイコンからアプリを開き、通知の許可をタップしてください</div>
-      </div>
-    </div>
-    <button class="btn btn-primary" id="btnOnboardDone">わかった、はじめる</button>
-    <button class="btn btn-ghost" id="btnOnboardSkip">あとで設定する</button>
-  </section>
+  </div>
 
   <!-- PASSWORD RESET -->
-  <section id="screenReset" aria-label="パスワードリセット">
-    <div class="auth-logo" aria-label="コエリアル">コエリアル</div>
-    <p style="font-size:.85rem;color:var(--muted);font-weight:600" id="resetDesc">登録したメールアドレスを入力してください。再設定用のリンクをお送りします。</p>
-    <input type="email" id="inResetEmail" placeholder="メールアドレス" autocomplete="email" aria-label="メールアドレス">
-    <button class="btn btn-primary" id="btnResetSend">再設定メールを送る</button>
-    <p id="newPwSection" style="display:none;flex-direction:column;gap:10px">
-    </p>
-    <input type="password" id="inNewPw" placeholder="新しいパスワード(8文字以上)" autocomplete="new-password" aria-label="新しいパスワード" style="display:none">
-    <button class="btn btn-primary" id="btnSetNewPw" style="display:none">パスワードを変更する</button>
-    <button class="btn btn-ghost" id="btnResetBack">ログイン画面に戻る</button>
-  </section>
+  <div id="screenReset" class="screen" role="main" aria-label="パスワード再設定">
+    <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:16px">
+      <p style="font-size:1.1rem;font-weight:800;text-align:center">パスワード再設定</p>
+      <p style="font-size:.85rem;color:var(--muted);text-align:center">新しいパスワードを入力してください</p>
+      <input type="password" id="inNewPass" placeholder="新しいパスワード(6文字以上)" autocomplete="new-password" aria-label="新しいパスワード">
+      <button class="btn btn-primary" id="btnSetNewPass">パスワードを更新</button>
+    </div>
+  </div>
+
+  <!-- ONBOARDING -->
+  <div id="screenOnboard" class="screen" role="main" aria-label="はじめかた">
+    <p class="onboard-title">コエリアルをはじめよう</p>
+    <p style="color:var(--muted);font-size:.85rem">ホーム画面に追加して通知を受け取ろう</p>
+    <div class="onboard-steps" id="onboardSteps"></div>
+    <button class="btn btn-primary" id="btnOnboardDone">はじめる</button>
+    <button class="auth-link" id="btnOnboardSkip">スキップ</button>
+  </div>
 
   <!-- FEED -->
-  <section id="screenFeed" class="screen" aria-label="フィード">
-    <div id="feedContent" aria-live="polite"></div>
-  </section>
+  <div id="screenFeed" class="screen" role="main" aria-label="フィード">
+    <div class="feed-header">
+      <span class="feed-title">コエリアル</span>
+      <span class="time-badge" id="todayTimeBadge" aria-live="polite"></span>
+    </div>
+    <div id="streakBanner"></div>
+    <div id="feedList" aria-live="polite" aria-label="投稿一覧"></div>
+  </div>
 
   <!-- PROFILE -->
-  <section id="screenProfile" class="screen" aria-label="プロフィール">
+  <div id="screenProfile" class="screen" role="main" aria-label="プロフィール">
     <div class="profile-header">
-      <div class="avatar-lg" id="profAvatar" aria-hidden="true">?</div>
+      <div class="avatar-lg" id="profAvatar" aria-hidden="true"></div>
       <div>
-        <div class="profile-name" id="profName"></div>
-        <div class="profile-code" id="profCodeDisp"></div>
-        <div class="profile-bio" id="profBioDisp"></div>
+        <p class="profile-name" id="profName"></p>
+        <p class="profile-code" id="profCode"></p>
+        <p class="profile-bio" id="profBio"></p>
       </div>
     </div>
-    <button class="btn btn-ghost" id="btnCopyInvite" style="display:none;margin-bottom:8px">招待文をコピー</button>
-    <p class="section-label">プロフィール編集</p>
-    <input type="text" id="inPName" placeholder="表示名" maxlength="20" aria-label="表示名">
-    <input type="text" id="inPBio" placeholder="ひとこと(任意)" maxlength="40" style="margin-top:8px" aria-label="ひとこと">
-    <button class="btn btn-primary" style="margin-top:8px" id="btnSaveProfile">保存する</button>
+    <input type="text" id="inPName" placeholder="表示名" maxlength="20" aria-label="表示名を編集">
+    <input type="text" id="inPBio" placeholder="ひとこと(40文字以内)" maxlength="40" style="margin-top:8px" aria-label="ひとことを編集">
+    <button class="btn btn-secondary" style="margin-top:10px" id="btnSaveProfile">保存</button>
+    <p class="section-label">フレンドコード</p>
+    <div style="display:flex;gap:8px;align-items:center">
+      <p id="myFriendCode" style="font-size:1.1rem;font-weight:800;letter-spacing:.1em"></p>
+      <button class="btn btn-ghost" style="width:auto;padding:8px 16px;font-size:.8rem" id="btnCopyInvite">招待文をコピー</button>
+    </div>
     <p class="section-label">フレンドを追加</p>
-    <div class="friend-input-row">
-      <input type="text" id="inFriendCode" placeholder="フレンドコードを入力" maxlength="8" aria-label="フレンドコード">
-      <button id="btnAddFriend" aria-label="フレンドを追加">追加</button>
+    <div style="display:flex;gap:8px">
+      <input type="text" id="inFriendCode" placeholder="フレンドコードを入力" maxlength="8" style="flex:1" aria-label="フレンドコード入力">
+      <button class="btn btn-primary" style="width:auto;padding:0 16px" id="btnAddFriend">追加</button>
     </div>
     <p class="section-label">フレンド一覧</p>
-    <div id="friendList" aria-live="polite"></div>
-    <p class="section-label">通知設定</p>
-    <button class="btn btn-ghost" id="btnPushSub">通知を許可する</button>
-    <p class="section-label">ホーム画面追加ガイドを再表示</p>
-    <button class="btn btn-ghost" id="btnShowOnboard">ガイドを表示する</button>
-    <p class="section-label">投稿記録</p>
-    <div id="calendarWrap"></div>
-    <div id="calPlayer" style="display:none">
-      <p class="cal-player-date" id="calPlayerDate"></p>
-      <div class="player">
-        <button class="play-btn" id="calPlayBtn" aria-label="再生する"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg></button>
-        <div class="wave" aria-hidden="true"><div></div></div>
-        <span class="dur" id="calDur"></span>
-      </div>
-      <p id="calCaption" style="display:none;font-size:.85rem;color:#ccc;margin-top:8px;line-height:1.5"></p>
+    <div id="friendList"></div>
+    <p class="section-label">投稿カレンダー</p>
+    <div id="calNav" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+      <button id="calPrev" style="background:none;border:none;color:#fff;font-size:1.2rem;cursor:pointer" aria-label="前の月">&lt;</button>
+      <span id="calTitle" style="font-weight:700"></span>
+      <button id="calNext" style="background:none;border:none;color:#fff;font-size:1.2rem;cursor:pointer" aria-label="次の月">&gt;</button>
     </div>
-    <p class="section-label">アカウント</p>
-    <button class="btn btn-danger" id="btnLogout">ログアウト</button>
-  </section>
+    <div class="cal-grid" id="calGrid" aria-label="投稿カレンダー"></div>
+    <p id="calCaption" style="display:none;font-size:.85rem;color:#ccc;margin-top:8px;line-height:1.5"></p>
+    <p class="section-label">通知設定</p>
+    <div class="push-card">
+      <p style="font-size:.85rem;color:#aaa;margin-bottom:12px">毎日ランダムな時刻に「声を残そう」通知を受け取る</p>
+      <button class="btn btn-primary" id="btnPushSub">通知をオンにする</button>
+    </div>
+    <p class="section-label">ヘルプ</p>
+    <button class="btn btn-ghost" style="margin-bottom:8px" id="btnShowOnboard">はじめかたを見る</button>
+    <button class="btn btn-ghost" id="btnLogout">ログアウト</button>
+    <p style="font-size:.7rem;color:var(--muted);text-align:center;margin-top:16px">コエリアル v0.1</p>
+  </div>
 
-  <!-- RECORD MODAL -->
+  <!-- FAB -->
+  <button id="fabRec" aria-label="録音を開始する">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm-1-9c0-.55.45-1 1-1s1 .45 1 1v6c0 .55-.45 1-1 1s-1-.45-1-1V5zm6 6c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/></svg>
+  </button>
+
+  <!-- REC MODAL -->
   <div id="recModal" role="dialog" aria-modal="true" aria-label="録音">
     <p class="rec-timer" id="recTimer" aria-live="polite">00:00</p>
     <canvas id="vizCanvas" aria-hidden="true"></canvas>
@@ -296,6 +247,7 @@
     </div>
     <div class="rec-caption-wrap">
       <input type="text" id="inCaption" placeholder="ひとことメモ(任意)" maxlength="50" aria-label="ひとことメモ">
+      <span id="captionCounter" class="rec-caption-counter" aria-live="polite">0/50</span>
     </div>
     <button class="btn btn-danger" style="width:80%" id="btnStopRec">録音を止める</button>
     <button class="btn btn-ghost" style="width:80%" id="btnCancelRec">キャンセル</button>
@@ -319,495 +271,264 @@
     </button>
   </nav>
 
-  <!-- FAB -->
-  <button id="fabRecord" aria-label="録音する">
-    <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm-1-9c0-.55.45-1 1-1s1 .45 1 1v6c0 .55-.45 1-1 1s-1-.45-1-1V5zm6 6c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/></svg>
-  </button>
-
   <div id="toast" role="alert" aria-live="assertive"></div>
 </div>
+
 <script type="module">
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-const SUPA_URL = 'https://hbkknijwdppojhzybcit.supabase.co';
-const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imhia2tuaWp3ZHBwb2poenliY2l0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk4MTkyMjIsImV4cCI6MjA2NTM5NTIyMn0.G-BBjHGLNXAiDjXu3pY6oZ4p6mTsHf-DMVGnLIELSoo';
-const sb = createClient(SUPA_URL, SUPA_KEY);
+const SUPA_URL='https://hbkknijwdppojhzybcit.supabase.co';
+const SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imhia2tuaWp3ZHBwb2poenliY2l0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkzNzY5NzEsImV4cCI6MjA2NDk1Mjk3MX0.gZPMJzB-HmVikKMfkBaXwC5jFJdUO5JCVVJiHxFW_qo';
+const sb=createClient(SUPA_URL,SUPA_KEY);
+const $=id=>document.getElementById(id);
+let me=null, myProfile=null;
+let mediaRecorder=null, audioChunks=[], recInterval=null, recSeconds=0;
+let vizAf=null, vizAnalyser=null;
+let previewBlob=null, previewAudio=null, previewDur=0;
+let calYear=new Date().getFullYear(), calMonth=new Date().getMonth()+1;
+let calPostDates=[];
 
-const $ = id => document.getElementById(id);
-const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-let me = null, myProfile = null, mediaRecorder = null, audioChunks = [];
-let recInterval = null, recSeconds = 0;
-let currentAudio = null;
-let currentSpeed = 1;
-let calAudio = null;
-let previewBlob = null, previewAudio = null, previewDur = 0;
-
-// ---- toast ----
-let toastTimer;
-function showToast(msg, dur=2800){
-  const t=$('toast'); t.textContent=msg; t.classList.add('show');
-  clearTimeout(toastTimer); toastTimer=setTimeout(()=>t.classList.remove('show'),dur);
-}
-
-// ---- screen ----
 function showScreen(id){
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
-  const s=$(id); if(s){ s.classList.add('active'); }
-  const inApp = ['screenFeed','screenProfile'].includes(id);
-  $('nav').classList.toggle('visible', inApp);
-  $('fabRecord').classList.toggle('visible', inApp);
+  $(id).classList.add('active');
 }
-
-// ---- net error ----
-function netMsg(e){ return e?.message || 'ネットワークエラー'; }
-
-// ---- date helpers ----
+function showToast(msg,dur=2800){
+  const t=$('toast'); t.textContent=msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),dur);
+}
+function esc(s){const d=document.createElement('div');d.textContent=s;return d.innerHTML;}
 function todayJST(){
-  const d = new Date(Date.now() + 9*3600*1000);
-  return d.toISOString().slice(0,10);
+  const d=new Date(new Date().toLocaleString('en-US',{timeZone:'Asia/Tokyo'}));
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 }
-function fmtDate(s){
-  const [,m,d]=s.split('-'); return `${+m}月${+d}日`;
-}
-function fmtTime(iso){
+function fmtDate(iso){
   const d=new Date(iso);
-  const h=d.getHours().toString().padStart(2,'0');
-  const mi=d.getMinutes().toString().padStart(2,'0');
-  return `${h}:${mi}`;
+  return d.toLocaleString('ja-JP',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit',timeZone:'Asia/Tokyo'});
 }
 
-// ---- daily challenge time (seed = date) ----
-function dailyChallengeMins(dateStr){
+// ---- daily time badge ----
+function dailyMinutes(){
+  const today=todayJST();
   let h=0;
-  for(let i=0;i<dateStr.length;i++) h=(h*31+dateStr.charCodeAt(i))>>>0;
-  return 660 + (h % 601); // 660=11:00, 601 mins span = 11:00-21:00
+  for(let i=0;i<today.length;i++) h=(h*31+today.charCodeAt(i))&0xfffffff;
+  return 11*60 + (h % (10*60));
 }
-function fmtMins(m){ const h=Math.floor(m/60),mn=m%60; return `${h}:${String(mn).padStart(2,'0')}`; }
-function isOnTime(isoCreated, postDate){
-  const cm = dailyChallengeMins(postDate);
-  const created = new Date(isoCreated);
-  const jstMins = created.getUTCHours()*60 + created.getUTCMinutes() + 9*60;
-  return Math.abs(jstMins - cm) <= 10;
+function showTodayBadge(){
+  const mins=dailyMinutes();
+  const h=Math.floor(mins/60), m=mins%60;
+  $('todayTimeBadge').textContent=`本日 ${h}:${String(m).padStart(2,'0')}`;
 }
 
 // ---- streak ----
-function calcStreak(posts) {
-  const dates = [...new Set(posts.map(p => p.post_date))].sort().reverse();
-  if (!dates.length) return 0;
-  const today = todayJST();
-  const yDate = new Date(Date.now() + 9*3600*1000 - 86400*1000);
-  const yesterday = yDate.toISOString().slice(0,10);
-  if (dates[0] !== today && dates[0] !== yesterday) return 0;
-  let streak = 1;
-  for (let i = 1; i < dates.length; i++) {
-    const diff = (new Date(dates[i-1]+'T00:00:00Z') - new Date(dates[i]+'T00:00:00Z')) / 86400000;
-    if (diff === 1) streak++;
+async function showStreak(){
+  if(!me) return;
+  const {data}=await sb.from('posts').select('post_date').eq('user_id',me.id).order('post_date',{ascending:false}).limit(60);
+  if(!data||data.length<3){$('streakBanner').innerHTML='';return;}
+  const dates=data.map(r=>r.post_date);
+  const today=todayJST();
+  let streak=0, cur=today;
+  for(let i=0;i<dates.length;i++){
+    if(dates[i]===cur){ streak++; const d=new Date(cur); d.setDate(d.getDate()-1); cur=d.toISOString().slice(0,10); }
     else break;
   }
-  return streak;
+  if(streak>=3){
+    $('streakBanner').innerHTML=`<div class="streak-banner">${streak}日連続で声を残しています</div>`;
+  } else {
+    $('streakBanner').innerHTML='';
+  }
 }
 
-// ---- escape helper for template literals ----
-
-// ---- profile ----
-async function ensureProfile(){
-  const { data } = await sb.from('profiles').select('*').eq('id',me.id).maybeSingle();
-  if(data){ myProfile=data; return; }
-  const fallback=(me.email||'わたし').split('@')[0].slice(0,20);
-  const { data:created } = await sb.from('profiles').upsert({id:me.id,username:fallback}).select().maybeSingle();
-  myProfile = created || {id:me.id,username:fallback,bio:'',friend_code:null};
-}
-
-// ---- render post card (own) ----
-function renderPostCard(p){
-  const card = document.createElement('article');
-  card.className = 'post-card';
-  const initial = esc((myProfile?.username||'?')[0]);
-  const badge = isOnTime(p.created_at, p.post_date) ? '<span class="on-time-badge">お題時刻</span>' : '';
-  card.innerHTML = `
-    <div class="post-head">
-      <div class="avatar" aria-hidden="true">${initial}</div>
-      <div><div class="post-user">${esc(myProfile?.username||'')}</div><div class="post-time">${fmtTime(p.created_at)}${badge}</div></div>
-    </div>
-    <div class="player">
-      <button class="play-btn" aria-label="再生する"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></button>
-      <div class="wave" aria-hidden="true"><div></div></div>
-      <span class="dur">${p.duration_sec ? p.duration_sec+'秒' : ''}</span>
-    </div>
-    <div class="speed-btns" role="group" aria-label="再生速度">
-      <button class="speed-btn${currentSpeed===0.75?' active':''}" data-speed="0.75">x0.75</button>
-      <button class="speed-btn${currentSpeed===1?' active':''}" data-speed="1">x1</button>
-      <button class="speed-btn${currentSpeed===1.5?' active':''}" data-speed="1.5">x1.5</button>
-    </div>
-    ${p.caption?`<p class="post-caption">${esc(p.caption)}</p>`:''}
-    <button class="post-del">この投稿を削除</button>`;
-  // play
-  const playBtn = card.querySelector('.play-btn');
-  let audio = null;
-  playBtn.addEventListener('click', async ()=>{
-    if(audio && !audio.paused){ audio.pause(); return; }
-    if(!audio){
-      const { data } = await sb.storage.from('voices').createSignedUrl(p.storage_path,300);
-      if(!data?.signedUrl){ showToast('再生できませんでした'); return; }
-      audio = new Audio(data.signedUrl);
-      audio.playbackRate = currentSpeed;
-      audio.onended = ()=>{ playBtn.innerHTML='<svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>'; playBtn.setAttribute('aria-label','再生する'); };
-    }
-    if(currentAudio && currentAudio !== audio) currentAudio.pause();
-    currentAudio = audio;
-    audio.play();
-    playBtn.innerHTML='<svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>';
-    playBtn.setAttribute('aria-label','一時停止');
-  });
-  // speed
-  card.querySelectorAll('.speed-btn').forEach(btn=>{
-    btn.addEventListener('click',()=>{
-      currentSpeed=parseFloat(btn.dataset.speed);
-      if(audio) audio.playbackRate=currentSpeed;
-      document.querySelectorAll('.speed-btn').forEach(b=>b.classList.toggle('active',parseFloat(b.dataset.speed)===currentSpeed));
-    });
-  });
-  // delete
-  card.querySelector('.post-del').addEventListener('click', async ()=>{
-    if(!confirm('この投稿を削除しますか？')) return;
-    await sb.from('posts').delete().eq('id',p.id);
-    await sb.storage.from('voices').remove([p.storage_path]);
-    showToast('削除しました');
-    loadFeed();
-  });
-  return card;
-}
-
-// ---- render friend post card ----
-function renderFriendPostCard(p) {
-  const card = document.createElement('article');
-  card.className = 'post-card';
-  const name = p._profile?.username || 'フレンド';
-  const bio = p._profile?.bio || '';
-  const initial = esc(name[0] || '?');
-  const badge = isOnTime(p.created_at, p.post_date) ? '<span class="on-time-badge">お題時刻</span>' : '';
-  const reacted = p._reacted || false;
-  const count = p._reactionCount || 0;
-  card.innerHTML = `
-    <div class="post-head">
-      <div class="avatar" aria-hidden="true">${initial}</div>
-      <div><div class="post-user">${esc(name)}</div>${bio ? `<div class="post-bio">${esc(bio)}</div>` : ''}<div class="post-time">${fmtTime(p.created_at)}${badge}</div></div>
-    </div>
-    <div class="player">
-      <button class="play-btn" aria-label="再生する"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></button>
-      <div class="wave" aria-hidden="true"><div></div></div>
-      <span class="dur">${p.duration_sec ? p.duration_sec+'秒' : ''}</span>
-    </div>
-    <div class="speed-btns" role="group" aria-label="再生速度">
-      <button class="speed-btn${currentSpeed===0.75?' active':''}" data-speed="0.75">x0.75</button>
-      <button class="speed-btn${currentSpeed===1?' active':''}" data-speed="1">x1</button>
-      <button class="speed-btn${currentSpeed===1.5?' active':''}" data-speed="1.5">x1.5</button>
-    </div>
-    ${p.caption?`<p class="post-caption">${esc(p.caption)}</p>`:''}
-    <div class="reaction-row">
-      <button class="reaction-btn${reacted?' reacted':''}" aria-pressed="${reacted}" aria-label="${reacted ? '「聴いたよ」を取り消す' : '「聴いたよ」と伝える'}">聴いたよ${count>0?`<span class="reaction-count">${count}</span>`:''}</button>
-    </div>`;
-  // play
-  const playBtn = card.querySelector('.play-btn');
-  let audio = null;
-  playBtn.addEventListener('click', async ()=>{
-    if(audio && !audio.paused){ audio.pause(); return; }
-    if(!audio){
-      const { data } = await sb.storage.from('voices').createSignedUrl(p.storage_path,300);
-      if(!data?.signedUrl){ showToast('再生できませんでした'); return; }
-      audio = new Audio(data.signedUrl);
-      audio.playbackRate = currentSpeed;
-      audio.onended = ()=>{ playBtn.innerHTML='<svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>'; playBtn.setAttribute('aria-label','再生する'); };
-    }
-    if(currentAudio && currentAudio !== audio) currentAudio.pause();
-    currentAudio = audio;
-    audio.play();
-    playBtn.innerHTML='<svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>';
-    playBtn.setAttribute('aria-label','一時停止');
-  });
-  // speed
-  card.querySelectorAll('.speed-btn').forEach(btn=>{
-    btn.addEventListener('click',()=>{
-      currentSpeed=parseFloat(btn.dataset.speed);
-      if(audio) audio.playbackRate=currentSpeed;
-      document.querySelectorAll('.speed-btn').forEach(b=>b.classList.toggle('active',parseFloat(b.dataset.speed)===currentSpeed));
-    });
-  });
-  // reaction
-  const rxBtn = card.querySelector('.reaction-btn');
-  rxBtn.addEventListener('click', async ()=>{
-    const nowReacted = rxBtn.classList.contains('reacted');
-    if(nowReacted){
-      await sb.from('reactions').delete().eq('post_id',p.id).eq('user_id',me.id);
-      p._reacted=false; p._reactionCount=Math.max(0,(p._reactionCount||1)-1);
-    } else {
-      await sb.from('reactions').upsert({post_id:p.id,user_id:me.id},{onConflict:'post_id,user_id'});
-      p._reacted=true; p._reactionCount=(p._reactionCount||0)+1;
-    }
-    const c=p._reactionCount;
-    rxBtn.className='reaction-btn'+(p._reacted?' reacted':'');
-    rxBtn.setAttribute('aria-pressed',String(p._reacted));
-    rxBtn.setAttribute('aria-label', p._reacted ? '「聴いたよ」を取り消す' : '「聴いたよ」と伝える');
-    rxBtn.innerHTML='聴いたよ'+(c>0?`<span class="reaction-count">${c}</span>`:'');
-  });
-  return card;
-}
-
-// ---- load feed ----
+// ---- feed ----
 async function loadFeed(){
-  const box=$('feedContent');
-  box.innerHTML=`<div class="skeleton"><div class="sk-line" style="width:40%"></div><div class="sk-line" style="width:100%;height:40px"></div></div>`.repeat(3);
-  try{
-    const today=todayJST();
-    const cm=dailyChallengeMins(today);
-    const [myResult, fsResult] = await Promise.all([
-      sb.from('posts').select('*').eq('user_id',me.id).order('created_at',{ascending:false}).limit(60),
-      sb.from('friendships').select('user_a, user_b')
-    ]);
-    if(myResult.error) throw myResult.error;
-    const myPosts = myResult.data||[];
-    const friendIds=(fsResult.data||[]).map(f=>f.user_a===me.id?f.user_b:f.user_a);
-    let friendFeedItems=[];
-    if(friendIds.length>0){
-      const [fpResult, profResult] = await Promise.all([
-        sb.from('posts').select('*').in('user_id',friendIds).eq('post_date',today).order('created_at',{ascending:false}),
-        sb.from('profiles').select('id, username, bio').in('id', friendIds)
-      ]);
-      const profileMap={};
-      (profResult.data||[]).forEach(p=>{ profileMap[p.id]=p; });
-      friendFeedItems=(fpResult.data||[]).map(p=>({...p,_profile:profileMap[p.user_id]||{username:'フレンド'}}));
-      if(friendFeedItems.length>0){
-        try{
-          const ids=friendFeedItems.map(p=>p.id);
-          const {data:rxData}=await sb.from('reactions').select('post_id, user_id').in('post_id',ids);
-          const myReacted=new Set((rxData||[]).filter(r=>r.user_id===me.id).map(r=>r.post_id));
-          const rxCounts={};
-          (rxData||[]).forEach(r=>{ rxCounts[r.post_id]=(rxCounts[r.post_id]||0)+1; });
-          friendFeedItems=friendFeedItems.map(p=>({...p,_reacted:myReacted.has(p.id),_reactionCount:rxCounts[p.id]||0}));
-        } catch{ /* reactionsテーブル未作成時はスキップ */ }
-      }
-    }
-    box.innerHTML='';
-    const banner=document.createElement('div');
-    banner.className='challenge-time-box';
-    banner.innerHTML=`<div><p class="ct-label">きょうのお題時刻</p><p class="ct-time">${fmtMins(cm)}</p></div><p style="font-size:.75rem;color:var(--muted);font-weight:700;text-align:right;line-height:1.7">この時刻から００分以内の<br>投稿にバッジが付きます</p>`;
-    box.appendChild(banner);
-    const streak = calcStreak(myPosts);
-    if (streak >= 3) {
-      const streakBanner = document.createElement('div');
-      streakBanner.className = 'streak-banner';
-      streakBanner.setAttribute('role', 'status');
-      streakBanner.setAttribute('aria-label', `${streak}日連続投稿中`);
-      streakBanner.innerHTML = `<div><div class="streak-count">${streak}日連続！</div><div class="streak-label">毎日続いています。この調子で！</div></div>`;
-      box.appendChild(streakBanner);
-    }
-    if(friendFeedItems.length>0){
-      const lbl=document.createElement('p');
-      lbl.className='day-label';
-      lbl.textContent='フレンドのきょうの声';
-      box.appendChild(lbl);
-      for(const p of friendFeedItems) box.appendChild(renderFriendPostCard(p));
-    } else if(friendIds.length>0){
-      const notice=document.createElement('p');
-      notice.style.cssText='font-size:.8rem;color:var(--muted);font-weight:700;text-align:center;padding:10px 0 2px;';
-      notice.textContent='フレンドはまだきょうの声を残していません';
-      box.appendChild(notice);
-    }
-    if(!myPosts.length){
-      const empty=document.createElement('div');
-      empty.className='empty';
-      empty.style.marginTop='16px';
-      empty.innerHTML='<b>まだ声がありません</b><p>下の録音ボタンから、きょうの声を残してみましょう。<br>1日1回、３０秒まで。加工なしのリアルな記録です。</p>';
-      box.appendChild(empty);
-      return;
-    }
-    let lastDate='';
-    for(const p of myPosts){
-      if(p.post_date!==lastDate){
-        lastDate=p.post_date;
-        const lbl=document.createElement('p');
-        lbl.className='day-label';
-        lbl.textContent=p.post_date===today?`きょう ${fmtDate(p.post_date)}`:fmtDate(p.post_date);
-        box.appendChild(lbl);
-      }
-      box.appendChild(renderPostCard(p));
-    }
-  } catch(e){
-    box.innerHTML=`<div class="retry-box"><p>${esc(netMsg(e))}</p><button class="retry-btn" id="feedRetry">もう一度読み込む</button></div>`;
-    $('feedRetry').onclick=loadFeed;
+  $('feedList').innerHTML='<p style="color:var(--muted);font-size:.85rem">読み込み中...</p>';
+  showTodayBadge();
+  showStreak();
+  const today=todayJST();
+  const targetMins=dailyMinutes();
+  // own post
+  const {data:mine}=await sb.from('posts').select('id,storage_path,duration_sec,caption,created_at,post_date').eq('user_id',me.id).eq('post_date',today).maybeSingle();
+  // friend posts
+  const {data:friendPosts}=await sb.from('friend_feed').select('*').eq('post_date',today).order('created_at',{ascending:false});
+  // my reactions
+  let myReactions=new Set();
+  if(friendPosts&&friendPosts.length){
+    const ids=friendPosts.map(p=>p.id);
+    const {data:rxs}=await sb.from('reactions').select('post_id').eq('user_id',me.id).in('post_id',ids);
+    if(rxs) rxs.forEach(r=>myReactions.add(r.post_id));
   }
-}
-
-// ---- load profile screen ----
-async function loadProfile(){
-  if(!myProfile) await ensureProfile();
-  const u=myProfile?.username||'';
-  $('profAvatar').textContent=(u[0]||'?').toUpperCase();
-  $('profName').textContent=u;
-  $('profCodeDisp').textContent=myProfile?.friend_code ? `フレンドコード: ${myProfile.friend_code}` : '';
-  $('profBioDisp').textContent=myProfile?.bio||'';
-  $('btnCopyInvite').style.display=myProfile?.friend_code?'':'none';
-  $('inPName').value=u;
-  $('inPBio').value=myProfile?.bio||'';
-  renderCalendar();
-  loadFriendList();
-}
-
-// ---- friend list ----
-async function loadFriendList(){
-  const box=$('friendList');
-  box.innerHTML='';
-  try{
-    const {data:fs}=await sb.from('friendships').select('user_a,user_b');
-    if(!fs||!fs.length){ box.innerHTML='<p style="font-size:.8rem;color:var(--muted);font-weight:600">まだフレンドがいません</p>'; return; }
-    const ids=fs.map(f=>f.user_a===me.id?f.user_b:f.user_a);
-    const {data:profs}=await sb.from('profiles').select('id,username').in('id',ids);
-    const nameMap={}; (profs||[]).forEach(p=>{nameMap[p.id]=p.username;});
-    ids.forEach(fid=>{
-      const item=document.createElement('div');
-      item.className='friend-item';
-      const name=nameMap[fid]||'フレンド';
-      item.innerHTML=`<span class="friend-item-name">${esc(name)}</span><button class="friend-remove-btn" data-id="${esc(fid)}">解除</button>`;
-      item.querySelector('.friend-remove-btn').addEventListener('click',async()=>{
-        try{
-          const {error}=await sb.rpc('remove_friend',{other_id:fid});
-          if(error) throw error;
-          showToast(`${name}さんとのフレンドを解除しました`);
-          loadFriendList();
-        } catch(e){ showToast('解除できませんでした: '+netMsg(e)); }
-      });
-      box.appendChild(item);
+  let html='';
+  if(friendPosts&&friendPosts.length){
+    html+='<p class="section-label">フレンドの声</p>';
+    friendPosts.forEach(p=>{
+      const postMins=(() =>{
+        const d=new Date(p.created_at);
+        const jst=new Date(d.toLocaleString('en-US',{timeZone:'Asia/Tokyo'}));
+        return jst.getHours()*60+jst.getMinutes();
+      })();
+      const onTime=Math.abs(postMins-targetMins)<=60;
+      const reacted=myReactions.has(p.id);
+      html+=`<div class="post-card" data-pid="${p.id}">
+        <div class="post-header">
+          <div class="avatar" aria-hidden="true">${esc(p.username?.[0]||'?')}</div>
+          <div>
+            <p class="post-name">${esc(p.username||'名無し')}</p>
+            <p class="post-time">${fmtDate(p.created_at)}</p>
+            ${p.bio?`<p class="post-bio">${esc(p.bio)}</p>`:''}
+          </div>
+          ${onTime?'<span class="on-time-badge" aria-label="お題時刻に投稿">時刻ぴったり</span>':''}
+        </div>
+        <div class="play-row">
+          <button class="play-btn" data-path="${p.storage_path}" data-dur="${p.duration_sec||0}" aria-label="${esc(p.username||'名無し')}の音声を再生">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
+          </button>
+          <div class="waveform" aria-hidden="true"><div class="waveform-progress" style="width:0%"></div></div>
+          <span class="duration-label">${p.duration_sec||0}s</span>
+          <button class="speed-btn" aria-label="再生速度" title="再生速度を変更">x1</button>
+        </div>
+        ${p.caption?`<p class="post-caption">${esc(p.caption)}</p>`:''}
+        <div class="reaction-row">
+          <button class="reaction-btn${reacted?' reacted':''}" data-pid="${p.id}" aria-label="聴いたよリアクション" aria-pressed="${reacted}">
+            ${reacted?'聴いたよ済み':'聴いたよ'}
+          </button>
+        </div>
+      </div>`;
     });
-  } catch(e){ box.innerHTML='<p style="font-size:.8rem;color:var(--muted);font-weight:600">読み込みエラー</p>'; }
-}
-
-// ---- calendar player ----
-function openCalPlayer(post, dateStr) {
-  if(calAudio){ calAudio.pause(); calAudio=null; }
-  $('calPlayerDate').textContent=fmtDate(dateStr);
-  $('calDur').textContent=post.duration_sec?post.duration_sec+'秒':'';
-  const capEl=$('calCaption');
-  if(post.caption){ capEl.textContent=post.caption; capEl.style.display=''; }
-  else { capEl.style.display='none'; }
-  const old=$('calPlayBtn');
-  const btn=old.cloneNode(true);
-  btn.innerHTML='<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>';
-  btn.setAttribute('aria-label','再生する');
-  old.parentNode.replaceChild(btn,old);
-  $('calPlayer').style.display='';
-  btn.addEventListener('click',async()=>{
-    if(calAudio&&!calAudio.paused){ calAudio.pause(); return; }
-    if(!calAudio){
-      const {data}=await sb.storage.from('voices').createSignedUrl(post.storage_path,300);
-      if(!data?.signedUrl){ showToast('再生できませんでした'); return; }
-      calAudio=new Audio(data.signedUrl);
-      calAudio.playbackRate=currentSpeed;
-      calAudio.onended=()=>{ btn.innerHTML='<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>'; btn.setAttribute('aria-label','再生する'); };
-    }
-    if(currentAudio&&currentAudio!==calAudio) currentAudio.pause();
-    currentAudio=calAudio;
-    calAudio.play();
-    btn.innerHTML='<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>';
-    btn.setAttribute('aria-label','一時停止');
-  });
-}
-
-// ---- calendar ----
-let calYear, calMonth;
-function renderCalendar(){
-  const wrap=$('calendarWrap');
-  if(!calYear){
-    const now=new Date();
-    calYear=now.getFullYear(); calMonth=now.getMonth()+1;
   }
-  wrap.innerHTML='';
-  const nav=document.createElement('div'); nav.className='cal-nav';
-  const prevBtn=document.createElement('button'); prevBtn.textContent='<'; prevBtn.setAttribute('aria-label','前の月');
-  const nextBtn=document.createElement('button'); nextBtn.textContent='>'; nextBtn.setAttribute('aria-label','次の月');
-  const label=document.createElement('span'); label.textContent=`${calYear}年${calMonth}月`;
-  nav.appendChild(prevBtn); nav.appendChild(label); nav.appendChild(nextBtn);
-  wrap.appendChild(nav);
-  prevBtn.addEventListener('click',()=>{
-    calMonth--; if(calMonth<1){calMonth=12;calYear--;}
-    if(calAudio){calAudio.pause();calAudio=null;}
-    $('calPlayer').style.display='none';
-    renderCalendar();
-  });
-  nextBtn.addEventListener('click',()=>{
-    calMonth++; if(calMonth>12){calMonth=1;calYear++;}
-    if(calAudio){calAudio.pause();calAudio=null;}
-    $('calPlayer').style.display='none';
-    renderCalendar();
-  });
-  const dows=['日','月','火','水','木','金','土'];
-  const grid=document.createElement('div'); grid.className='cal-grid';
-  dows.forEach(d=>{
-    const cell=document.createElement('div'); cell.className='cal-dow'; cell.textContent=d; grid.appendChild(cell);
-  });
-  const firstDay=new Date(calYear,calMonth-1,1).getDay();
-  const daysInMonth=new Date(calYear,calMonth,0).getDate();
-  const todayStr=todayJST();
-  const yearStr=String(calYear); const monthStr=String(calMonth).padStart(2,'0');
-  for(let i=0;i<firstDay;i++){
-    const cell=document.createElement('div'); cell.className='cal-cell'; grid.appendChild(cell);
+  html+='<p class="section-label">自分の声</p>';
+  if(mine){
+    const postMins=(() =>{
+      const d=new Date(mine.created_at);
+      const jst=new Date(d.toLocaleString('en-US',{timeZone:'Asia/Tokyo'}));
+      return jst.getHours()*60+jst.getMinutes();
+    })();
+    const onTime=Math.abs(postMins-targetMins)<=60;
+    html+=`<div class="post-card">
+      <div class="post-header">
+        <div class="avatar" aria-hidden="true">${esc(myProfile?.username?.[0]||'?')}</div>
+        <div>
+          <p class="post-name">${esc(myProfile?.username||'あなた')}</p>
+          <p class="post-time">${fmtDate(mine.created_at)}</p>
+        </div>
+        ${onTime?'<span class="on-time-badge" aria-label="お題時刻に投稿">時刻ぴったり</span>':''}
+      </div>
+      <div class="play-row">
+        <button class="play-btn" data-path="${mine.storage_path}" data-dur="${mine.duration_sec||0}" aria-label="自分の音声を再生">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
+        </button>
+        <div class="waveform" aria-hidden="true"><div class="waveform-progress" style="width:0%"></div></div>
+        <span class="duration-label">${mine.duration_sec||0}s</span>
+        <button class="speed-btn" aria-label="再生速度" title="再生速度を変更">x1</button>
+      </div>
+      ${mine.caption?`<p class="post-caption">${esc(mine.caption)}</p>`:''}
+    </div>`;
+  } else {
+    html+=`<div class="post-card" style="text-align:center;color:var(--muted);font-size:.9rem;padding:24px">
+      まだ今日の声を残していません<br><br>
+      <button class="btn btn-primary" style="width:auto;padding:12px 24px" onclick="document.getElementById('fabRec').click()">録音する</button>
+    </div>`;
   }
-  sb.from('posts').select('id,storage_path,duration_sec,caption,created_at,post_date').eq('user_id',me.id)
-    .gte('post_date',`${yearStr}-${monthStr}-01`)
-    .lte('post_date',`${yearStr}-${monthStr}-${String(daysInMonth).padStart(2,'0')}`)
-    .order('created_at',{ascending:false})
-    .then(({data})=>{
-      const postMap={};
-      (data||[]).forEach(p=>{ if(!postMap[p.post_date]) postMap[p.post_date]=p; });
-      for(let d=1;d<=daysInMonth;d++){
-        const cell=document.createElement('div'); cell.className='cal-cell';
-        const ds=`${yearStr}-${monthStr}-${String(d).padStart(2,'0')}`;
-        if(postMap[ds]){
-          cell.classList.add('posted');
-          cell.setAttribute('role','button');
-          cell.setAttribute('tabindex','0');
-          cell.setAttribute('aria-label',`${+calMonth}月${d}日の音声を再生`);
-          const post=postMap[ds];
-          const onTap=()=>openCalPlayer(post,ds);
-          cell.addEventListener('click',onTap);
-          cell.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' ')onTap();});
-        }
-        if(ds===todayStr) cell.classList.add('today');
-        cell.textContent=d;
-        grid.appendChild(cell);
-      }
-    });
-  wrap.appendChild(grid);
+  $('feedList').innerHTML=html;
+  // play buttons
+  $('feedList').querySelectorAll('.play-btn').forEach(btn=>{
+    btn.addEventListener('click',()=>playPost(btn));
+  });
+  // speed buttons
+  $('feedList').querySelectorAll('.speed-btn').forEach(btn=>{
+    btn.addEventListener('click',()=>cycleSpeed(btn));
+  });
+  // reaction buttons
+  $('feedList').querySelectorAll('.reaction-btn').forEach(btn=>{
+    btn.addEventListener('click',()=>toggleReaction(btn));
+  });
 }
 
-// ---- record ----
-let vizAnim, vizAnalyser, vizDataArr;
+let currentAudio=null, currentBtn=null, currentWave=null;
+function playPost(btn){
+  const path=btn.dataset.path;
+  const dur=parseInt(btn.dataset.dur)||30;
+  const card=btn.closest('.post-card');
+  const wave=card.querySelector('.waveform-progress');
+  const speedBtn=card.querySelector('.speed-btn');
+  const speed=parseFloat(speedBtn?.textContent?.replace('x','')||'1');
+  if(currentAudio){
+    currentAudio.pause(); currentAudio=null;
+    if(currentBtn)currentBtn.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>';
+    if(currentWave)currentWave.style.width='0%';
+    if(currentBtn===btn){currentBtn=null;currentWave=null;return;}
+  }
+  sb.storage.from('voice-posts').createSignedUrl(path,60).then(({data})=>{
+    if(!data?.signedUrl) return;
+    const audio=new Audio(data.signedUrl);
+    audio.playbackRate=speed;
+    currentAudio=audio; currentBtn=btn; currentWave=wave;
+    btn.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>';
+    audio.play();
+    const interval=setInterval(()=>{
+      if(!audio.paused) wave.style.width=(audio.currentTime/dur*100)+'%';
+    },100);
+    audio.onended=()=>{
+      clearInterval(interval); wave.style.width='0%';
+      btn.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>';
+      currentAudio=null; currentBtn=null; currentWave=null;
+    };
+  });
+}
+
+function cycleSpeed(btn){
+  const speeds=[0.75,1,1.5];
+  const cur=parseFloat(btn.textContent.replace('x',''))||1;
+  const next=speeds[(speeds.indexOf(cur)+1)%speeds.length];
+  btn.textContent='x'+next;
+  const card=btn.closest('.post-card');
+  const playBtn=card.querySelector('.play-btn');
+  if(currentBtn===playBtn && currentAudio) currentAudio.playbackRate=next;
+}
+
+async function toggleReaction(btn){
+  const pid=btn.dataset.pid;
+  const reacted=btn.classList.contains('reacted');
+  if(reacted){
+    await sb.from('reactions').delete().eq('user_id',me.id).eq('post_id',pid);
+    btn.classList.remove('reacted'); btn.textContent='聴いたよ'; btn.setAttribute('aria-pressed','false');
+  } else {
+    const {error}=await sb.from('reactions').insert({user_id:me.id,post_id:pid});
+    if(!error){ btn.classList.add('reacted'); btn.textContent='聴いたよ済み'; btn.setAttribute('aria-pressed','true'); }
+    else if(error.code==='23505'){ btn.classList.add('reacted'); btn.textContent='聴いたよ済み'; btn.setAttribute('aria-pressed','true'); }
+    else showToast('エラー: '+error.message);
+  }
+}
+
+// ---- visualizer ----
 function startViz(stream){
   const ctx=new AudioContext();
   const src=ctx.createMediaStreamSource(stream);
-  vizAnalyser=ctx.createAnalyser(); vizAnalyser.fftSize=64;
-  src.connect(vizAnalyser);
-  vizDataArr=new Uint8Array(vizAnalyser.frequencyBinCount);
+  const analyser=ctx.createAnalyser();
+  analyser.fftSize=64; src.connect(analyser);
+  vizAnalyser=analyser;
   const canvas=$('vizCanvas');
-  const c=canvas.getContext('2d');
+  const cctx=canvas.getContext('2d');
+  canvas.width=canvas.offsetWidth*2; canvas.height=canvas.offsetHeight*2;
+  const buf=new Uint8Array(analyser.frequencyBinCount);
   function draw(){
-    vizAnim=requestAnimationFrame(draw);
-    vizAnalyser.getByteFrequencyData(vizDataArr);
-    c.clearRect(0,0,canvas.width,canvas.height);
-    const bw=canvas.width/vizDataArr.length;
-    vizDataArr.forEach((v,i)=>{
-      const h=(v/255)*canvas.height;
-      c.fillStyle=`rgba(232,255,90,${0.4+0.6*(v/255)})`;
-      c.fillRect(i*bw,(canvas.height-h),bw-1,h);
+    vizAf=requestAnimationFrame(draw);
+    analyser.getByteFrequencyData(buf);
+    cctx.clearRect(0,0,canvas.width,canvas.height);
+    const barW=canvas.width/buf.length;
+    buf.forEach((v,i)=>{
+      const h=v/255*canvas.height;
+      cctx.fillStyle='#e8ff5a';
+      cctx.fillRect(i*barW,canvas.height-h,barW-1,h);
     });
   }
   draw();
 }
-function stopViz(){ if(vizAnim) cancelAnimationFrame(vizAnim); }
+function stopViz(){ if(vizAf){cancelAnimationFrame(vizAf);vizAf=null;} vizAnalyser=null; }
 
+// ---- recording ----
 async function startRecording(){
+  audioChunks=[];
   try{
     const stream=await navigator.mediaDevices.getUserMedia({audio:true});
     mediaRecorder=new MediaRecorder(stream);
-    audioChunks=[];
     mediaRecorder.ondataavailable=e=>audioChunks.push(e.data);
     mediaRecorder.start();
     startViz(stream);
@@ -815,7 +536,7 @@ async function startRecording(){
     $('recTimer').textContent='00:00';
     $('recBarFill').style.width='0%';
     $('recProgress').setAttribute('aria-valuenow','0');
-    $('inCaption').value='';
+    $('inCaption').value=''; $('captionCounter').textContent='0/50';
     $('recModal').classList.add('open');
     recInterval=setInterval(()=>{
       recSeconds++;
@@ -835,24 +556,37 @@ async function stopRecording(){
   clearInterval(recInterval);
   stopViz();
   if(!mediaRecorder||mediaRecorder.state==='inactive') return;
-  const dur=recSeconds;
-  mediaRecorder.stop();
-  mediaRecorder.stream.getTracks().forEach(t=>t.stop());
-  await new Promise(r=>mediaRecorder.onstop=r);
-  previewBlob=new Blob(audioChunks,{type:'audio/webm'});
-  previewDur=dur;
-  previewAudio=null;
-  $('recTimer').style.display='none';
-  $('vizCanvas').style.display='none';
-  $('recProgress').style.display='none';
-  $('btnStopRec').style.display='none';
-  $('btnCancelRec').style.display='none';
-  $('recPreview').classList.add('show');
+  return new Promise(res=>{
+    mediaRecorder.onstop=async()=>{
+      mediaRecorder.stream.getTracks().forEach(t=>t.stop());
+      previewBlob=new Blob(audioChunks,{type:'audio/webm'});
+      previewDur=recSeconds;
+      // show preview UI
+      $('recTimer').style.display='none';
+      $('vizCanvas').style.display='none';
+      $('recProgress').style.display='none';
+      $('btnStopRec').style.display='none';
+      $('btnCancelRec').style.display='none';
+      $('recPreview').classList.add('show');
+      res();
+    };
+    mediaRecorder.stop();
+  });
 }
 
 async function uploadAndPost(){
-  if(!previewBlob) return;
-  if(previewAudio){ previewAudio.pause(); previewAudio=null; }
+  if(!previewBlob){ showToast('録音データがありません'); return; }
+  const dur=previewDur;
+  const today=todayJST();
+  const caption=($('inCaption').value||'').trim();
+  showToast('アップロード中...',10000);
+  const path=`${me.id}/${Date.now()}.webm`;
+  const {error:upErr}=await sb.storage.from('voice-posts').upload(path,previewBlob,{contentType:'audio/webm'});
+  if(upErr){ showToast('アップロード失敗: '+upErr.message); return; }
+  const {error:dbErr}=await sb.from('posts').insert({user_id:me.id,storage_path:path,duration_sec:dur,post_date:today,caption:caption||null});
+  if(dbErr){ showToast('投稿失敗: '+dbErr.message); return; }
+  showToast('投稿しました');
+  previewBlob=null;
   $('recPreview').classList.remove('show');
   $('recTimer').style.display='';
   $('vizCanvas').style.display='';
@@ -860,163 +594,261 @@ async function uploadAndPost(){
   $('btnStopRec').style.display='';
   $('btnCancelRec').style.display='';
   $('btnPreviewPlay').textContent='再生して確認';
+  $('inCaption').value=''; $('captionCounter').textContent='0/50';
   $('recModal').classList.remove('open');
-  const dur=previewDur;
-  const today=todayJST();
-  const caption=($('inCaption').value||'').trim();
-  showToast('アップロード中...',10000);
-  const path=`${me.id}/${Date.now()}.webm`;
-  const {error:upErr}=await sb.storage.from('voices').upload(path,previewBlob,{contentType:'audio/webm'});
-  if(upErr){ showToast('アップロード失敗: '+upErr.message); return; }
-  const {error:dbErr}=await sb.from('posts').insert({user_id:me.id,storage_path:path,duration_sec:dur,post_date:today,caption:caption||null});
-  if(dbErr){
-    await sb.storage.from('voices').remove([path]);
-    showToast('投稿失敗: '+dbErr.message); return;
-  }
-  showToast('投稿しました');
-  previewBlob=null;
   loadFeed();
 }
 
-// ---- push notification ----
-async function subscribePush(){
-  if(!('serviceWorker' in navigator)||!('PushManager' in window)){
-    showToast('このブラウザは通知に対応していません'); return;
+// ---- profile ----
+async function loadProfile(){
+  $('profName').textContent=myProfile?.username||'';
+  $('profAvatar').textContent=myProfile?.username?.[0]||'?';
+  $('profCode').textContent=myProfile?.friend_code?'フレンドコード: '+myProfile.friend_code:'';
+  $('profBio').textContent=myProfile?.bio||'';
+  $('inPName').value=myProfile?.username||'';
+  $('inPBio').value=myProfile?.bio||'';
+  $('myFriendCode').textContent=myProfile?.friend_code||'';
+  const {data:posts}=await sb.from('posts').select('id,storage_path,duration_sec,caption,created_at,post_date').eq('user_id',me.id);
+  renderCalendar(posts||[]);
+  loadFriends(posts||[]);
+}
+
+// ---- calendar ----
+function renderCalendar(posts){
+  calPostDates=posts;
+  const yr=calYear, mo=calMonth;
+  $('calTitle').textContent=`${yr}年${mo}月`;
+  const firstDay=new Date(yr,mo-1,1).getDay();
+  const daysInMonth=new Date(yr,mo,0).getDate();
+  const postedSet=new Set(posts.filter(p=>{
+    const d=p.post_date||p.created_at?.slice(0,10);
+    return d&&d.startsWith(`${yr}-${String(mo).padStart(2,'0')}`);
+  }).map(p=>parseInt((p.post_date||p.created_at?.slice(0,10)).slice(8,10))));
+  let html='';
+  ['日','月','火','水','木','金','土'].forEach(d=>{ html+=`<div class="cal-day" style="color:var(--muted);font-size:.65rem">${d}</div>`; });
+  for(let i=0;i<firstDay;i++) html+='<div class="cal-day empty"></div>';
+  for(let d=1;d<=daysInMonth;d++){
+    if(postedSet.has(d)){
+      html+=`<div class="cal-day posted" data-day="${d}" role="button" tabindex="0" aria-label="${mo}月${d}日 録音あり">${d}</div>`;
+    } else {
+      html+=`<div class="cal-day">${d}</div>`;
+    }
   }
-  const reg=await navigator.serviceWorker.ready;
+  $('calGrid').innerHTML=html;
+  $('calCaption').style.display='none';
+  $('calGrid').querySelectorAll('.cal-day.posted').forEach(el=>{
+    el.addEventListener('click',()=>playCalDay(parseInt(el.dataset.day)));
+    el.addEventListener('keydown',e=>{ if(e.key==='Enter'||e.key===' ') playCalDay(parseInt(el.dataset.day)); });
+  });
+}
+
+async function playCalDay(day){
+  const yr=calYear, mo=calMonth;
+  const dateStr=`${yr}-${String(mo).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+  const post=calPostDates.find(p=>(p.post_date||p.created_at?.slice(0,10))===dateStr);
+  if(!post) return;
+  const capEl=$('calCaption');
+  if(post.caption){ capEl.textContent=post.caption; capEl.style.display=''; }
+  else { capEl.style.display='none'; }
+  const {data}=await sb.storage.from('voice-posts').createSignedUrl(post.storage_path,60);
+  if(!data?.signedUrl){ showToast('再生できませんでした'); return; }
+  if(currentAudio){ currentAudio.pause(); currentAudio=null; }
+  const audio=new Audio(data.signedUrl);
+  currentAudio=audio;
+  audio.play();
+  showToast(`${mo}月${day}日の声を再生中`);
+  audio.onended=()=>{ currentAudio=null; };
+}
+
+// ---- friends ----
+async function loadFriends(posts){
+  const {data:friends}=await sb.from('friendships').select('friend_id, profiles!friendships_friend_id_fkey(username,friend_code)').eq('user_id',me.id);
+  const todayStr=todayJST();
+  if(!friends||!friends.length){
+    $('friendList').innerHTML='<p style="color:var(--muted);font-size:.85rem">まだフレンドがいません</p>';
+    return;
+  }
+  let html='';
+  friends.forEach(f=>{
+    const name=f.profiles?.username||'名無し';
+    const code=f.profiles?.friend_code||'';
+    html+=`<div class="friend-card">
+      <div class="friend-info">
+        <div class="avatar" aria-hidden="true">${esc(name[0]||'?')}</div>
+        <div>
+          <p class="friend-name">${esc(name)}</p>
+          <p style="font-size:.7rem;color:var(--muted)">${esc(code)}</p>
+        </div>
+      </div>
+      <button class="btn btn-ghost" style="width:auto;padding:6px 12px;font-size:.78rem" data-fid="${f.friend_id}" aria-label="${esc(name)}をフレンド解除">解除</button>
+    </div>`;
+  });
+  $('friendList').innerHTML=html;
+  $('friendList').querySelectorAll('.btn-ghost[data-fid]').forEach(btn=>{
+    btn.addEventListener('click',()=>removeFriend(btn.dataset.fid));
+  });
+}
+
+async function removeFriend(fid){
+  const {error}=await sb.rpc('remove_friend',{target_id:fid});
+  if(error){ showToast('解除失敗: '+error.message); return; }
+  showToast('フレンドを解除しました');
+  loadProfile();
+}
+
+async function addFriend(){
+  const code=($('inFriendCode').value||'').trim().toUpperCase();
+  if(!code){ showToast('フレンドコードを入力してください'); return; }
+  if(code===myProfile?.friend_code){ showToast('自分のコードは使えません'); return; }
+  const {data:target}=await sb.from('profiles').select('id').eq('friend_code',code).maybeSingle();
+  if(!target){ showToast('見つかりませんでした'); return; }
+  const {error}=await sb.rpc('add_friend',{target_id:target.id});
+  if(error){ showToast('追加失敗: '+error.message); return; }
+  showToast('フレンドになりました');
+  $('inFriendCode').value='';
+  loadProfile();
+}
+
+// ---- push notifications ----
+async function subscribePush(){
+  if(!('serviceWorker' in navigator&&'PushManager' in window)){
+    showToast('このブラウザはプッシュ通知に対応していません'); return;
+  }
   const perm=await Notification.requestPermission();
   if(perm!=='granted'){ showToast('通知が許可されませんでした'); return; }
-  const VAPID_PUBLIC='BCMCpJxqXnqIGZqQqxHYmGHBEEWEKK-APnBRygdXl-h1SgMRmv-6tFRCbMgFG5yAPilG3bDjUj1XTtTXMBHBXaA';
+  const reg=await navigator.serviceWorker.ready;
+  const VAPID_PUBLIC='BNmIe8LqSJb2Qp0Y73xR_FxpQY6LCN-d-LUG7YRSB7jQ-2FE8VcT0s9GtnOEjrj1OBpd3cZfgqLxmS4OlE5DzA';
   let sub=await reg.pushManager.getSubscription();
   if(!sub){
     sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:VAPID_PUBLIC});
   }
-  const {error}=await sb.from('subscriptions').upsert({user_id:me.id,endpoint:sub.endpoint,p256dh:btoa(String.fromCharCode(...new Uint8Array(sub.getKey('p256dh')))),auth:btoa(String.fromCharCode(...new Uint8Array(sub.getKey('auth'))))},{onConflict:'user_id'});
-  if(error){ showToast('通知登録エラー: '+error.message); return; }
-  showToast('通知を登録しました');
+  const subJson=sub.toJSON();
+  const {error}=await sb.from('subscriptions').upsert({user_id:me.id,endpoint:subJson.endpoint,p256dh:subJson.keys.p256dh,auth:subJson.keys.auth},{onConflict:'endpoint'});
+  if(error){ showToast('通知登録失敗: '+error.message); return; }
+  showToast('通知をオンにしました');
+  $('btnPushSub').textContent='通知オン済み';
+  $('btnPushSub').disabled=true;
 }
 
 // ---- onboarding ----
-function detectOS(){ const ua=navigator.userAgent; if(/android/i.test(ua)) return 'android'; if(/ipad|iphone|ipod/i.test(ua)) return 'ios'; return 'other'; }
 function showOnboarding(){
-  const os=detectOS();
-  if(os==='android'){
-    $('obStep1Title').textContent='メニューボタンをタップ';
-    $('obStep1Desc').textContent='ブラウザ右上の3点メニュー(...)をタップします';
-  }
+  const isIOS=/iphone|ipad|ipod/i.test(navigator.userAgent);
+  const steps=isIOS?[
+    {num:'1',text:'Safariの下部「共有」ボタンをタップ'},
+    {num:'2',text:'「ホーム画面に追加」を選択してアイコンを追加'},
+    {num:'3',text:'ホーム画面のアイコンからアプリを開き、通知を許可'},
+  ]:[
+    {num:'1',text:'ブラウザのメニュー(三点リーダー)をタップ'},
+    {num:'2',text:'「ホーム画面に追加」または「アプリをインストール」を選択'},
+    {num:'3',text:'ホーム画面のアイコンからアプリを開き、通知を許可'},
+  ];
+  $('onboardSteps').innerHTML=steps.map(s=>`<div class="onboard-step"><div class="onboard-step-num">${s.num}</div><div class="onboard-step-text">${s.text}</div></div>`).join('');
   showScreen('screenOnboard');
 }
-function onboardingDone(){ localStorage.setItem('onboarded','1'); showScreen('screenFeed'); loadFeed(); }
 
-// ---- add friend ----
-async function addFriend(){
-  const code=($('inFriendCode').value||'').trim().toUpperCase();
-  if(!code){ showToast('フレンドコードを入力してください'); return; }
-  const {data:target,error:e1}=await sb.from('profiles').select('id').eq('friend_code',code).maybeSingle();
-  if(e1||!target){ showToast('そのコードのユーザーが見つかりませんでした'); return; }
-  if(target.id===me.id){ showToast('自分のコードは追加できません'); return; }
-  const {error:e2}=await sb.from('friendships').upsert({user_a:me.id,user_b:target.id},{onConflict:'user_a,user_b'});
-  if(e2){ showToast('追加に失敗しました: '+e2.message); return; }
-  await sb.from('friendships').upsert({user_a:target.id,user_b:me.id},{onConflict:'user_a,user_b'});
-  $('inFriendCode').value='';
-  showToast('フレンドを追加しました');
-  loadFriendList();
+// ---- auth ----
+async function init(){
+  // handle password reset flow
+  const hash=window.location.hash;
+  if(hash.includes('type=recovery')){
+    showScreen('screenReset');
+    return;
+  }
+  const {data:{session}}=await sb.auth.getSession();
+  if(session){ me=session.user; await afterLogin(); }
+  else showScreen('screenAuth');
 }
 
-// ---- password reset ----
-function showPasswordReset(){
-  showScreen('screenReset');
-  $('inResetEmail').style.display='';
-  $('btnResetSend').style.display='';
-  $('inNewPw').style.display='none';
-  $('btnSetNewPw').style.display='none';
-  $('resetDesc').textContent='登録したメールアドレスを入力してください。再設定用のリンクをお送りします。';
+async function afterLogin(){
+  const {data:prof}=await sb.from('profiles').select('*').eq('id',me.id).maybeSingle();
+  myProfile=prof;
+  if(!prof||!prof.onboarded){
+    showOnboarding();
+  } else {
+    showScreen('screenFeed');
+    loadFeed();
+  }
 }
 
-// ---- wire up events ----
-document.addEventListener('DOMContentLoaded', ()=>{
-  // auth tabs
+// ---- event listeners ----
+window.addEventListener('load',()=>{
+  init();
+  // tab switch
   $('tabLogin').addEventListener('click',()=>{
-    $('tabLogin').classList.add('active'); $('tabLogin').setAttribute('aria-selected','true');
-    $('tabSignup').classList.remove('active'); $('tabSignup').setAttribute('aria-selected','false');
-    $('panelLogin').classList.add('active'); $('panelSignup').classList.remove('active');
+    $('tabLogin').classList.add('active'); $('tabSignup').classList.remove('active');
+    $('tabLogin').setAttribute('aria-selected','true'); $('tabSignup').setAttribute('aria-selected','false');
+    $('panelLogin').hidden=false; $('panelSignup').hidden=true;
   });
   $('tabSignup').addEventListener('click',()=>{
-    $('tabSignup').classList.add('active'); $('tabSignup').setAttribute('aria-selected','true');
-    $('tabLogin').classList.remove('active'); $('tabLogin').setAttribute('aria-selected','false');
-    $('panelSignup').classList.add('active'); $('panelLogin').classList.remove('active');
+    $('tabSignup').classList.add('active'); $('tabLogin').classList.remove('active');
+    $('tabSignup').setAttribute('aria-selected','true'); $('tabLogin').setAttribute('aria-selected','false');
+    $('panelSignup').hidden=false; $('panelLogin').hidden=true;
   });
   // login
   $('btnLogin').addEventListener('click', async ()=>{
-    const email=$('inLoginEmail').value.trim();
-    const pw=$('inLoginPw').value;
-    if(!email||!pw){ showToast('メールとパスワードを入力してください'); return; }
-    const {error}=await sb.auth.signInWithPassword({email,password:pw});
+    const email=$('inEmail').value.trim(), pass=$('inPass').value;
+    if(!email||!pass){ showToast('メールアドレスとパスワードを入力してください'); return; }
+    const {error}=await sb.auth.signInWithPassword({email,password:pass});
     if(error){ showToast('ログイン失敗: '+error.message); return; }
+    const {data:{session}}=await sb.auth.getSession();
+    me=session.user; await afterLogin();
+  });
+  // forgot password
+  $('btnForgotPw').addEventListener('click', async ()=>{
+    const email=$('inEmail').value.trim();
+    if(!email){ showToast('メールアドレスを入力してください'); return; }
+    const {error}=await sb.auth.resetPasswordForEmail(email,{redirectTo:window.location.origin+'/'});
+    if(error){ showToast('送信失敗: '+error.message); return; }
+    showToast('パスワード再設定メールを送信しました');
+  });
+  // password reset submit
+  $('btnSetNewPass').addEventListener('click', async ()=>{
+    const newPass=$('inNewPass').value;
+    if(!newPass||newPass.length<6){ showToast('6文字以上のパスワードを入力してください'); return; }
+    const {error}=await sb.auth.updateUser({password:newPass});
+    if(error){ showToast('更新失敗: '+error.message); return; }
+    showToast('パスワードを更新しました。ログインしてください');
+    window.location.hash='';
+    showScreen('screenAuth');
   });
   // signup
   $('btnSignup').addEventListener('click', async ()=>{
-    const email=$('inSignupEmail').value.trim();
-    const pw=$('inSignupPw').value;
-    if(!email||!pw){ showToast('メールとパスワードを入力してください'); return; }
-    const {error}=await sb.auth.signUp({email,password:pw});
+    const name=($('inName').value||'').trim().slice(0,20);
+    const email=$('inEmail2').value.trim();
+    const pass=$('inPass2').value;
+    if(!name||!email||!pass){ showToast('すべての項目を入力してください'); return; }
+    if(pass.length<6){ showToast('パスワードは6文字以上にしてください'); return; }
+    const {data,error}=await sb.auth.signUp({email,password:pass,options:{data:{username:name}}});
     if(error){ showToast('登録失敗: '+error.message); return; }
-    showToast('確認メールを送りました。メールを確認してください。',5000);
+    me=data.user;
+    const {error:pErr}=await sb.from('profiles').upsert({id:me.id,username:name},{onConflict:'id'});
+    if(pErr) showToast('プロフィール設定失敗: '+pErr.message);
+    const {data:prof}=await sb.from('profiles').select('*').eq('id',me.id).maybeSingle();
+    myProfile=prof;
+    showOnboarding();
   });
-  // forgot password
-  $('forgotLink').addEventListener('click', showPasswordReset);
-  $('forgotLink').addEventListener('keydown', e=>{ if(e.key==='Enter'||e.key===' ') showPasswordReset(); });
-  // reset send
-  $('btnResetSend').addEventListener('click', async ()=>{
-    const email=$('inResetEmail').value.trim();
-    if(!email){ showToast('メールアドレスを入力してください'); return; }
-    const {error}=await sb.auth.resetPasswordForEmail(email,{redirectTo:window.location.origin+'/'});
-    if(error){ showToast('エラー: '+error.message); return; }
-    showToast('再設定メールを送りました',4000);
-    $('btnResetSend').disabled=true;
-  });
-  // set new password
-  $('btnSetNewPw').addEventListener('click', async ()=>{
-    const pw=$('inNewPw').value;
-    if(!pw||pw.length<8){ showToast('8文字以上のパスワードを入力してください'); return; }
-    const {error}=await sb.auth.updateUser({password:pw});
-    if(error){ showToast('変更失敗: '+error.message); return; }
-    showToast('パスワードを変更しました');
+  // onboarding
+  $('btnOnboardDone').addEventListener('click', async ()=>{
+    if(me) await sb.from('profiles').update({onboarded:true}).eq('id',me.id);
     showScreen('screenFeed'); loadFeed();
   });
-  // reset back
-  $('btnResetBack').addEventListener('click',()=>showScreen('screenAuth'));
-  // onboarding
-  $('btnOnboardDone').addEventListener('click', onboardingDone);
-  $('btnOnboardSkip').addEventListener('click', onboardingDone);
+  $('btnOnboardSkip').addEventListener('click', async ()=>{
+    if(me) await sb.from('profiles').update({onboarded:true}).eq('id',me.id);
+    showScreen('screenFeed'); loadFeed();
+  });
   // nav
   $('navFeed').addEventListener('click',()=>{
-    $('navFeed').classList.add('active'); $('navFeed').setAttribute('aria-current','page');
-    $('navProfile').classList.remove('active'); $('navProfile').removeAttribute('aria-current');
+    $('navFeed').classList.add('active'); $('navProfile').classList.remove('active');
+    $('navFeed').setAttribute('aria-current','page'); $('navProfile').removeAttribute('aria-current');
     showScreen('screenFeed'); loadFeed();
   });
   $('navProfile').addEventListener('click',()=>{
-    $('navProfile').classList.add('active'); $('navProfile').setAttribute('aria-current','page');
-    $('navFeed').classList.remove('active'); $('navFeed').removeAttribute('aria-current');
+    $('navProfile').classList.add('active'); $('navFeed').classList.remove('active');
+    $('navProfile').setAttribute('aria-current','page'); $('navFeed').removeAttribute('aria-current');
     showScreen('screenProfile'); loadProfile();
   });
   // fab
-  $('fabRecord').addEventListener('click',()=>{
-    if(mediaRecorder&&mediaRecorder.state==='recording'){ stopRecording(); return; }
-    startRecording();
-  });
-  $('btnPreviewPlay').addEventListener('click', ()=>{
-    if(!previewBlob) return;
-    if(previewAudio && !previewAudio.paused){ previewAudio.pause(); $('btnPreviewPlay').textContent='再生して確認'; return; }
-    if(!previewAudio){
-      const url=URL.createObjectURL(previewBlob);
-      previewAudio=new Audio(url);
-      previewAudio.playbackRate=currentSpeed;
-      previewAudio.onended=()=>{ $('btnPreviewPlay').textContent='再生して確認'; };
-    }
-    previewAudio.play();
-    $('btnPreviewPlay').textContent='一時停止';
-  });
+  $('fabRec').addEventListener('click', startRecording);
   $('btnPostConfirm').addEventListener('click', uploadAndPost);
   $('btnReRecord').addEventListener('click', ()=>{
     if(previewAudio){ previewAudio.pause(); previewAudio=null; }
@@ -1028,16 +860,53 @@ document.addEventListener('DOMContentLoaded', ()=>{
     $('btnStopRec').style.display='';
     $('btnCancelRec').style.display='';
     $('btnPreviewPlay').textContent='再生して確認';
-    $('inCaption').value='';
+    $('inCaption').value=''; $('captionCounter').textContent='0/50';
     $('recModal').classList.remove('open');
   });
   $('btnStopRec').addEventListener('click', stopRecording);
+  $('inCaption').addEventListener('input',()=>{
+    const len=$('inCaption').value.length;
+    $('captionCounter').textContent=len+'/50';
+  });
   $('btnCancelRec').addEventListener('click',()=>{
     clearInterval(recInterval); stopViz();
     if(mediaRecorder&&mediaRecorder.state!=='inactive'){
       mediaRecorder.stop(); mediaRecorder.stream.getTracks().forEach(t=>t.stop());
     }
     $('recModal').classList.remove('open');
+    $('inCaption').value='';
+    $('captionCounter').textContent='0/50';
+    previewBlob=null;
+    $('recPreview').classList.remove('show');
+    $('recTimer').style.display='';
+    $('vizCanvas').style.display='';
+    $('recProgress').style.display='';
+    $('btnStopRec').style.display='';
+    $('btnCancelRec').style.display='';
+    $('btnPreviewPlay').textContent='再生して確認';
+  });
+  // preview play
+  $('btnPreviewPlay').addEventListener('click',()=>{
+    if(!previewBlob){ showToast('録音データがありません'); return; }
+    if(previewAudio){
+      previewAudio.pause(); previewAudio=null;
+      $('btnPreviewPlay').textContent='再生して確認';
+      return;
+    }
+    const url=URL.createObjectURL(previewBlob);
+    previewAudio=new Audio(url);
+    previewAudio.play();
+    $('btnPreviewPlay').textContent='停止';
+    previewAudio.onended=()=>{ previewAudio=null; $('btnPreviewPlay').textContent='再生して確認'; };
+  });
+  // calendar nav
+  $('calPrev').addEventListener('click',()=>{
+    calMonth--; if(calMonth<1){calMonth=12;calYear--;}
+    renderCalendar(calPostDates);
+  });
+  $('calNext').addEventListener('click',()=>{
+    calMonth++; if(calMonth>12){calMonth=1;calYear++;}
+    renderCalendar(calPostDates);
   });
   // profile save
   $('btnSaveProfile').addEventListener('click', async ()=>{
@@ -1068,77 +937,18 @@ document.addEventListener('DOMContentLoaded', ()=>{
   $('btnLogout').addEventListener('click', async ()=>{
     await sb.auth.signOut(); me=null; myProfile=null;
     showScreen('screenAuth');
-    $('nav').classList.remove('visible');
-    $('fabRecord').classList.remove('visible');
   });
-});
-
-// ---- auth listener ----
-let appReady=false;
-const authTimeout=setTimeout(()=>{
-  if(!appReady){
-    showScreen('screenAuth');
-    $('nav').classList.remove('visible');
-    $('fabRecord').classList.remove('visible');
-    showToast('読み込みに時間がかかっています。ページを再読み込みしてください。',8000);
-  }
-},8000);
-
-sb.auth.onAuthStateChange(async(event,session)=>{
-  appReady=true;
-  clearTimeout(authTimeout);
-  if(event==='PASSWORD_RECOVERY'){
-    me=session.user;
-    showScreen('screenReset');
-    $('resetDesc').textContent='新しいパスワードを入力してください。';
-    $('inResetEmail').style.display='none';
-    $('btnResetSend').style.display='none';
-    $('inNewPw').style.display='';
-    $('btnSetNewPw').style.display='';
-    return;
-  }
-  if(session?.user){
-    me=session.user;
-    await ensureProfile();
-    if(event==='SIGNED_IN'&&!localStorage.getItem('onboarded')){
-      showOnboarding();
-    } else {
-      showScreen('screenFeed');
-      loadFeed();
+  // auth state change
+  sb.auth.onAuthStateChange(async (event,session)=>{
+    if(event==='PASSWORD_RECOVERY'){
+      showScreen('screenReset');
     }
-  } else {
-    me=null; myProfile=null;
-    showScreen('screenAuth');
-    $('nav').classList.remove('visible');
-    $('fabRecord').classList.remove('visible');
-  }
+  });
 });
 
 if('serviceWorker' in navigator){
   navigator.serviceWorker.register('/sw.js').catch(()=>{});
 }
-
-// register keyboard for auth submit
-document.addEventListener('keydown', e=>{
-  if(e.key!=='Enter') return;
-  if($('screenAuth').classList.contains('active')){
-    if($('panelLogin').classList.contains('active')) $('btnLogin').click();
-    else $('btnSignup').click();
-  }
-  if($('screenReset').classList.contains('active')){
-    if($('btnResetSend').style.display!=='none') $('btnResetSend').click();
-    else $('btnSetNewPw').click();
-  }
-});
-
-// ---- init push state ----
-(async()=>{
-  if(!('serviceWorker' in navigator)||!('PushManager' in window)) return;
-  const reg=await navigator.serviceWorker.ready.catch(()=>null);
-  if(!reg) return;
-  const sub=await reg.pushManager.getSubscription().catch(()=>null);
-  if(sub) $('btnPushSub').textContent='通知はオン';
-})();
 </script>
 </body>
 </html>
