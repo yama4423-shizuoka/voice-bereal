@@ -220,6 +220,8 @@
     </div>
     <p class="section-label">フレンド一覧</p>
     <div id="friendList"></div>
+    <p class="section-label">最近のリアクション</p>
+    <div id="reactionNotifs"></div>
     <p class="section-label">投稿カレンダー</p>
     <div id="calNav" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
       <button id="calPrev" style="background:none;border:none;color:#fff;font-size:1.2rem;cursor:pointer" aria-label="前の月">&lt;</button>
@@ -481,7 +483,7 @@ function playPost(btn){
 
 function cycleSpeed(btn){
   const speeds=[0.75,1,1.5];
-  const cur=parseFloat(btn.textContent.replace('x',''))||1;
+  const cur=parseFloat(btn.textContent.replace('x','')||'1');
   const next=speeds[(speeds.indexOf(cur)+1)%speeds.length];
   btn.textContent='x'+next;
   const card=btn.closest('.post-card');
@@ -617,6 +619,7 @@ async function loadProfile(){
   const {data:posts}=await sb.from('posts').select('id,storage_path,duration_sec,caption,created_at,post_date').eq('user_id',me.id);
   renderCalendar(posts||[]);
   loadFriends(posts||[]);
+  loadReactionNotifs(posts||[]);
 }
 
 // ---- calendar ----
@@ -699,6 +702,44 @@ async function loadFriends(posts){
   $('friendList').querySelectorAll('.btn-ghost[data-fid]').forEach(btn=>{
     btn.addEventListener('click',()=>removeFriend(btn.dataset.fid));
   });
+}
+
+// ---- reaction notifications ----
+async function loadReactionNotifs(posts){
+  const el=$('reactionNotifs');
+  if(!posts||!posts.length){
+    el.innerHTML='<p style="color:var(--muted);font-size:.85rem">まだリアクションはありません</p>';
+    return;
+  }
+  const myPostIds=posts.map(p=>p.id);
+  const {data:rxs}=await sb.from('reactions').select('post_id,user_id,created_at').in('post_id',myPostIds).order('created_at',{ascending:false}).limit(20);
+  if(!rxs||!rxs.length){
+    el.innerHTML='<p style="color:var(--muted);font-size:.85rem">まだリアクションはありません</p>';
+    return;
+  }
+  const uids=[...new Set(rxs.map(r=>r.user_id))];
+  const {data:profs}=await sb.from('profiles').select('id,username').in('id',uids);
+  const profMap=Object.fromEntries((profs||[]).map(p=>[p.id,p]));
+  const postMap=Object.fromEntries(posts.map(p=>[p.id,p]));
+  let html='';
+  rxs.forEach(rx=>{
+    const name=profMap[rx.user_id]?.username||'名無し';
+    const post=postMap[rx.post_id];
+    const postDate=post?.post_date||post?.created_at?.slice(0,10)||'';
+    const rawCaption=post?.caption||'';
+    const captionSnip=rawCaption?`「${esc(rawCaption.slice(0,20))}${rawCaption.length>20?'...':''}」`:'';
+    html+=`<div class="friend-card">
+      <div class="friend-info">
+        <div class="avatar" aria-hidden="true">${esc(name[0]||'?')}</div>
+        <div>
+          <p class="friend-name">${esc(name)}</p>
+          <p style="font-size:.75rem;color:var(--muted)">${fmtDate(rx.created_at)} に聴いたよ</p>
+          ${postDate?`<p style="font-size:.72rem;color:var(--muted);margin-top:2px">${postDate}の投稿${captionSnip?' '+captionSnip:''}</p>`:''}
+        </div>
+      </div>
+    </div>`;
+  });
+  el.innerHTML=html;
 }
 
 async function removeFriend(fid){
