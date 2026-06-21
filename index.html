@@ -206,6 +206,8 @@
     <textarea id="inputBio" placeholder="ひとこと(40文字以内)" maxlength="40" rows="2" style="resize:none" aria-label="ひとこと"></textarea>
     <button class="btn btn-primary" type="submit">保存</button>
   </form>
+  <p class="section-label">投稿統計</p>
+  <div id="profileStats"></div>
   <p class="section-label">投稿カレンダー</p>
   <div id="calContainer"></div>
   <p id="calCaption" style="font-size:.82rem;color:#aaa;margin-top:4px;display:none"></p>
@@ -638,6 +640,34 @@ async function loadReactionNotifs(posts){
   el.innerHTML=html;
 }
 
+// ---- profile stats ----
+function calcLongestStreak(posts){
+  if(!posts||!posts.length) return 0;
+  const dates=[...new Set(posts.map(p=>p.post_date||p.created_at?.slice(0,10)))].sort();
+  if(!dates.length) return 0;
+  let max=1,cur=1;
+  for(let i=1;i<dates.length;i++){
+    const diff=(new Date(dates[i])-new Date(dates[i-1]))/86400000;
+    if(diff===1){cur++;if(cur>max)max=cur;}else cur=1;
+  }
+  return max;
+}
+function renderProfileStats(posts){
+  const total=posts?posts.length:0;
+  const longest=calcLongestStreak(posts);
+  $('profileStats').innerHTML=
+    `<div style="display:flex;gap:12px;margin-bottom:4px">
+      <div style="flex:1;background:var(--card);border-radius:12px;padding:14px;text-align:center">
+        <p style="font-size:1.6rem;font-weight:900;color:var(--accent)">${total}</p>
+        <p style="font-size:.72rem;color:var(--muted);margin-top:4px">合計投稿数</p>
+      </div>
+      <div style="flex:1;background:var(--card);border-radius:12px;padding:14px;text-align:center">
+        <p style="font-size:1.6rem;font-weight:900;color:var(--accent)">${longest}</p>
+        <p style="font-size:.72rem;color:var(--muted);margin-top:4px">最長連続日数</p>
+      </div>
+    </div>`;
+}
+
 // ---- profile ----
 async function loadProfile(){
   const {data:posts}=await sb.from('posts').select('id,storage_path,post_date,caption,created_at').eq('user_id',me.id).order('post_date',{ascending:false});
@@ -647,6 +677,7 @@ async function loadProfile(){
   $('profileBio').textContent=myProfile?.bio||'';
   $('inputName').value=myProfile?.username||'';
   $('inputBio').value=myProfile?.bio||'';
+  renderProfileStats(posts||[]);
   renderCalendar(posts||[]);
   loadFriends(posts||[]);
   loadReactionNotifs(posts||[]);
