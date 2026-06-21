@@ -427,6 +427,9 @@ async function loadFeed(){
         <button class="speed-btn" aria-label="再生速度" title="再生速度を変更">x1</button>
       </div>
       ${mine.caption?`<p class="post-caption">${esc(mine.caption)}</p>`:''}
+      <div style="margin-top:10px;text-align:right">
+        <button class="btn btn-ghost" style="width:auto;padding:5px 12px;font-size:.75rem;border-color:#333;color:var(--danger)" data-del-pid="${mine.id}" data-del-path="${mine.storage_path}" aria-label="この投稿を削除">削除</button>
+      </div>
     </div>`;
   } else {
     html+=`<div class="post-card" style="text-align:center;color:var(--muted);font-size:.9rem;padding:24px">
@@ -447,6 +450,9 @@ async function loadFeed(){
   $('feedList').querySelectorAll('.reaction-btn').forEach(btn=>{
     btn.addEventListener('click',()=>toggleReaction(btn));
   });
+  // delete own post button
+  const delBtn=$('feedList').querySelector('[data-del-pid]');
+  if(delBtn) delBtn.addEventListener('click',()=>deleteOwnPost(delBtn.dataset.delPid,delBtn.dataset.delPath));
 }
 
 let currentAudio=null, currentBtn=null, currentWave=null;
@@ -503,6 +509,15 @@ async function toggleReaction(btn){
     else if(error.code==='23505'){ btn.classList.add('reacted'); btn.textContent='聴いたよ済み'; btn.setAttribute('aria-pressed','true'); }
     else showToast('エラー: '+error.message);
   }
+}
+
+async function deleteOwnPost(postId,storagePath){
+  if(!confirm('この投稿を削除しますか？削除後は元に戻せません。')) return;
+  const {error}=await sb.from('posts').delete().eq('id',postId).eq('user_id',me.id);
+  if(error){ showToast('削除失敗: '+error.message); return; }
+  sb.storage.from('voice-posts').remove([storagePath]).catch(()=>{});
+  showToast('投稿を削除しました');
+  loadFeed();
 }
 
 // ---- visualizer ----
@@ -677,7 +692,6 @@ async function loadFriends(posts){
     $('friendList').innerHTML='<p style="color:var(--muted);font-size:.85rem">まだフレンドがいません</p>';
     return;
   }
-  // 今日投稿済みフレンドのuser_idセット(friend_feedビュー経由)
   const postedToday=new Set();
   const {data:todayPosts}=await sb.from('friend_feed').select('user_id').eq('post_date',todayStr);
   if(todayPosts) todayPosts.forEach(p=>postedToday.add(p.user_id));
@@ -801,7 +815,6 @@ function showOnboarding(){
 
 // ---- auth ----
 async function init(){
-  // handle password reset flow
   const hash=window.location.hash;
   if(hash.includes('type=recovery')){
     showScreen('screenReset');
