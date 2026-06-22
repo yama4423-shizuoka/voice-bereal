@@ -123,7 +123,8 @@
     #fabRec:active{transform:translateX(-50%) scale(.92)}
     /* ---- nav ---- */
     nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:430px;background:rgba(10,10,10,.95);backdrop-filter:blur(10px);border-top:1px solid #1a1a1a;display:flex;justify-content:space-around;padding:8px 0;padding-bottom:calc(8px + var(--safe-bottom));z-index:10}
-    .nav-btn{background:none;border:none;color:var(--muted);font-size:.65rem;font-weight:600;display:flex;flex-direction:column;align-items:center;gap:4px;padding:4px 16px;cursor:pointer;transition:color .15s}
+    .nav-btn{position:relative;background:none;border:none;color:var(--muted);font-size:.65rem;font-weight:600;display:flex;flex-direction:column;align-items:center;gap:4px;padding:4px 16px;cursor:pointer;transition:color .15s}
+    .nav-badge{position:absolute;top:2px;right:4px;background:var(--danger);color:#fff;border-radius:50%;font-size:.55rem;font-weight:900;min-width:15px;height:15px;display:flex;align-items:center;justify-content:center;pointer-events:none}
     .nav-btn.active,.nav-btn:focus-visible{color:#fff}
     .nav-btn svg{width:22px;height:22px}
     /* ---- push setup ---- */
@@ -296,6 +297,7 @@
   <button class="nav-btn" id="navProfile" aria-label="プロフィール">
     <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/></svg>
     プロフィール
+    <span id="reactionBadge" class="nav-badge" aria-hidden="true" style="display:none"></span>
   </button>
 </nav>
 
@@ -936,7 +938,7 @@ $('formSignup').addEventListener('submit',async e=>{
 
 // ---- nav ----
 $('navFeed').addEventListener('click',()=>{ showScreen('screenFeed'); loadFeed(); });
-$('navProfile').addEventListener('click',()=>{ showScreen('screenProfile'); loadProfile(); });
+$('navProfile').addEventListener('click',()=>{ clearReactionBadge(); showScreen('screenProfile'); loadProfile(); });
 $('fabRec').addEventListener('click',startRec);
 $('recStopBtn').addEventListener('click',stopRec);
 $('recCancelBtn').addEventListener('click',()=>{
@@ -1073,6 +1075,25 @@ async function playArchiveDay(dateStr){
   audio.onended=()=>{currentAudio=null;};
 }
 
+// ---- reaction badge ----
+async function updateReactionBadge(){
+  if(!me) return;
+  const lastSeen=localStorage.getItem('rx_seen_'+me.id)||'2000-01-01T00:00:00Z';
+  const {data:posts}=await sb.from('posts').select('id').eq('user_id',me.id).limit(200);
+  const badge=$('reactionBadge');
+  if(!badge) return;
+  if(!posts||!posts.length){badge.style.display='none';return;}
+  const ids=posts.map(p=>p.id);
+  const {count}=await sb.from('reactions').select('id',{count:'exact',head:true}).in('post_id',ids).gt('created_at',lastSeen);
+  if(count&&count>0){badge.textContent=count>9?'9+':String(count);badge.style.display='flex';}
+  else badge.style.display='none';
+}
+function clearReactionBadge(){
+  if(!me) return;
+  localStorage.setItem('rx_seen_'+me.id,new Date().toISOString());
+  const badge=$('reactionBadge');if(badge)badge.style.display='none';
+}
+
 // ---- auth state ----
 sb.auth.onAuthStateChange(async (event,session)=>{
   if(event==='PASSWORD_RECOVERY'){
@@ -1088,6 +1109,7 @@ sb.auth.onAuthStateChange(async (event,session)=>{
       const {data:newProf}=await sb.from('profiles').select('*').eq('id',me.id).maybeSingle();
       myProfile=newProf;
     } else { myProfile=prof; }
+    updateReactionBadge();
     const firstLogin=!localStorage.getItem('onboarded_'+me.id);
     if(firstLogin){ localStorage.setItem('onboarded_'+me.id,'1'); showOnboarding(); }
     else { showScreen('screenFeed'); loadFeed(); }
