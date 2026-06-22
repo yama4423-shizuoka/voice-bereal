@@ -78,11 +78,15 @@ self.addEventListener('push', (e) => {
 
 self.addEventListener('notificationclick', (e) => {
   e.notification.close();
-  const url = e.notification.data?.url ?? '/';
+  const feedUrl = self.location.origin + '/?screen=feed';
   e.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then((cs) => {
       const open = cs.find((c) => c.url.startsWith(self.location.origin));
-      return open ? open.focus() : clients.openWindow(url);
+      if (open) {
+        open.postMessage({ type: 'SW_NAV', screen: 'screenFeed' });
+        return open.focus();
+      }
+      return clients.openWindow(feedUrl);
     })
   );
 });

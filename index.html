@@ -1099,6 +1099,18 @@ sb.auth.onAuthStateChange(async (event,session)=>{
 
 if('serviceWorker' in navigator){
   navigator.serviceWorker.register('/sw.js').catch(()=>{});
+  navigator.serviceWorker.addEventListener('message',(e)=>{
+    if(e.data?.type==='SW_NAV' && me){
+      showScreen(e.data.screen);
+      if(e.data.screen==='screenFeed') loadFeed();
+    }
+  });
+}
+
+// 通知クリックで新規起動した場合: ?screen=feed をチェックしてフィードを開く
+const _swNavParam=new URLSearchParams(location.search).get('screen');
+if(_swNavParam==='feed'){
+  history.replaceState(null,'',location.pathname);
 }
 </script>
 </body>
