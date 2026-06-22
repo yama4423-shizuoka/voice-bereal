@@ -72,6 +72,10 @@
     .streak-banner{background:#1a2a00;border:1px solid var(--accent);border-radius:14px;padding:12px 16px;margin-bottom:16px;text-align:center;font-weight:700;font-size:.95rem;color:var(--accent)}
     .silent-list{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:4px}
     .silent-chip{background:var(--card);border:1px solid #2a2a2a;border-radius:20px;padding:4px 12px;font-size:.78rem;color:var(--muted)}
+    .tag-selector{display:flex;gap:6px;flex-wrap:wrap;width:80%;justify-content:center;margin-top:4px}
+    .tag-btn{background:#1a1a1a;border:1px solid #333;color:#aaa;border-radius:20px;padding:6px 14px;font-size:.8rem;font-weight:600;cursor:pointer;transition:all .2s}
+    .tag-btn.selected{background:#1a2a00;border-color:var(--accent);color:var(--accent)}
+    .post-tag{display:inline-block;background:#1a2a00;border:1px solid #2a3a00;color:#9ab83c;border-radius:8px;padding:2px 8px;font-size:.7rem;font-weight:600;margin-top:6px}
     /* ---- rec modal ---- */
     #recModal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.96);z-index:100;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:24px}
     #recModal.open{display:flex}
@@ -248,6 +252,12 @@
     <div class="rec-bar-fill" id="recBarFill"></div>
   </div>
   <canvas id="vizCanvas" aria-hidden="true"></canvas>
+  <div class="tag-selector" id="tagSelector" role="group" aria-label="気分タグ">
+    <button class="tag-btn" data-tag="朝" aria-pressed="false">朝</button>
+    <button class="tag-btn" data-tag="夜" aria-pressed="false">夜</button>
+    <button class="tag-btn" data-tag="ひとりごと" aria-pressed="false">ひとりごと</button>
+    <button class="tag-btn" data-tag="仕事中" aria-pressed="false">仕事中</button>
+  </div>
   <div class="rec-caption-wrap">
     <input id="recCaption" type="text" placeholder="いまのひとこと(省略可)" maxlength="50" aria-label="キャプション">
     <p class="rec-caption-counter" id="recCaptionCounter" aria-live="polite">0 / 50</p>
@@ -343,7 +353,7 @@ async function loadFeed(){
   const today=todayJST();
   const targetMins=dailyMinutes();
   // own post
-  const {data:mine}=await sb.from('posts').select('id,storage_path,duration_sec,caption,created_at,post_date').eq('user_id',me.id).eq('post_date',today).maybeSingle();
+  const {data:mine}=await sb.from('posts').select('id,storage_path,duration_sec,caption,tag,created_at,post_date').eq('user_id',me.id).eq('post_date',today).maybeSingle();
   // friend posts
   const {data:friendPosts}=await sb.from('friend_feed').select('*').eq('post_date',today).order('created_at',{ascending:false});
   // all friends (for silent check)
@@ -385,6 +395,7 @@ async function loadFeed(){
           <button class="speed-btn" aria-label="再生速度" title="再生速度を変更">x1</button>
         </div>
         ${p.caption?`<p class="post-caption">${esc(p.caption)}</p>`:''}
+        ${p.tag?`<span class="post-tag">${esc(p.tag)}</span>`:''}
         <div class="reaction-row">
           <button class="reaction-btn${reacted?' reacted':''}" data-pid="${p.id}" aria-label="聴いたよリアクション" aria-pressed="${reacted}">
             ${reacted?'聴いたよ済み':'聴いたよ'}
@@ -431,6 +442,7 @@ async function loadFeed(){
         <button class="speed-btn" aria-label="再生速度" title="再生速度を変更">x1</button>
       </div>
       ${mine.caption?`<p class="post-caption">${esc(mine.caption)}</p>`:''}
+      ${mine.tag?`<span class="post-tag">${esc(mine.tag)}</span>`:''}
       <div style="margin-top:10px;text-align:right">
         <button class="btn btn-ghost" style="width:auto;padding:5px 12px;font-size:.75rem;border-color:#333;color:var(--danger)" data-del-pid="${mine.id}" data-del-path="${mine.storage_path}" aria-label="この投稿を削除">削除</button>
       </div>
@@ -727,7 +739,7 @@ async function ensurePushSubscription(){
 }
 
 // ---- recording ----
-let mediaRec=null, audioChunks=[], recInterval=null, vizAnim=null, vizStream=null;
+let mediaRec=null, audioChunks=[], recInterval=null, vizAnim=null, vizStream=null, selectedTag=null;
 
 async function startRec(){
   if(!navigator.mediaDevices){ showToast('このブラウザは録音に対応していません'); return; }
@@ -744,6 +756,8 @@ async function startRec(){
     $('recStopBtn').style.display='';
     $('recCaption').value='';
     $('recCaptionCounter').textContent='0 / 50';
+    selectedTag=null;
+    $('tagSelector').querySelectorAll('.tag-btn').forEach(b=>{b.classList.remove('selected');b.setAttribute('aria-pressed','false');});
     let elapsed=0;
     recInterval=setInterval(()=>{
       elapsed++;
@@ -803,7 +817,13 @@ async function submitRecording(){
   const {error:upErr}=await sb.storage.from('voice-posts').upload(path,blob);
   if(upErr){ showToast('アップロード失敗: '+upErr.message); return; }
   const dur=parseInt($('recTimer').textContent)||0;
-  const {error:dbErr}=await sb.from('posts').insert({user_id:me.id,storage_path:path,duration_sec:dur,caption,post_date:today});
+  const insertData={user_id:me.id,storage_path:path,duration_sec:dur,caption,post_date:today};
+  if(selectedTag) insertData.tag=selectedTag;
+  let {error:dbErr}=await sb.from('posts').insert(insertData);
+  if(dbErr&&selectedTag&&(dbErr.message?.includes('tag')||dbErr.code==='42703')){
+    delete insertData.tag;
+    const r2=await sb.from('posts').insert(insertData); dbErr=r2.error;
+  }
   if(dbErr){
     sb.storage.from('voice-posts').remove([path]);
     showToast('投稿失敗: '+dbErr.message); return;
@@ -950,6 +970,18 @@ $('addFriendBtn').addEventListener('click',async ()=>{
   loadProfile();
 });
 $('copyInviteBtn').addEventListener('click',copyInviteText);
+$('tagSelector').addEventListener('click',e=>{
+  const btn=e.target.closest('.tag-btn');
+  if(!btn) return;
+  const tag=btn.dataset.tag;
+  if(selectedTag===tag){
+    selectedTag=null;
+    btn.classList.remove('selected'); btn.setAttribute('aria-pressed','false');
+  } else {
+    $('tagSelector').querySelectorAll('.tag-btn').forEach(b=>{b.classList.remove('selected');b.setAttribute('aria-pressed','false');});
+    selectedTag=tag; btn.classList.add('selected'); btn.setAttribute('aria-pressed','true');
+  }
+});
 $('refreshBtn').addEventListener('click',async ()=>{
   $('refreshBtn').disabled=true;
   await loadFeed();
