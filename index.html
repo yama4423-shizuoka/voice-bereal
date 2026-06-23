@@ -76,6 +76,8 @@
     .reaction-row{display:flex;align-items:center;gap:8px;margin-top:10px}
     .reaction-btn{background:var(--input-bg);border:1px solid var(--input-border);border-radius:20px;color:var(--muted);font-size:.78rem;font-weight:600;padding:5px 12px;cursor:pointer;transition:all .2s}
     .reaction-btn.reacted{background:#2a2a1a;border-color:var(--accent);color:var(--accent)}
+    .bookmark-btn{background:var(--input-bg);border:1px solid var(--input-border);border-radius:20px;color:var(--muted);font-size:.78rem;font-weight:600;padding:5px 12px;cursor:pointer;transition:all .2s;margin-left:auto}
+    .bookmark-btn.bookmarked{background:#0a1a2a;border-color:#5aa8e8;color:#5aa8e8}
     .comment-section{margin-top:10px;padding-top:10px;border-top:1px solid var(--subtle)}
     .comment-item{font-size:.78rem;color:#ccc;margin-bottom:5px;line-height:1.4}
     .comment-name{font-weight:700;color:var(--muted);margin-right:4px}
@@ -237,6 +239,8 @@
   <p id="calCaption" style="font-size:.82rem;color:#aaa;margin-top:4px;display:none"></p>
   <p class="section-label">最近のリアクション</p>
   <div id="reactionNotifs"></div>
+  <p class="section-label">ブックマーク</p>
+  <div id="bookmarkList"></div>
   <p class="section-label">フレンド</p>
   <div id="friendSection">
     <input id="friendCodeInput" type="text" placeholder="フレンドコードを入力" maxlength="8" style="margin-bottom:8px;text-transform:uppercase" aria-label="フレンドコードを入力">
@@ -401,6 +405,13 @@ async function loadFeed(){
     const {data:rxs}=await sb.from('reactions').select('post_id').eq('user_id',me.id).in('post_id',ids);
     if(rxs) rxs.forEach(r=>myReactions.add(r.post_id));
   }
+  // my bookmarks
+  let myBookmarks=new Set();
+  if(visiblePosts.length){
+    const ids=visiblePosts.map(p=>p.id);
+    const {data:bks}=await sb.from('bookmarks').select('post_id').eq('user_id',me.id).in('post_id',ids);
+    if(bks) bks.forEach(b=>myBookmarks.add(b.post_id));
+  }
   let html='';
   if(visiblePosts.length){
     html+='<p class="section-label">フレンドの声</p>';
@@ -412,6 +423,7 @@ async function loadFeed(){
       })();
       const onTime=Math.abs(postMins-targetMins)<=60;
       const reacted=myReactions.has(p.id);
+      const bookmarked=myBookmarks.has(p.id);
       html+=`<div class="post-card" data-pid="${p.id}">
         <div class="post-header">
           <div class="avatar" aria-hidden="true">${esc(p.username?.[0]||'?')}</div>
@@ -435,6 +447,9 @@ async function loadFeed(){
         <div class="reaction-row">
           <button class="reaction-btn${reacted?' reacted':''}" data-pid="${p.id}" aria-label="聴いたよリアクション" aria-pressed="${reacted}">
             ${reacted?'聴いたよ済み':'聴いたよ'}
+          </button>
+          <button class="bookmark-btn${bookmarked?' bookmarked':''}" data-bm="${p.id}" aria-label="${bookmarked?'ブックマーク解除':'ブックマーク'}" aria-pressed="${bookmarked}">
+            ${bookmarked?'保存済み':'保存'}
           </button>
         </div>
         <div class="comment-section" id="cmt-${p.id}"></div>
@@ -503,6 +518,10 @@ async function loadFeed(){
   $('feedList').querySelectorAll('.reaction-btn').forEach(btn=>{
     btn.addEventListener('click',()=>toggleReaction(btn));
   });
+  // bookmark buttons
+  $('feedList').querySelectorAll('.bookmark-btn[data-bm]').forEach(btn=>{
+    btn.addEventListener('click',()=>toggleBookmark(btn));
+  });
   // delete own post button
   const delBtn=$('feedList').querySelector('[data-del-pid]');
   if(delBtn) delBtn.addEventListener('click',()=>deleteOwnPost(delBtn.dataset.delPid,delBtn.dataset.delPath));
@@ -563,6 +582,26 @@ async function toggleReaction(btn){
     if(!error){ btn.classList.add('reacted'); btn.textContent='聴いたよ済み'; btn.setAttribute('aria-pressed','true'); }
     else if(error.code==='23505'){ btn.classList.add('reacted'); btn.textContent='聴いたよ済み'; btn.setAttribute('aria-pressed','true'); }
     else showToast('エラー: '+error.message);
+  }
+}
+
+async function toggleBookmark(btn){
+  const pid=btn.dataset.bm;
+  const bookmarked=btn.classList.contains('bookmarked');
+  if(bookmarked){
+    const {error}=await sb.from('bookmarks').delete().eq('user_id',me.id).eq('post_id',pid);
+    if(error&&error.code!=='42P01'){showToast('解除失敗: '+error.message);return;}
+    btn.classList.remove('bookmarked');btn.textContent='保存';btn.setAttribute('aria-pressed','false');btn.setAttribute('aria-label','ブックマーク');
+  } else {
+    const {error}=await sb.from('bookmarks').insert({user_id:me.id,post_id:pid});
+    if(error){
+      if(error.code==='42P01') showToast('ブックマーク機能は準備中です');
+      else if(error.code==='23505'){btn.classList.add('bookmarked');btn.textContent='保存済み';btn.setAttribute('aria-pressed','true');btn.setAttribute('aria-label','ブックマーク解除');}
+      else showToast('保存失敗: '+error.message);
+      return;
+    }
+    btn.classList.add('bookmarked');btn.textContent='保存済み';btn.setAttribute('aria-pressed','true');btn.setAttribute('aria-label','ブックマーク解除');
+    showToast('ブックマークしました');
   }
 }
 
@@ -751,6 +790,68 @@ async function loadReactionNotifs(posts){
   el.innerHTML=html;
 }
 
+// ---- bookmarks ----
+async function loadBookmarks(){
+  const el=$('bookmarkList');
+  if(!el) return;
+  const {data:bkData,error}=await sb.from('bookmarks').select('post_id,created_at').eq('user_id',me.id).order('created_at',{ascending:false}).limit(20);
+  if(error){
+    el.innerHTML=`<p style="color:var(--muted);font-size:.85rem">${error.code==='42P01'?'準備中です':'読み込み失敗'}</p>`;
+    return;
+  }
+  if(!bkData||!bkData.length){
+    el.innerHTML='<p style="color:var(--muted);font-size:.85rem">まだブックマークがありません</p>';
+    return;
+  }
+  const postIds=bkData.map(b=>b.post_id);
+  const {data:postsData}=await sb.from('friend_feed').select('id,storage_path,duration_sec,caption,post_date,username').in('id',postIds);
+  const postMap=Object.fromEntries((postsData||[]).map(p=>[p.id,p]));
+  let html='';
+  bkData.forEach(b=>{
+    const p=postMap[b.post_id];
+    if(!p) return;
+    html+=`<div class="post-card">
+      <div class="post-header">
+        <div class="avatar" aria-hidden="true">${esc(p.username?.[0]||'?')}</div>
+        <div>
+          <p class="post-name">${esc(p.username||'名無し')}</p>
+          <p class="post-time">${p.post_date||''}</p>
+        </div>
+      </div>
+      <div class="play-row">
+        <button class="play-btn" data-path="${p.storage_path}" data-dur="${p.duration_sec||0}" aria-label="${esc(p.username||'名無し')}の音声を再生">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
+        </button>
+        <div class="waveform" aria-hidden="true"><div class="waveform-progress" style="width:0%"></div></div>
+        <span class="duration-label">${p.duration_sec||0}s</span>
+        <button class="speed-btn" aria-label="再生速度">x1</button>
+      </div>
+      ${p.caption?`<p class="post-caption">${esc(p.caption)}</p>`:''}
+      <div class="reaction-row" style="justify-content:flex-end">
+        <button class="bookmark-btn bookmarked" data-rm-bk="${b.post_id}" aria-label="ブックマークを解除" aria-pressed="true">保存済み</button>
+      </div>
+    </div>`;
+  });
+  if(!html){
+    el.innerHTML='<p style="color:var(--muted);font-size:.85rem">まだブックマークがありません</p>';
+    return;
+  }
+  el.innerHTML=html;
+  el.querySelectorAll('.play-btn').forEach(btn=>btn.addEventListener('click',()=>playPost(btn)));
+  el.querySelectorAll('.speed-btn').forEach(btn=>btn.addEventListener('click',()=>cycleSpeed(btn)));
+  el.querySelectorAll('[data-rm-bk]').forEach(btn=>btn.addEventListener('click',()=>removeBookmark(btn.dataset.rmBk,btn)));
+}
+
+async function removeBookmark(postId,btn){
+  const {error}=await sb.from('bookmarks').delete().eq('user_id',me.id).eq('post_id',postId);
+  if(error){showToast('解除失敗: '+error.message);return;}
+  const card=btn.closest('.post-card');
+  if(card) card.remove();
+  showToast('ブックマークを解除しました');
+  const el=$('bookmarkList');
+  if(el&&!el.querySelector('.post-card')) el.innerHTML='<p style="color:var(--muted);font-size:.85rem">まだブックマークがありません</p>';
+}
+
 // ---- profile stats ----
 function calcLongestStreak(posts){
   if(!posts||!posts.length) return 0;
@@ -792,6 +893,7 @@ async function loadProfile(){
   renderCalendar(posts||[]);
   loadFriends(posts||[]);
   loadReactionNotifs(posts||[]);
+  loadBookmarks();
 }
 
 async function removeFriend(friendId){
