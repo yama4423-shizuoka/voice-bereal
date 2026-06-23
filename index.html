@@ -76,6 +76,13 @@
     .reaction-row{display:flex;align-items:center;gap:8px;margin-top:10px}
     .reaction-btn{background:var(--input-bg);border:1px solid var(--input-border);border-radius:20px;color:var(--muted);font-size:.78rem;font-weight:600;padding:5px 12px;cursor:pointer;transition:all .2s}
     .reaction-btn.reacted{background:#2a2a1a;border-color:var(--accent);color:var(--accent)}
+    .comment-section{margin-top:10px;padding-top:10px;border-top:1px solid var(--subtle)}
+    .comment-item{font-size:.78rem;color:#ccc;margin-bottom:5px;line-height:1.4}
+    .comment-name{font-weight:700;color:var(--muted);margin-right:4px}
+    .comment-form{display:flex;gap:6px;margin-top:8px}
+    .comment-form input{flex:1;padding:7px 10px;font-size:.78rem;border-radius:10px}
+    .comment-send{width:auto!important;padding:7px 12px;font-size:.75rem;font-weight:700;border-radius:10px;background:var(--input-bg);border:1px solid var(--input-border);color:var(--muted);cursor:pointer;flex-shrink:0}
+    .comment-send:active{opacity:.7}
     .on-time-badge{background:#1a2a00;border:1px solid var(--accent);color:var(--accent);border-radius:10px;padding:2px 8px;font-size:.7rem;font-weight:700}
     .streak-banner{background:#1a2a00;border:1px solid var(--accent);border-radius:14px;padding:12px 16px;margin-bottom:16px;text-align:center;font-weight:700;font-size:.95rem;color:var(--accent)}
     .silent-list{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:4px}
@@ -428,6 +435,7 @@ async function loadFeed(){
             ${reacted?'聴いたよ済み':'聴いたよ'}
           </button>
         </div>
+        <div class="comment-section" id="cmt-${p.id}"></div>
       </div>`;
     });
   }
@@ -496,6 +504,8 @@ async function loadFeed(){
   // delete own post button
   const delBtn=$('feedList').querySelector('[data-del-pid]');
   if(delBtn) delBtn.addEventListener('click',()=>deleteOwnPost(delBtn.dataset.delPid,delBtn.dataset.delPath));
+  // load comments for each friend post
+  if(friendPosts&&friendPosts.length) friendPosts.forEach(p=>loadComments(p.id));
 }
 
 let currentAudio=null, currentBtn=null, currentWave=null;
@@ -561,6 +571,54 @@ async function deleteOwnPost(postId,storagePath){
   sb.storage.from('voice-posts').remove([storagePath]).catch(()=>{});
   showToast('投稿を削除しました');
   loadFeed();
+}
+
+async function loadComments(postId){
+  const el=document.getElementById('cmt-'+postId);
+  if(!el) return;
+  const {data,error}=await sb.from('comments').select('id,body,user_id,created_at').eq('post_id',postId).order('created_at',{ascending:true}).limit(10);
+  if(error) return;
+  const uids=[...new Set((data||[]).map(c=>c.user_id))];
+  let profMap={};
+  if(uids.length){
+    const {data:profs}=await sb.from('profiles').select('id,username').in('id',uids);
+    profMap=Object.fromEntries((profs||[]).map(p=>[p.id,p]));
+  }
+  renderComments(el,postId,data||[],profMap);
+}
+
+function renderComments(el,postId,comments,profMap){
+  let h='';
+  comments.forEach(c=>{
+    const name=profMap[c.user_id]?.username||'名無し';
+    h+=`<div class="comment-item"><span class="comment-name">${esc(name)}</span>${esc(c.body)}</div>`;
+  });
+  h+=`<div class="comment-form"><input id="ci-${postId}" type="text" maxlength="30" placeholder="コメント(30文字以内)" aria-label="コメントを入力"><button class="comment-send" id="cs-${postId}" aria-label="コメントを送信">送信</button></div>`;
+  el.innerHTML=h;
+  document.getElementById('cs-'+postId)?.addEventListener('click',()=>submitComment(postId));
+  document.getElementById('ci-'+postId)?.addEventListener('keydown',e=>{if(e.key==='Enter')submitComment(postId);});
+}
+
+async function submitComment(postId){
+  const inp=document.getElementById('ci-'+postId);
+  if(!inp) return;
+  const body=inp.value.trim();
+  if(!body){showToast('コメントを入力してください');return;}
+  const btn=document.getElementById('cs-'+postId);
+  if(btn) btn.disabled=true;
+  const {error}=await sb.from('comments').insert({post_id:postId,user_id:me.id,body});
+  if(btn) btn.disabled=false;
+  if(error){showToast(error.code==='42P01'?'コメント機能は準備中です':'送信失敗: '+error.message);return;}
+  inp.value='';
+  const {data}=await sb.from('comments').select('id,body,user_id,created_at').eq('post_id',postId).order('created_at',{ascending:true}).limit(10);
+  const uids=[...new Set((data||[]).map(c=>c.user_id))];
+  let profMap={};
+  if(uids.length){
+    const {data:profs}=await sb.from('profiles').select('id,username').in('id',uids);
+    profMap=Object.fromEntries((profs||[]).map(p=>[p.id,p]));
+  }
+  const el=document.getElementById('cmt-'+postId);
+  if(el) renderComments(el,postId,data||[],profMap);
 }
 
 // ---- calendar ----
