@@ -35,7 +35,7 @@
 - [x] プッシュ通知クリックでフィードを開く: sw.jsのnotificationclickイベントでアプリのフィード画面にフォーカス/遷移するよう改善
 - [x] プロフィールタブの未読リアクションバッジ: プロフィールタブに新着リアクション件数を赤バッジで表示。プロフィールを開くとリセット(DB追加なし・localStorageで既読管理)
 - [x] ダークモード/ライトモード切り替え: システム設定に連動しつつ、プロフィール画面から手動切替も可能(localStorageで保存・DB追加なし)
-- [ ] テキストコメント機能: フレンドの投稿に短いテキストコメント(30文字以内)を残せる。commentsテーブル追加(migrations/007-comments.sql)
+- [x] テキストコメント機能: フレンドの投稿に短いテキストコメント(30文字以内)を残せる。commentsテーブル追加(migrations/007-comments.sql)
 - [ ] フレンドのミュート: フレンドのままフィードに表示しないミュート機能。muted_friends列をprofilesテーブルにjsonb型で追加(migrations/008-muted-friends.sql)
 - [ ] 投稿のブックマーク: フレンドの投稿をお気に入りとして保存・一覧できる。bookmarksテーブル追加(migrations/009-bookmarks.sql)
 
