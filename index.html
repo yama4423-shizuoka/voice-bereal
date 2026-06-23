@@ -390,19 +390,21 @@ async function loadFeed(){
   const {data:mine}=await sb.from('posts').select('id,storage_path,duration_sec,caption,tag,created_at,post_date').eq('user_id',me.id).eq('post_date',today).maybeSingle();
   // friend posts
   const {data:friendPosts}=await sb.from('friend_feed').select('*').eq('post_date',today).order('created_at',{ascending:false});
+  const muteSet=new Set(myProfile?.muted_friends||[]);
+  const visiblePosts=(friendPosts||[]).filter(p=>!muteSet.has(p.user_id));
   // all friends (for silent check)
   const {data:allFriends}=await sb.from('friendships').select('friend_id,profiles!friendships_friend_id_fkey(username)').eq('user_id',me.id);
   // my reactions
   let myReactions=new Set();
-  if(friendPosts&&friendPosts.length){
-    const ids=friendPosts.map(p=>p.id);
+  if(visiblePosts.length){
+    const ids=visiblePosts.map(p=>p.id);
     const {data:rxs}=await sb.from('reactions').select('post_id').eq('user_id',me.id).in('post_id',ids);
     if(rxs) rxs.forEach(r=>myReactions.add(r.post_id));
   }
   let html='';
-  if(friendPosts&&friendPosts.length){
+  if(visiblePosts.length){
     html+='<p class="section-label">フレンドの声</p>';
-    friendPosts.forEach(p=>{
+    visiblePosts.forEach(p=>{
       const postMins=(()=>{
         const d=new Date(p.created_at);
         const jst=new Date(d.toLocaleString('en-US',{timeZone:'Asia/Tokyo'}));
@@ -441,7 +443,7 @@ async function loadFeed(){
   }
   // silent friends section
   const postedIds=new Set((friendPosts||[]).map(p=>p.user_id));
-  const silentFriends=(allFriends||[]).filter(f=>!postedIds.has(f.friend_id));
+  const silentFriends=(allFriends||[]).filter(f=>!postedIds.has(f.friend_id)&&!muteSet.has(f.friend_id));
   if(silentFriends.length){
     html+='<p class="section-label">まだ声がないよ</p>';
     html+='<div class="silent-list">';
@@ -505,7 +507,7 @@ async function loadFeed(){
   const delBtn=$('feedList').querySelector('[data-del-pid]');
   if(delBtn) delBtn.addEventListener('click',()=>deleteOwnPost(delBtn.dataset.delPid,delBtn.dataset.delPath));
   // load comments for each friend post
-  if(friendPosts&&friendPosts.length) friendPosts.forEach(p=>loadComments(p.id));
+  if(visiblePosts.length) visiblePosts.forEach(p=>loadComments(p.id));
 }
 
 let currentAudio=null, currentBtn=null, currentWave=null;
@@ -682,11 +684,13 @@ async function loadFriends(posts){
   const postedToday=new Set();
   const {data:todayPosts}=await sb.from('friend_feed').select('user_id').eq('post_date',todayStr);
   if(todayPosts) todayPosts.forEach(p=>postedToday.add(p.user_id));
+  const fMuteSet=new Set(myProfile?.muted_friends||[]);
   let html='';
   friends.forEach(f=>{
     const name=f.profiles?.username||'名無し';
     const code=f.profiles?.friend_code||'';
     const posted=postedToday.has(f.friend_id);
+    const muted=fMuteSet.has(f.friend_id);
     html+=`<div class="friend-card">
       <div class="friend-info">
         <div class="avatar" aria-hidden="true">${esc(name[0]||'?')}</div>
@@ -698,6 +702,7 @@ async function loadFriends(posts){
       </div>
       <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end">
         <button class="btn btn-ghost" style="width:auto;padding:4px 10px;font-size:.72rem" data-farchive="${f.friend_id}" data-fname="${esc(name)}" aria-label="${esc(name)}の過去の声を見る">履歴</button>
+        <button class="btn btn-ghost" style="width:auto;padding:4px 10px;font-size:.72rem${muted?';color:var(--accent)':''}" data-fmute="${f.friend_id}" aria-label="${esc(name)}を${muted?'ミュート解除':'ミュート'}">${muted?'ミュート中':'ミュート'}</button>
         <button class="btn btn-ghost" style="width:auto;padding:4px 10px;font-size:.72rem" data-fid="${f.friend_id}" aria-label="${esc(name)}をフレンド解除">解除</button>
       </div>
     </div>`;
@@ -705,6 +710,9 @@ async function loadFriends(posts){
   $('friendList').innerHTML=html;
   $('friendList').querySelectorAll('.btn-ghost[data-fid]').forEach(btn=>{
     btn.addEventListener('click',()=>removeFriend(btn.dataset.fid));
+  });
+  $('friendList').querySelectorAll('[data-fmute]').forEach(btn=>{
+    btn.addEventListener('click',()=>toggleMute(btn.dataset.fmute));
   });
   $('friendList').querySelectorAll('[data-farchive]').forEach(btn=>{
     btn.addEventListener('click',()=>openFriendArchive(btn.dataset.farchive,btn.dataset.fname));
@@ -792,6 +800,18 @@ async function removeFriend(friendId){
   if(error){ showToast('解除に失敗しました: '+error.message); return; }
   showToast('フレンドを解除しました');
   loadProfile();
+}
+
+async function toggleMute(friendId){
+  const arr=myProfile?.muted_friends||[];
+  const newArr=arr.includes(friendId)?arr.filter(id=>id!==friendId):[...arr,friendId];
+  const {error}=await sb.from('profiles').update({muted_friends:newArr}).eq('id',me.id);
+  if(error){
+    showToast(error.code==='42703'?'ミュート機能は準備中です':'更新に失敗しました: '+error.message);
+    return;
+  }
+  myProfile={...myProfile,muted_friends:newArr};
+  loadFriends([]);
 }
 
 // ---- push notifications ----
