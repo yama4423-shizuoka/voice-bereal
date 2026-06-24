@@ -248,6 +248,8 @@
   <p id="calCaption" style="font-size:.82rem;color:#aaa;margin-top:4px;display:none"></p>
   <p class="section-label">最近のリアクション</p>
   <div id="reactionNotifs"></div>
+  <p class="section-label">最近のコメント</p>
+  <div id="commentNotifs"></div>
   <p class="section-label">ブックマーク</p>
   <div id="bookmarkList"></div>
   <p class="section-label">フレンド</p>
@@ -823,6 +825,41 @@ async function loadReactionNotifs(posts){
   el.innerHTML=html;
 }
 
+// ---- comment notifications ----
+async function loadCommentNotifs(posts){
+  const el=$('commentNotifs');
+  if(!el) return;
+  if(!posts||!posts.length){
+    el.innerHTML='<p style="color:var(--muted);font-size:.85rem">まだコメントはありません</p>';
+    return;
+  }
+  const myPostIds=posts.map(p=>p.id);
+  const {data:cmts}=await sb.from('comments').select('post_id,user_id,body,created_at')
+    .in('post_id',myPostIds).neq('user_id',me.id)
+    .order('created_at',{ascending:false}).limit(20);
+  if(!cmts||!cmts.length){
+    el.innerHTML='<p style="color:var(--muted);font-size:.85rem">まだコメントはありません</p>';
+    return;
+  }
+  const uids=[...new Set(cmts.map(c=>c.user_id))];
+  const {data:profs}=await sb.from('profiles').select('id,username').in('id',uids);
+  const profMap=Object.fromEntries((profs||[]).map(p=>[p.id,p]));
+  const postMap=Object.fromEntries(posts.map(p=>[p.id,p]));
+  let html='';
+  cmts.forEach(c=>{
+    const name=profMap[c.user_id]?.username||'名無し';
+    const postDate=postMap[c.post_id]?.post_date||'?';
+    html+=`<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+      <div class="avatar" style="width:28px;height:28px;font-size:.7rem" aria-hidden="true">${esc(name[0]||'?')}</div>
+      <div>
+        <p style="font-size:.82rem;font-weight:600">${esc(name)}</p>
+        <p style="font-size:.72rem;color:var(--muted)">${esc(postDate)}の投稿 - ${esc(c.body)} - ${fmtDate(c.created_at)}</p>
+      </div>
+    </div>`;
+  });
+  el.innerHTML=html;
+}
+
 // ---- bookmarks ----
 async function loadBookmarks(){
   const el=$('bookmarkList');
@@ -946,6 +983,7 @@ async function loadProfile(){
   renderCalendar(posts||[]);
   loadFriends(posts||[]);
   loadReactionNotifs(posts||[]);
+  loadCommentNotifs(posts||[]);
   loadBookmarks();
 }
 
@@ -1325,19 +1363,26 @@ async function playArchiveDay(dateStr){
 // ---- reaction badge ----
 async function updateReactionBadge(){
   if(!me) return;
-  const lastSeen=localStorage.getItem('rx_seen_'+me.id)||'2000-01-01T00:00:00Z';
+  const rxLastSeen=localStorage.getItem('rx_seen_'+me.id)||'2000-01-01T00:00:00Z';
+  const cmtLastSeen=localStorage.getItem('cmt_seen_'+me.id)||'2000-01-01T00:00:00Z';
   const {data:posts}=await sb.from('posts').select('id').eq('user_id',me.id).limit(200);
   const badge=$('reactionBadge');
   if(!badge) return;
   if(!posts||!posts.length){badge.style.display='none';return;}
   const ids=posts.map(p=>p.id);
-  const {count}=await sb.from('reactions').select('id',{count:'exact',head:true}).in('post_id',ids).gt('created_at',lastSeen);
-  if(count&&count>0){badge.textContent=count>9?'9+':String(count);badge.style.display='flex';}
+  const [{count:rxCount},{count:cmtCount}]=await Promise.all([
+    sb.from('reactions').select('id',{count:'exact',head:true}).in('post_id',ids).gt('created_at',rxLastSeen),
+    sb.from('comments').select('id',{count:'exact',head:true}).in('post_id',ids).neq('user_id',me.id).gt('created_at',cmtLastSeen)
+  ]);
+  const total=(rxCount||0)+(cmtCount||0);
+  if(total>0){badge.textContent=total>9?'9+':String(total);badge.style.display='flex';}
   else badge.style.display='none';
 }
 function clearReactionBadge(){
   if(!me) return;
-  localStorage.setItem('rx_seen_'+me.id,new Date().toISOString());
+  const now=new Date().toISOString();
+  localStorage.setItem('rx_seen_'+me.id,now);
+  localStorage.setItem('cmt_seen_'+me.id,now);
   const badge=$('reactionBadge');if(badge)badge.style.display='none';
 }
 
