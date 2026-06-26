@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+successfully downloaded text file (SHA: 337882adbb1cde2debdebc68067ef718f5d4d746)[Resource from github at repo://yama4423-shizuoka/voice-bereal/sha/7688c8f0ab73502cf8dfc04713109d4f6ec3c9ee/contents/index.html] <!DOCTYPE html>
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
@@ -342,6 +342,7 @@ const SUPA_URL='https://hbkknijwdppojhzybcit.supabase.co';
 const SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imhia2tuaWp3ZHBwb2poenliY2l0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk4NTgzMzAsImV4cCI6MjA2NTQzNDMzMH0.5fEjLVTEeOuOPYNFXdHNEaFkpuGRXDxoJeJS0OJqgjQ';
 const sb=createClient(SUPA_URL,SUPA_KEY);
 let me=null, myProfile=null;
+let feedPollInterval=null, feedLastLoadedAt=null, feedFriendIds=[];
 const $=id=>document.getElementById(id);
 function esc(s){const d=document.createElement('div');d.textContent=s;return d.innerHTML;}
 function showScreen(id){
@@ -398,6 +399,8 @@ async function showStreak(){
 
 // ---- feed ----
 async function loadFeed(){
+    feedLastLoadedAt=new Date().toISOString();
+  const _prevBanner=$('newPostsBanner');if(_prevBanner)_prevBanner.remove();
   $('feedList').innerHTML='<p style="color:var(--muted);font-size:.85rem">読み込み中...</p>';
   showTodayBadge();
   showStreak();
@@ -411,6 +414,7 @@ async function loadFeed(){
   const visiblePosts=(friendPosts||[]).filter(p=>!muteSet.has(p.user_id));
   // all friends (for silent check)
   const {data:allFriends}=await sb.from('friendships').select('friend_id,profiles!friendships_friend_id_fkey(username)').eq('user_id',me.id);
+  feedFriendIds=(allFriends||[]).map(f=>f.friend_id);
   // my reactions
   let myReactions=new Set();
   if(visiblePosts.length){
@@ -559,6 +563,8 @@ $('feedList').querySelectorAll('.reaction-btn').forEach(btn=>{
   if(delBtn) delBtn.addEventListener('click',()=>deleteOwnPost(delBtn.dataset.delPid,delBtn.dataset.delPath));
   // load comments for each friend post
   if(visiblePosts.length) visiblePosts.forEach(p=>loadComments(p.id));
+
+  startFeedPoller();
 }
 
 let currentAudio=null, currentBtn=null, currentWave=null;
@@ -1394,6 +1400,36 @@ function clearReactionBadge(){
   localStorage.setItem('rx_seen_'+me.id,now);
   localStorage.setItem('cmt_seen_'+me.id,now);
   const badge=$('reactionBadge');if(badge)badge.style.display='none';
+}
+
+// ---- feed poller ----
+function stopFeedPoller(){
+  if(feedPollInterval){clearInterval(feedPollInterval);feedPollInterval=null;}
+}
+function showNewPostsBanner(cnt){
+  if($('newPostsBanner'))return;
+  const b=document.createElement('div');
+  b.id='newPostsBanner';
+  b.setAttribute('role','alert');
+  b.textContent='フレンドの新しい声が'+cnt+'件とどいたよ (タップして更新)';
+  b.style.cssText='background:var(--accent);color:#fff;text-align:center;padding:10px 16px;font-size:.88rem;cursor:pointer;';
+  b.addEventListener('click',()=>{b.remove();loadFeed();});
+  const fl=$('feedList');
+  fl.parentElement.insertBefore(b,fl);
+}
+async function startFeedPoller(){
+  stopFeedPoller();
+  if(!me||!feedFriendIds.length)return;
+  feedPollInterval=setInterval(async()=>{
+    if(document.hidden||!$('screenFeed').classList.contains('active'))return;
+    if($('newPostsBanner'))return;
+    const today=new Date().toLocaleDateString('sv-SE',{timeZone:'Asia/Tokyo'});
+    const{count}=await sb.from('friend_feed')
+      .select('id',{count:'exact',head:true})
+      .eq('post_date',today)
+      .gt('created_at',feedLastLoadedAt);
+    if(count>0)showNewPostsBanner(count);
+  },60000);
 }
 
 // ---- theme ----
