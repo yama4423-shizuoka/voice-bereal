@@ -429,6 +429,13 @@ async function loadFeed(){
     const {data:bks}=await sb.from('bookmarks').select('post_id').eq('user_id',me.id).in('post_id',ids);
     if(bks) bks.forEach(b=>myBookmarks.add(b.post_id));
   }
+  // reaction counts per post (all users)
+  let reactionCounts={};
+  if(visiblePosts.length){
+    const ids=visiblePosts.map(p=>p.id);
+    const {data:rxAll}=await sb.from('reactions').select('post_id').in('post_id',ids);
+    if(rxAll) rxAll.forEach(r=>{reactionCounts[r.post_id]=(reactionCounts[r.post_id]||0)+1;});
+  }
   let html='';
   if(visiblePosts.length){
     html+='<p class="section-label">フレンドの声</p>';
@@ -441,6 +448,7 @@ async function loadFeed(){
       const onTime=Math.abs(postMins-targetMins)<=60;
       const reacted=myReactions.has(p.id);
       const bookmarked=myBookmarks.has(p.id);
+      const rxCount=reactionCounts[p.id]||0;
       html+=`<div class="post-card" data-pid="${p.id}" data-tag="${esc(p.tag||'')}">
         <div class="post-header">
           <div class="avatar" aria-hidden="true">${esc(p.username?.[0]||'?')}</div>
@@ -462,8 +470,8 @@ async function loadFeed(){
         ${p.caption?`<p class="post-caption">${esc(p.caption)}</p>`:''}
         ${p.tag?`<span class="post-tag">${esc(p.tag)}</span>`:''}
         <div class="reaction-row">
-          <button class="reaction-btn${reacted?' reacted':''}" data-pid="${p.id}" aria-label="聴いたよリアクション" aria-pressed="${reacted}">
-            ${reacted?'聴いたよ済み':'聴いたよ'}
+          <button class="reaction-btn${reacted?' reacted':''}" data-pid="${p.id}" data-rx="${rxCount}" aria-label="聴いたよリアクション" aria-pressed="${reacted}">
+            ${reacted?'聴いたよ済み':'聴いたよ'}${rxCount>0?` ${rxCount}`:''}
           </button>
           <button class="bookmark-btn${bookmarked?' bookmarked':''}" data-bm="${p.id}" aria-label="${bookmarked?'ブックマーク解除':'ブックマーク'}" aria-pressed="${bookmarked}">
             ${bookmarked?'保存済み':'保存'}
@@ -621,14 +629,22 @@ function cycleSpeed(btn){
 async function toggleReaction(btn){
   const pid=btn.dataset.pid;
   const reacted=btn.classList.contains('reacted');
+  let cnt=parseInt(btn.dataset.rx||'0');
   if(reacted){
     await sb.from('reactions').delete().eq('user_id',me.id).eq('post_id',pid);
-    btn.classList.remove('reacted'); btn.textContent='聴いたよ'; btn.setAttribute('aria-pressed','false');
+    cnt=Math.max(0,cnt-1);
+    btn.dataset.rx=cnt;
+    btn.classList.remove('reacted');
+    btn.textContent=cnt>0?`聴いたよ ${cnt}`:'聴いたよ';
+    btn.setAttribute('aria-pressed','false');
   } else {
     const {error}=await sb.from('reactions').insert({user_id:me.id,post_id:pid});
-    if(!error){ btn.classList.add('reacted'); btn.textContent='聴いたよ済み'; btn.setAttribute('aria-pressed','true'); }
-    else if(error.code==='23505'){ btn.classList.add('reacted'); btn.textContent='聴いたよ済み'; btn.setAttribute('aria-pressed','true'); }
-    else showToast('エラー: '+error.message);
+    if(!error||error.code==='23505'){
+      cnt+=1; btn.dataset.rx=cnt;
+      btn.classList.add('reacted');
+      btn.textContent=cnt>0?`聴いたよ済み ${cnt}`:'聴いたよ済み';
+      btn.setAttribute('aria-pressed','true');
+    } else showToast('エラー: '+error.message);
   }
 }
 
