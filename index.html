@@ -115,6 +115,8 @@
     .profile-code{font-size:.75rem;color:var(--muted);font-weight:600;margin-top:2px}
     .profile-bio{font-size:.85rem;color:#aaa;margin-top:4px}
     .section-label{font-size:.75rem;color:var(--muted);font-weight:700;margin:20px 0 10px;letter-spacing:.05em}
+    .play-all-btn{background:var(--input-bg);border:1px solid var(--input-border);border-radius:20px;color:var(--muted);font-size:.78rem;font-weight:600;padding:5px 14px;cursor:pointer;transition:all .2s;margin-bottom:12px}
+    .play-all-btn.active{background:#1a2a1a;border-color:var(--accent);color:var(--accent)}
     .profile-stat{font-size:.85rem;color:#aaa;margin-bottom:8px}
     /* ---- calendar ---- */
     .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-bottom:16px}
@@ -438,7 +440,7 @@ async function loadFeed(){
   }
   let html='';
   if(visiblePosts.length){
-    html+='<p class="section-label">フレンドの声</p>';
+    html+='<div style="display:flex;align-items:center;justify-content:space-between;margin:20px 0 10px"><p class="section-label" style="margin:0">フレンドの声</p><button class="play-all-btn" id="playAllBtn" aria-label="フレンドの声を全部再生">全部聴く</button></div>';
     visiblePosts.forEach(p=>{
       const postMins=(()=>{
         const d=new Date(p.created_at);
@@ -534,7 +536,12 @@ async function loadFeed(){
   $('feedList').innerHTML=html;
   // play buttons
   $('feedList').querySelectorAll('.play-btn').forEach(btn=>{
-    btn.addEventListener('click',()=>playPost(btn));
+    btn.addEventListener('click',()=>{
+      autoPlayQueue=[];
+      const pab=$('feedList').querySelector('.play-all-btn');
+      if(pab){pab.textContent='全部聴く';pab.classList.remove('active');}
+      playPost(btn);
+    });
   });
   // waveform seek
   $('feedList').querySelectorAll('.waveform').forEach(wf=>{
@@ -552,6 +559,25 @@ async function loadFeed(){
   $('feedList').querySelectorAll('.speed-btn').forEach(btn=>{
     btn.addEventListener('click',()=>cycleSpeed(btn));
   });
+  // play-all button
+  const playAllBtn=$('feedList').querySelector('#playAllBtn');
+  if(playAllBtn){
+    playAllBtn.addEventListener('click',()=>{
+      if(autoPlayQueue.length||(currentBtn&&$('feedList').querySelector('.play-all-btn')?.classList.contains('active'))){
+        autoPlayQueue=[];
+        if(currentAudio){currentAudio.pause();currentAudio=null;}
+        if(currentBtn){currentBtn.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>';currentBtn=null;}
+        if(currentWave){currentWave.style.width='0%';currentWave=null;}
+        playAllBtn.textContent='全部聴く';playAllBtn.classList.remove('active');
+        return;
+      }
+      const friendBtns=[...$('feedList').querySelectorAll('.post-card[data-pid] .play-btn')];
+      if(!friendBtns.length) return;
+      autoPlayQueue=friendBtns.slice(1);
+      playAllBtn.textContent='停止'; playAllBtn.classList.add('active');
+      playPost(friendBtns[0]);
+    });
+  }
   // reaction buttons
     // tag filter visibility
   const ftEl=document.getElementById('feedTagFilter');
@@ -580,6 +606,7 @@ $('feedList').querySelectorAll('.reaction-btn').forEach(btn=>{
 }
 
 let currentAudio=null, currentBtn=null, currentWave=null;
+let autoPlayQueue=[];
 function playPost(btn,seekTo){
   const path=btn.dataset.path;
   const dur=parseInt(btn.dataset.dur)||30;
@@ -612,6 +639,8 @@ function playPost(btn,seekTo){
       clearInterval(interval); wave.style.width='0%';
       btn.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>';
       currentAudio=null; currentBtn=null; currentWave=null;
+      if(autoPlayQueue.length){ const nb=autoPlayQueue.shift(); playPost(nb); }
+      else{ const pab=$('feedList')?.querySelector('.play-all-btn'); if(pab){pab.textContent='全部聴く';pab.classList.remove('active');} }
     };
   });
 }
