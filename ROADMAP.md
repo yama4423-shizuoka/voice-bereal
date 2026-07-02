@@ -53,7 +53,7 @@
 - [x] 昨日の声セクション: フィードの一番下に「昨日の声」として前日のフレンド投稿を折りたたみ表示(クリックで展開)。DB変更なし・friend_feedビューに日付フィルターを変えてクエリを追加するだけ
 - [x] プロフィール表示名の変更: プロフィール画面でusernameをインライン編集できるようにする(30文字以内)。profilesテーブルにUPDATE RLSポリシーが必要(migrations/012-profile-update-rls.sql)
 - [x] フレンドのミニプロフィールカード: フィードカードのフレンド名をタップすると、bio・合計投稿数を表示するミニモーダルが開く。DB変更なし
-- [ ] 通知ON/OFF設定: プロフィール画面に「毎日の通知を受け取る」トグルを追加。subscriptionsテーブルにis_active boolean列を追加し、Vercel Functionで購読がアクティブなユーザーのみに通知(migrations/013-subscription-active.sql)
+- [x] 通知ON/OFF設定: プロフィール画面に「毎日の通知を受け取る」トグルを追加。subscriptionsテーブルにis_active boolean列を追加し、Vercel Functionで購読がアクティブなユーザーのみに通知(migrations/013-subscription-active.sql)
 
 ## ルール
 

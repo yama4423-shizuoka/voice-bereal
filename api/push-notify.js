@@ -38,7 +38,7 @@ module.exports = async function handler(req, res) {
   webpush.setVapidDetails(VAPID_SUBJECT, VAPID_PUBLIC, VAPID_PRIVATE);
 
   const sb = createClient(SB_URL, SB_SERVICE);
-  const { data: subs, error } = await sb.from('push_subscriptions').select('id, endpoint, p256dh, auth');
+  const { data: subs, error } = await sb.from('push_subscriptions').select('id, endpoint, p256dh, auth').eq('is_active', true);
   if (error) return res.status(500).json({ error: error.message });
 
   const payload = JSON.stringify({

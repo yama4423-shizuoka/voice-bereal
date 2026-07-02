@@ -284,6 +284,7 @@
   <p class="section-label">設定</p>
   <div style="display:flex;flex-direction:column;gap:10px">
     <button class="btn btn-ghost" id="themeToggleBtn">テーマ: ダーク</button>
+    <button class="btn btn-ghost" id="notifToggleBtn" style="display:none">毎日の通知: ON</button>
     <button class="btn btn-ghost" id="pushSetupBtn">通知の設定</button>
     <button class="btn btn-ghost" id="onboardAgainBtn">はじめかたを見る</button>
     <button class="btn btn-ghost" id="logoutBtn">ログアウト</button>
@@ -1159,6 +1160,7 @@ async function loadProfile(){
   loadReactionNotifs(posts||[]);
   loadCommentNotifs(posts||[]);
   loadBookmarks();
+  loadNotifToggle();
 }
 
 async function removeFriend(friendId){
@@ -1212,8 +1214,43 @@ async function ensurePushSubscription(){
       sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:appKey});
     }
     const subJson=sub.toJSON();
-    await sb.from('push_subscriptions').upsert({user_id:me.id,endpoint:subJson.endpoint,p256dh:subJson.keys?.p256dh,auth:subJson.keys?.auth},{onConflict:'endpoint'});
+    await sb.from('push_subscriptions').upsert({user_id:me.id,endpoint:subJson.endpoint,p256dh:subJson.keys?.p256dh,auth:subJson.keys?.auth,is_active:true},{onConflict:'endpoint'});
   }catch(e){ console.warn('push subscription failed',e); }
+}
+async function loadNotifToggle(){
+  const btn=$('notifToggleBtn');
+  if(!btn) return;
+  if(!('Notification' in window)||!('serviceWorker' in navigator)||Notification.permission!=='granted'){
+    btn.style.display='none'; return;
+  }
+  btn.style.display='';
+  try{
+    const {data,error}=await sb.from('push_subscriptions').select('is_active').eq('user_id',me.id).limit(1);
+    if(error){ btn.style.display='none'; return; }
+    if(!data||data.length===0){ btn.style.display='none'; return; }
+    const active=data[0].is_active!==false;
+    btn.textContent='毎日の通知: '+(active?'ON':'OFF');
+    btn.dataset.active=String(active);
+  }catch(e){ btn.style.display='none'; }
+}
+async function toggleNotif(){
+  const btn=$('notifToggleBtn');
+  if(!btn) return;
+  const currentlyActive=btn.dataset.active!=='false';
+  const newActive=!currentlyActive;
+  btn.disabled=true;
+  try{
+    if(newActive) await ensurePushSubscription();
+    const {error}=await sb.from('push_subscriptions').update({is_active:newActive}).eq('user_id',me.id);
+    if(error){
+      if(error.code==='42703') showToast('通知ON/OFF設定は準備中です');
+      else showToast('更新に失敗しました: '+error.message);
+      return;
+    }
+    btn.dataset.active=String(newActive);
+    btn.textContent='毎日の通知: '+(newActive?'ON':'OFF');
+    showToast(newActive?'毎日の通知をオンにしました':'毎日の通知をオフにしました');
+  }finally{ btn.disabled=false; }
 }
 
 // ---- recording ----
@@ -1447,6 +1484,7 @@ $('logoutBtn').addEventListener('click',async ()=>{
   showScreen('screenAuth');
 });
 $('pushSetupBtn').addEventListener('click',()=>{ showScreen('screenPush'); loadPushScreen(); });
+$('notifToggleBtn').addEventListener('click',toggleNotif);
 $('onboardAgainBtn').addEventListener('click',showOnboarding);
 $('onboardSkipBtn').addEventListener('click',()=>{ showScreen('screenFeed'); loadFeed(); });
 $('onboardPushBtn').addEventListener('click',async ()=>{
