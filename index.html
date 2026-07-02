@@ -117,6 +117,8 @@
     .profile-code{font-size:.75rem;color:var(--muted);font-weight:600;margin-top:2px}
     .profile-bio{font-size:.85rem;color:#aaa;margin-top:4px}
     .section-label{font-size:.75rem;color:var(--muted);font-weight:700;margin:20px 0 10px;letter-spacing:.05em}
+    details.yesterday-section>summary{cursor:pointer;list-style:none;display:block}
+    details.yesterday-section>summary::-webkit-details-marker{display:none}
     .play-all-btn{background:var(--input-bg);border:1px solid var(--input-border);border-radius:20px;color:var(--muted);font-size:.78rem;font-weight:600;padding:5px 14px;cursor:pointer;transition:all .2s;margin-bottom:12px}
     .play-all-btn.active{background:#1a2a1a;border-color:var(--accent);color:var(--accent)}
     .profile-stat{font-size:.85rem;color:#aaa;margin-bottom:8px}
@@ -364,6 +366,11 @@ function showToast(msg,dur=2500){
 function todayJST(){
   return new Date().toLocaleDateString('sv-SE',{timeZone:'Asia/Tokyo'});
 }
+function yesterdayJST(){
+  const d=new Date(new Date().toLocaleString('en-US',{timeZone:'Asia/Tokyo'}));
+  d.setDate(d.getDate()-1);
+  return d.toLocaleDateString('sv-SE');
+}
 function fmtDate(iso){
   const d=new Date(iso);
   return d.toLocaleString('ja-JP',{timeZone:'Asia/Tokyo',month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'});
@@ -416,6 +423,10 @@ async function loadFeed(){
   const {data:friendPosts}=await sb.from('friend_feed').select('*').eq('post_date',today).order('created_at',{ascending:false});
   const muteSet=new Set(myProfile?.muted_friends||[]);
   const visiblePosts=(friendPosts||[]).filter(p=>!muteSet.has(p.user_id));
+  // yesterday friend posts (collapsed section at bottom of feed)
+  const yesterday=yesterdayJST();
+  const {data:yesterdayPosts}=await sb.from('friend_feed').select('id,user_id,username,bio,storage_path,duration_sec,caption,tag,created_at').eq('post_date',yesterday).order('created_at',{ascending:false});
+  const visibleYesterday=(yesterdayPosts||[]).filter(p=>!muteSet.has(p.user_id));
   // all friends (for silent check)
   const {data:allFriends}=await sb.from('friendships').select('friend_id,profiles!friendships_friend_id_fkey(username)').eq('user_id',me.id);
   feedFriendIds=(allFriends||[]).map(f=>f.friend_id);
@@ -544,6 +555,33 @@ async function loadFeed(){
       <button class="btn btn-primary" style="width:auto;padding:12px 24px" onclick="document.getElementById('fabRec').click()">録音する</button>
     </div>`;
   }
+  if(visibleYesterday.length){
+    const yPlayedSet=getPlayedSet();
+    let yCards='';
+    visibleYesterday.forEach(p=>{
+      yCards+=`<div class="post-card yesterday-card${yPlayedSet.has(String(p.id))?' listened':''}" data-pid="${p.id}">
+        <div class="post-header">
+          <div class="avatar" aria-hidden="true">${esc(p.username?.[0]||'?')}</div>
+          <div>
+            <p class="post-name">${esc(p.username||'名無し')}</p>
+            <p class="post-time">${fmtDate(p.created_at)}</p>
+            ${p.bio?`<p class="post-bio">${esc(p.bio)}</p>`:''}
+          </div>
+        </div>
+        <div class="play-row">
+          <button class="play-btn" data-path="${p.storage_path}" data-dur="${p.duration_sec||0}" aria-label="${esc(p.username||'名無し')}の昨日の音声を再生">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
+          </button>
+          <div class="waveform" aria-hidden="true"><div class="waveform-progress" style="width:0%"></div></div>
+          <span class="duration-label">${p.duration_sec||0}s</span>
+          <button class="speed-btn" aria-label="再生速度" title="再生速度を変更">x1</button>
+        </div>
+        ${p.caption?`<p class="post-caption">${esc(p.caption)}</p>`:''}
+        ${p.tag?`<span class="post-tag">${esc(p.tag)}</span>`:''}
+      </div>`;
+    });
+    html+=`<details class="yesterday-section"><summary class="section-label" style="margin:20px 0 10px;cursor:pointer;list-style:none">昨日の声 (${visibleYesterday.length}件)</summary>${yCards}</details>`;
+  }
   $('feedList').innerHTML=html;
   // play buttons
   $('feedList').querySelectorAll('.play-btn').forEach(btn=>{
@@ -583,7 +621,7 @@ async function loadFeed(){
         playAllBtn.textContent='全部聴く';playAllBtn.classList.remove('active');
         return;
       }
-      const friendBtns=[...$('feedList').querySelectorAll('.post-card[data-pid] .play-btn')];
+      const friendBtns=[...$('feedList').querySelectorAll('.post-card[data-pid]:not(.yesterday-card) .play-btn')];
       if(!friendBtns.length) return;
       autoPlayQueue=friendBtns.slice(1);
       playAllBtn.textContent='停止'; playAllBtn.classList.add('active');
