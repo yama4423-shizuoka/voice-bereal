@@ -238,16 +238,25 @@
 <section id="screenProfile" class="screen" aria-label="プロフィール">
   <div class="profile-header">
     <div class="avatar-lg" id="profileAvatar" aria-hidden="true">?</div>
-    <div>
-      <p class="profile-name" id="profileName"></p>
+    <div style="flex:1;min-width:0">
+      <div id="nameDisplay" style="display:flex;align-items:center;gap:6px">
+        <p class="profile-name" id="profileName"></p>
+        <button id="nameEditBtn" class="btn btn-ghost" style="width:auto;padding:2px 8px;font-size:.72rem;flex-shrink:0" aria-label="表示名を編集">編集</button>
+      </div>
+      <div id="nameEditArea" style="display:none;margin-bottom:4px">
+        <input id="nameEditInput" type="text" maxlength="30" placeholder="表示名(30文字以内)" style="margin-bottom:6px" aria-label="新しい表示名">
+        <div style="display:flex;gap:6px">
+          <button id="nameEditSave" class="btn btn-primary" style="flex:1;padding:6px 0;font-size:.85rem">保存</button>
+          <button id="nameEditCancel" class="btn btn-ghost" style="flex:1;padding:6px 0;font-size:.85rem">キャンセル</button>
+        </div>
+      </div>
       <p class="profile-code" id="profileCode"></p>
       <p class="profile-bio" id="profileBio"></p>
     </div>
   </div>
-  <form id="formProfile" style="display:flex;flex-direction:column;gap:10px;margin-bottom:24px" aria-label="プロフィール編集">
-    <input id="inputName" type="text" placeholder="表示名" maxlength="20" aria-label="表示名">
+  <form id="formProfile" style="display:flex;flex-direction:column;gap:10px;margin-bottom:24px" aria-label="ひとこと編集">
     <textarea id="inputBio" placeholder="ひとこと(40文字以内)" maxlength="40" rows="2" style="resize:none" aria-label="ひとこと"></textarea>
-    <button class="btn btn-primary" type="submit">保存</button>
+    <button class="btn btn-primary" type="submit">ひとことを保存</button>
   </form>
   <p class="section-label">投稿統計</p>
   <div id="profileStats"></div>
@@ -1121,8 +1130,9 @@ async function loadProfile(){
   $('profileName').textContent=myProfile?.username||'';
   $('profileCode').textContent='フレンドコード: '+(myProfile?.friend_code||'');
   $('profileBio').textContent=myProfile?.bio||'';
-  $('inputName').value=myProfile?.username||'';
   $('inputBio').value=myProfile?.bio||'';
+  $('nameDisplay').style.display='flex';
+  $('nameEditArea').style.display='none';
   renderProfileStats(posts||[]);
   renderCalendar(posts||[]);
   loadFriends(posts||[]);
@@ -1386,12 +1396,31 @@ $('previewRetryBtn').addEventListener('click',()=>{
 });
 $('formProfile').addEventListener('submit',async e=>{
   e.preventDefault();
-  const name=$('inputName').value.trim();
-  if(!name){ showToast('表示名を入力してください'); return; }
   const bio=$('inputBio').value.trim();
-  const {error}=await sb.from('profiles').update({username:name,bio}).eq('id',me.id);
+  const {error}=await sb.from('profiles').update({bio}).eq('id',me.id);
   if(error) showToast('保存失敗: '+error.message);
-  else{ myProfile={...myProfile,username:name,bio}; showToast('保存しました'); loadProfile(); }
+  else{ myProfile={...myProfile,bio}; showToast('ひとことを保存しました'); loadProfile(); }
+});
+$('nameEditBtn').addEventListener('click',()=>{
+  $('nameEditInput').value=myProfile?.username||'';
+  $('nameDisplay').style.display='none';
+  $('nameEditArea').style.display='';
+  $('nameEditInput').focus();
+});
+$('nameEditCancel').addEventListener('click',()=>{
+  $('nameDisplay').style.display='flex';
+  $('nameEditArea').style.display='none';
+});
+$('nameEditSave').addEventListener('click',async ()=>{
+  const name=$('nameEditInput').value.trim();
+  if(!name){ showToast('表示名を入力してください'); return; }
+  const {error}=await sb.from('profiles').update({username:name}).eq('id',me.id);
+  if(error){ showToast('保存失敗: '+error.message); return; }
+  myProfile={...myProfile,username:name};
+  $('nameDisplay').style.display='flex';
+  $('nameEditArea').style.display='none';
+  showToast('表示名を変更しました');
+  loadProfile();
 });
 $('logoutBtn').addEventListener('click',async ()=>{
   await sb.auth.signOut(); me=null; myProfile=null;
