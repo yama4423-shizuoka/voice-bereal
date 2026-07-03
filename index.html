@@ -1138,6 +1138,19 @@ function calcLongestStreak(posts){
   }
   return max;
 }
+function calcCurrentStreak(dates){
+  const unique=[...new Set(dates)].sort().reverse();
+  if(!unique.length) return 0;
+  const today=new Date().toISOString().slice(0,10);
+  const yest=new Date(Date.now()-86400000).toISOString().slice(0,10);
+  if(unique[0]!==today&&unique[0]!==yest) return 0;
+  let s=1;
+  for(let i=1;i<unique.length;i++){
+    const d=(new Date(unique[i-1])-new Date(unique[i]))/86400000;
+    if(d===1)s++;else break;
+  }
+  return s;
+}
 function renderProfileStats(posts){
   const total=posts?posts.length:0;
   const longest=calcLongestStreak(posts);
@@ -1688,10 +1701,14 @@ async function openMiniProfile(uid,name){
   $('miniProfileBio').textContent='';
   $('miniProfileStats').textContent='読み込み中...';
   $('miniProfileModal').classList.add('open');
-  const {data,count,error}=await sb.from('friend_feed').select('bio',{count:'exact'}).eq('user_id',uid).limit(1);
-  if(!error){
-    $('miniProfileBio').textContent=(data&&data[0]?.bio)||'';
-    $('miniProfileStats').textContent='合計 '+(count||0)+' 件の声';
+  const {data,error}=await sb.from('friend_feed').select('bio,post_date').eq('user_id',uid);
+  if(!error&&data){
+    $('miniProfileBio').textContent=(data[0]?.bio)||'';
+    const total=data.length;
+    const streak=calcCurrentStreak(data.map(p=>p.post_date).filter(Boolean));
+    let stats='合計 '+total+' 件の声';
+    if(streak>=2) stats+='<br>'+streak+' 日連続中';
+    $('miniProfileStats').innerHTML=stats;
   } else {
     $('miniProfileStats').textContent='';
   }
