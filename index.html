@@ -229,6 +229,9 @@
   </div>
   <div id="todayBadge" style="margin-bottom:12px" aria-live="polite"></div>
   <div id="streakBanner"></div>
+  <div id="feedUnheardRow" style="margin-bottom:8px">
+    <button id="feedUnheardBtn" class="feed-tag-btn" aria-pressed="false">未聴のみ</button>
+  </div>
   <div id="feedTagFilter" style="display:none;flex-wrap:wrap;gap:6px;margin-bottom:12px" role="group" aria-label="タグで絞り込む">
     <button class="feed-tag-btn selected" data-ftag="">全て</button>
     <button class="feed-tag-btn" data-ftag="朝">朝</button>
@@ -379,6 +382,7 @@ const SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJ
 const sb=createClient(SUPA_URL,SUPA_KEY);
 let me=null, myProfile=null;
 let feedPollInterval=null, feedLastLoadedAt=null, feedFriendIds=[];
+let activeUnheardOnly=false;
 const $=id=>document.getElementById(id);
 function esc(s){const d=document.createElement('div');d.textContent=s;return d.innerHTML;}
 function showScreen(id){
@@ -666,6 +670,9 @@ async function loadFeed(){
     ftEl.style.display=hasTags?'flex':'none';
     ftEl.querySelectorAll('.feed-tag-btn').forEach(b=>{b.classList.toggle('selected',b.dataset.ftag==='');});
   }
+  activeUnheardOnly=false;
+  const uhBtn=$('feedUnheardBtn');
+  if(uhBtn){uhBtn.classList.remove('selected');uhBtn.setAttribute('aria-pressed','false');}
 $('feedList').querySelectorAll('.reaction-btn').forEach(btn=>{
     btn.addEventListener('click',()=>toggleReaction(btn));
   });
@@ -1100,9 +1107,12 @@ async function loadBookmarks(){
 function applyTagFilter(tag){
   const ftEl=document.getElementById('feedTagFilter');
   if(ftEl) ftEl.querySelectorAll('.feed-tag-btn').forEach(b=>b.classList.toggle('selected',b.dataset.ftag===tag));
+  const playedSet=activeUnheardOnly?getPlayedSet():null;
   document.querySelectorAll('#feedList .post-card[data-pid]').forEach(card=>{
     const ct=card.dataset.tag||'';
-    card.style.display=(!tag||ct===tag)?'':'none';
+    const tagOk=!tag||ct===tag;
+    const heardOk=!playedSet||!playedSet.has(String(card.dataset.pid));
+    card.style.display=(tagOk&&heardOk)?'':'none';
   });
 }
 
@@ -1513,6 +1523,14 @@ document.getElementById('feedTagFilter').addEventListener('click',e=>{
   const btn=e.target.closest('.feed-tag-btn');
   if(!btn) return;
   applyTagFilter(btn.dataset.ftag);
+});
+$('feedUnheardBtn').addEventListener('click',()=>{
+  activeUnheardOnly=!activeUnheardOnly;
+  const btn=$('feedUnheardBtn');
+  btn.classList.toggle('selected',activeUnheardOnly);
+  btn.setAttribute('aria-pressed',String(activeUnheardOnly));
+  const currentTag=$('feedTagFilter')?.querySelector('.feed-tag-btn.selected')?.dataset?.ftag??'';
+  applyTagFilter(currentTag);
 });
 $('tagSelector').addEventListener('click',e=>{
   const btn=e.target.closest('.tag-btn');
