@@ -1047,6 +1047,17 @@ function buildFeedCard(post){
   let isLoaded=false;
   const durationLabel=document.createElement('span');
   durationLabel.className='duration-label';
+  {
+    const today=new Date().toISOString().split('T')[0];
+    const pdate=post.post_date||today;
+    const{data:metaUrl}=sb.storage.from('voice-posts').getPublicUrl(`${post.user_id}/${pdate}.webm`);
+    const metaAudio=new Audio();
+    metaAudio.preload='metadata';
+    metaAudio.src=metaUrl.publicUrl;
+    metaAudio.addEventListener('loadedmetadata',()=>{
+      durationLabel.textContent=Math.round(metaAudio.duration)+'秒';
+    },{once:true});
+  }
   const actionsRow=document.createElement('div');
   actionsRow.className='feed-actions';
   const speedBtn=document.createElement('button');
