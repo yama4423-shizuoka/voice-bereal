@@ -427,6 +427,7 @@ const sb=createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
 const $=id=>document.getElementById(id);
 let me=null,myProfile=null,mediaRecorder=null,audioChunks=[],recInterval=null,recSeconds=0;
 let feedPosts=[],currentPlayingAudio=null,currentPlayingCard=null;
+let olderFeedOffset=0;
 let playQueue=[],playQueueIndex=-1,isPlayingAll=false;
 let lastFeedIds=new Set(),feedPollInterval=null;
 let pendingBlob=null,pendingCaption='',pendingTag='';
@@ -822,6 +823,7 @@ async function loadFeed(){
   lastFeedIds=new Set(feedPosts.map(p=>p.id));
   if(feedPollInterval) clearInterval(feedPollInterval);
   feedPollInterval=setInterval(pollNewPosts,60000);
+  olderFeedOffset=0;
   renderFeed(el,todayPosts||[],myPost,yesterdayPosts||[]);
 }
 async function pollNewPosts(){
@@ -1008,6 +1010,51 @@ function renderFeed(el,posts,myPost,yesterdayPosts){
     ySection.appendChild(yEmpty);
   }
   el.appendChild(ySection);
+  const olderContainer=document.createElement('div');
+  olderContainer.id='olderPostsContainer';
+  el.appendChild(olderContainer);
+  const moreBtn=document.createElement('button');
+  moreBtn.className='btn-secondary';
+  moreBtn.style.cssText='display:block;margin:12px auto;font-size:.85rem;padding:6px 16px';
+  moreBtn.textContent='さらに前の声を見る';
+  moreBtn.onclick=()=>loadOlderFriendPosts(moreBtn);
+  el.appendChild(moreBtn);
+}
+async function loadOlderFriendPosts(btn){
+  btn.disabled=true;
+  btn.textContent='読み込み中...';
+  olderFeedOffset++;
+  const d=new Date(Date.now()-86400000*(1+olderFeedOffset));
+  const dateStr=d.toISOString().split('T')[0];
+  const month=d.getMonth()+1;
+  const day=d.getDate();
+  const label=month+'月'+day+'日の声';
+  const{data:posts}=await sb.from('friend_feed').select('*').eq('post_date',dateStr).order('created_at',{ascending:false});
+  const container=$('olderPostsContainer');
+  if(container){
+    const section=document.createElement('details');
+    section.style.marginTop='16px';
+    const sum=document.createElement('summary');
+    sum.className='section-title';
+    sum.style.cursor='pointer';
+    sum.textContent=label;
+    section.appendChild(sum);
+    if(posts&&posts.length>0){
+      posts.forEach(p=>section.appendChild(buildFeedCard(p)));
+    } else {
+      const empty=document.createElement('p');
+      empty.style.cssText='color:var(--text2);font-size:.9rem;padding:8px 0';
+      empty.textContent='この日のフレンドの声はありません';
+      section.appendChild(empty);
+    }
+    container.appendChild(section);
+  }
+  if(olderFeedOffset>=5){
+    btn.style.display='none';
+  } else {
+    btn.disabled=false;
+    btn.textContent='さらに前の声を見る';
+  }
 }
 
 function buildMyCard(post){
