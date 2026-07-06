@@ -338,6 +338,8 @@
         </div>
         <p class="section-title">今月のまとめ</p>
         <div id="monthlySummary" style="display:flex;gap:8px;margin-bottom:20px"></div>
+        <p class="section-title">声の傾向</p>
+        <div id="tagStats" style="margin-bottom:20px"></div>
         <p class="section-title">最近のリアクション</p>
         <div id="reactionList" style="margin-bottom:20px"></div>
         <p class="section-title">最近のコメント</p>
@@ -1448,7 +1450,7 @@ async function loadProfile(){
   renderDurationPicker();
   await updateNotifToggle();
   // stats
-  const{data:allPosts}=await sb.from('posts').select('post_date').eq('user_id',me.id).order('post_date',{ascending:true});
+  const{data:allPosts}=await sb.from('posts').select('post_date,tag').eq('user_id',me.id).order('post_date',{ascending:true});
   const dates=(allPosts||[]).map(p=>p.post_date);
   $('statTotalPosts').textContent=dates.length;
   $('statMaxStreak').textContent=calcMaxStreak(dates)+'日';
@@ -1468,6 +1470,21 @@ async function loadProfile(){
     }
     $('monthlySummary').innerHTML=[['投稿',monthPostCnt],['聴いたよ',monthReactCnt],['コメント',monthCommentCnt]]
       .map(([l,v])=>`<div style="flex:1;background:var(--surface);border-radius:var(--radius-sm);padding:12px;text-align:center"><div style="font-size:1.4rem;font-weight:700">${v}</div><div style="font-size:.7rem;color:var(--text2)">${l}</div></div>`).join('');
+  }
+  // tag stats
+  {
+    const tagCounts={};
+    (allPosts||[]).forEach(p=>{if(p.tag) tagCounts[p.tag]=(tagCounts[p.tag]||0)+1;});
+    const entries=Object.entries(tagCounts).sort((a,b)=>b[1]-a[1]);
+    if(entries.length){
+      const maxCount=entries[0][1];
+      $('tagStats').innerHTML=entries.map(([tag,count])=>{
+        const pct=Math.round(count/maxCount*100);
+        return `<div style="margin-bottom:10px"><div style="display:flex;justify-content:space-between;font-size:.82rem;margin-bottom:3px"><span>${tag}</span><span style="color:var(--text2)">${count}回</span></div><div style="height:6px;background:var(--surface2);border-radius:3px;overflow:hidden"><div style="width:${pct}%;height:100%;background:var(--accent);border-radius:3px;transition:width .4s"></div></div></div>`;
+      }).join('');
+    } else {
+      $('tagStats').innerHTML='<p style="color:var(--text2);font-size:.85rem">タグ付き投稿がまだありません</p>';
+    }
   }
   // reactions
   const{data:myPostsR}=await sb.from('posts').select('id,post_date').eq('user_id',me.id);
