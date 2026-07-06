@@ -359,7 +359,10 @@
 
     <nav class="tab-bar" role="tablist">
       <button class="tab-btn active" data-tab="Feed" role="tab" aria-label="フィード">
-        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+        <div style="position:relative;display:inline-flex">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+          <span id="feedTabBadge" class="tab-badge" style="display:none"></span>
+        </div>
         フィード
       </button>
       <button class="tab-btn" data-tab="Record" role="tab" aria-label="録音">
@@ -786,8 +789,18 @@ const SPEED_OPTIONS=[.75,1,1.5];
 let savedSpeed=parseFloat(localStorage.getItem('playSpeed'))||1;
 function getPlayedKey(){ return `played_${me?.id}_${new Date().toISOString().split('T')[0]}`; }
 function getPlayedSet(){ try{return new Set(JSON.parse(localStorage.getItem(getPlayedKey())||'[]'));}catch{return new Set();} }
-function addPlayed(pid){ const s=getPlayedSet();s.add(pid);localStorage.setItem(getPlayedKey(),JSON.stringify([...s])); }
+function addPlayed(pid){ const s=getPlayedSet();s.add(pid);localStorage.setItem(getPlayedKey(),JSON.stringify([...s]));updateFeedBadge(); }
 
+let todayFriendPostIds=[];
+function updateFeedBadge(){
+  if(!me) return;
+  const played=getPlayedSet();
+  const n=todayFriendPostIds.filter(id=>!played.has(id)).length;
+  const badge=$('feedTabBadge');
+  if(!badge) return;
+  if(n>0){badge.textContent=n;badge.style.display='flex';}
+  else{badge.style.display='none';}
+}
 let activeTagFilter='';
 let showUnheardOnly=false;
 let captionSearchQuery='';
@@ -829,6 +842,8 @@ async function pollNewPosts(){
 }
 
 function renderFeed(el,posts,myPost,yesterdayPosts){
+  todayFriendPostIds=(posts||[]).map(p=>p.id);
+  updateFeedBadge();
   el.innerHTML='';
   const streak=calcCurrentStreak();
   if(streak>=3){
