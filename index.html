@@ -342,6 +342,8 @@
         <div id="tagStats" style="margin-bottom:20px"></div>
         <p class="section-title">月別投稿グラフ</p>
         <div id="monthlyGraph" style="margin-bottom:20px"></div>
+        <p class="section-title">曜日別の声</p>
+        <div id="weekdayGraph" style="margin-bottom:20px"></div>
         <p class="section-title">最近のリアクション</p>
         <div id="reactionList" style="margin-bottom:20px"></div>
         <p class="section-title">最近のコメント</p>
@@ -1553,6 +1555,24 @@ async function loadProfile(){
     $('monthlyGraph').innerHTML=monthCounts.map(({label,count})=>{
       const pct=Math.round(count/maxCount*100);
       return `<div style="margin-bottom:10px"><div style="display:flex;justify-content:space-between;font-size:.82rem;margin-bottom:3px"><span>${label}</span><span style="color:var(--text2)">${count}回</span></div><div style="height:8px;background:var(--surface2);border-radius:4px;overflow:hidden"><div style="width:${pct}%;height:100%;background:var(--accent);border-radius:4px;transition:width .4s"></div></div></div>`;
+    }).join('');
+  }
+  // weekday pattern
+  {
+    const DAYS=['月','火','水','木','金','土','日'];
+    const DOW_IDX=[1,2,3,4,5,6,0];
+    const dayCounts=Array(7).fill(0);
+    (allPosts||[]).forEach(p=>{
+      if(p.post_date){
+        const dow=new Date(p.post_date+'T12:00:00').getDay();
+        const i=DOW_IDX.indexOf(dow);
+        if(i>=0) dayCounts[i]++;
+      }
+    });
+    const maxDay=Math.max(...dayCounts,1);
+    $('weekdayGraph').innerHTML=dayCounts.map((count,i)=>{
+      const pct=Math.round(count/maxDay*100);
+      return `<div style="margin-bottom:8px"><div style="display:flex;justify-content:space-between;font-size:.82rem;margin-bottom:3px"><span>${DAYS[i]}曜日</span><span style="color:var(--text2)">${count}回</span></div><div style="height:8px;background:var(--surface2);border-radius:4px;overflow:hidden"><div style="width:${pct}%;height:100%;background:var(--accent);border-radius:4px;transition:width .4s"></div></div></div>`;
     }).join('');
   }
   // reactions
