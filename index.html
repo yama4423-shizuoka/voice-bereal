@@ -627,6 +627,8 @@ $('btnNotifToggle').addEventListener('click',async()=>{
   showToast(newVal?'通知をオンにしました':'通知をオフにしました');
 });
 
+function fmtTime(s){const m=Math.floor(s/60);return `${m}:${String(Math.floor(s%60)).padStart(2,'0')}`;}
+
 // today time display
 function getTodayPostTime(){
   const now=new Date();
@@ -1336,12 +1338,14 @@ function buildFeedCard(post){
         if(!audio.duration) return;
         const prog=audio.currentTime/audio.duration;
         bars.forEach((b,i)=>b.classList.toggle('played',i/BAR_COUNT<prog));
+        durationLabel.textContent=`${fmtTime(audio.currentTime)} / ${fmtTime(audio.duration)}`;
         if('mediaSession' in navigator){try{navigator.mediaSession.setPositionState({duration:audio.duration,playbackRate:audio.playbackRate,position:audio.currentTime});}catch(e){}}
       });
       audio.addEventListener('play',()=>{if('mediaSession' in navigator) navigator.mediaSession.playbackState='playing';});
       audio.addEventListener('pause',()=>{if('mediaSession' in navigator) navigator.mediaSession.playbackState='paused';});
       audio.addEventListener('ended',async()=>{
         bars.forEach(b=>b.classList.remove('played'));
+        if(audio.duration) durationLabel.textContent=Math.round(audio.duration)+'秒';
         addPlayed(post.id);
         card.classList.add('greyed');
         await reactToPost();
