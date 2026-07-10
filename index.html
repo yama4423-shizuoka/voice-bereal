@@ -398,12 +398,13 @@
         <div id="mpStreak" style="font-size:.78rem;color:var(--accent);margin-top:2px"></div>
       </div>
     </div>
-    <div id="mpStats" style="display:flex;gap:12px;margin-bottom:16px">
+    <div id="mpStats" style="display:flex;gap:12px;margin-bottom:12px">
       <div style="flex:1;background:var(--surface2);border-radius:var(--radius-sm);padding:10px;text-align:center">
         <div id="mpPostCount" style="font-size:1.3rem;font-weight:700">-</div>
         <div style="font-size:.72rem;color:var(--text2)">合計投稿</div>
       </div>
     </div>
+    <div id="mpWeekDots" style="margin-bottom:16px"></div>
     <button id="btnCloseMiniProfile" class="btn btn-secondary">閉じる</button>
     <button id="btnViewFriendCal" class="btn btn-ghost" style="margin-top:8px">投稿カレンダーを見る</button>
   </div>
@@ -1820,6 +1821,42 @@ async function showMiniProfile(userId){
     else break;
   }
   $('mpStreak').textContent=fStreak>0?`${fStreak}日連続中`:'';
+  // week dots
+  const DOW_LABELS=['日','月','火','水','木','金','土'];
+  const weekDays=[];
+  for(let i=6;i>=0;i--){
+    const d=new Date(today);
+    d.setDate(today.getDate()-i);
+    weekDays.push({date:d.toISOString().split('T')[0],dow:d.getDay()});
+  }
+  const mpWD=$('mpWeekDots');
+  mpWD.innerHTML='';
+  const wRow=document.createElement('div');
+  wRow.style.cssText='display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--surface1);border-radius:8px';
+  const wLabel=document.createElement('span');
+  wLabel.style.cssText='font-size:.78rem;color:var(--text2);white-space:nowrap';
+  wLabel.textContent='今週';
+  const wDots=document.createElement('div');
+  wDots.style.cssText='display:flex;gap:5px;flex:1;justify-content:center';
+  weekDays.forEach(({date,dow})=>{
+    const col=document.createElement('div');
+    col.style.cssText='display:flex;flex-direction:column;align-items:center;gap:3px';
+    const dot=document.createElement('div');
+    dot.style.cssText='width:10px;height:10px;border-radius:50%;background:'+(pDates.includes(date)?'var(--accent)':'var(--surface2)');
+    const lbl=document.createElement('div');
+    lbl.style.cssText='font-size:.55rem;color:var(--text2)';
+    lbl.textContent=DOW_LABELS[dow];
+    col.appendChild(dot);
+    col.appendChild(lbl);
+    wDots.appendChild(col);
+  });
+  const wCount=document.createElement('span');
+  wCount.style.cssText='font-size:.78rem;color:var(--text2);white-space:nowrap';
+  wCount.textContent=weekDays.filter(({date})=>pDates.includes(date)).length+'/7';
+  wRow.appendChild(wLabel);
+  wRow.appendChild(wDots);
+  wRow.appendChild(wCount);
+  mpWD.appendChild(wRow);
   $('miniProfileModal').style.display='flex';
   $('miniProfileModal').dataset.userId=userId;
 }
