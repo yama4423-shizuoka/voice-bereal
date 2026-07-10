@@ -340,6 +340,8 @@
         <div id="monthlySummary" style="display:flex;gap:8px;margin-bottom:20px"></div>
         <p class="section-title">声の傾向</p>
         <div id="tagStats" style="margin-bottom:20px"></div>
+        <p class="section-title">月別投稿グラフ</p>
+        <div id="monthlyGraph" style="margin-bottom:20px"></div>
         <p class="section-title">最近のリアクション</p>
         <div id="reactionList" style="margin-bottom:20px"></div>
         <p class="section-title">最近のコメント</p>
@@ -1533,6 +1535,25 @@ async function loadProfile(){
     } else {
       $('tagStats').innerHTML='<p style="color:var(--text2);font-size:.85rem">タグ付き投稿がまだありません</p>';
     }
+  }
+  // monthly graph (past 6 months)
+  {
+    const now=new Date();
+    const monthCounts=[];
+    for(let i=5;i>=0;i--){
+      const d=new Date(now.getFullYear(),now.getMonth()-i,1);
+      const y=d.getFullYear();
+      const m=String(d.getMonth()+1).padStart(2,'0');
+      const label=`${y}年${d.getMonth()+1}月`;
+      const prefix=`${y}-${m}`;
+      const count=(allPosts||[]).filter(p=>p.post_date&&p.post_date.startsWith(prefix)).length;
+      monthCounts.push({label,count});
+    }
+    const maxCount=Math.max(...monthCounts.map(mc=>mc.count),1);
+    $('monthlyGraph').innerHTML=monthCounts.map(({label,count})=>{
+      const pct=Math.round(count/maxCount*100);
+      return `<div style="margin-bottom:10px"><div style="display:flex;justify-content:space-between;font-size:.82rem;margin-bottom:3px"><span>${label}</span><span style="color:var(--text2)">${count}回</span></div><div style="height:8px;background:var(--surface2);border-radius:4px;overflow:hidden"><div style="width:${pct}%;height:100%;background:var(--accent);border-radius:4px;transition:width .4s"></div></div></div>`;
+    }).join('');
   }
   // reactions
   const{data:myPostsR}=await sb.from('posts').select('id,post_date').eq('user_id',me.id);
