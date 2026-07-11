@@ -336,6 +336,10 @@
             <div id="statMaxStreak" style="font-size:1.5rem;font-weight:700">-</div>
             <div style="font-size:.75rem;color:var(--text2)">最長連続</div>
           </div>
+          <div style="flex:1;background:var(--surface);border-radius:var(--radius-sm);padding:12px;text-align:center">
+            <div id="statFriendCount" style="font-size:1.5rem;font-weight:700">-</div>
+            <div style="font-size:.75rem;color:var(--text2)">フレンド</div>
+          </div>
         </div>
         <p class="section-title">今月のまとめ</p>
         <div id="monthlySummary" style="display:flex;gap:8px;margin-bottom:20px"></div>
@@ -1676,6 +1680,7 @@ async function loadProfile(){
   localStorage.setItem('lastSeenNotifCount',totalNotifs);
   // friends
   const{data:friendships}=await sb.from('friendships').select('friend_id').eq('user_id',me.id);
+  $('statFriendCount').textContent=(friendships||[]).length;
   let friendHtml='';
   if(friendships&&friendships.length){
     const fids=friendships.map(f=>f.friend_id);
