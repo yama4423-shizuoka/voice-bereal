@@ -238,6 +238,7 @@
           <button id="btnRefreshFeed" style="background:var(--surface2);border:none;border-radius:var(--radius-sm);padding:6px 10px;color:var(--text);font-size:.78rem;cursor:pointer">更新</button>
         </div>
       </div>
+      <div id="ptrBar" style="height:0;overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:.8rem;color:var(--text2);background:var(--surface);flex-shrink:0"></div>
       <div class="content" id="feedContent" style="flex:1;overflow-y:auto">
         <div class="spinner"></div>
       </div>
@@ -1482,6 +1483,37 @@ $('btnPlayAll').addEventListener('click',()=>{
   playQueue[0]();
 });
 $('btnRefreshFeed').addEventListener('click',()=>loadFeed());
+
+// Pull-to-refresh
+(function(){
+  const THRESHOLD=60;
+  let startY=0,pulling=false,lastDy=0;
+  const fc=$('feedContent');
+  const bar=$('ptrBar');
+  fc.addEventListener('touchstart',e=>{
+    if(fc.scrollTop!==0) return;
+    startY=e.touches[0].clientY;
+    pulling=true;
+    lastDy=0;
+  },{passive:true});
+  fc.addEventListener('touchmove',e=>{
+    if(!pulling) return;
+    const dy=e.touches[0].clientY-startY;
+    if(dy<=0){pulling=false;bar.style.height='0';return;}
+    e.preventDefault();
+    lastDy=dy;
+    bar.style.transition='none';
+    bar.style.height=Math.min(dy*0.5,56)+'px';
+    bar.textContent=dy>=THRESHOLD?'離して更新':'引っ張って更新';
+  },{passive:false});
+  fc.addEventListener('touchend',()=>{
+    if(!pulling) return;
+    pulling=false;
+    bar.style.transition='height .2s';
+    bar.style.height='0';
+    if(lastDy>=THRESHOLD) loadFeed();
+  },{passive:true});
+})();
 
 // bookmarks
 async function loadBookmarks(){
