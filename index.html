@@ -816,6 +816,7 @@ let activeTagFilter='';
 let showUnheardOnly=false;
 let captionSearchQuery='';
 let activeFriendFilter='';
+let feedSortOrder='newest';
 
 async function loadFeed(){
   const el=$('feedContent');
@@ -853,7 +854,7 @@ async function pollNewPosts(){
   }
 }
 
-function renderFeed(el,posts,myPost,yesterdayPosts){
+async function renderFeed(el,posts,myPost,yesterdayPosts){
   todayFriendPostIds=(posts||[]).map(p=>p.id);
   updateFeedBadge();
   el.innerHTML='';
@@ -935,6 +936,17 @@ function renderFeed(el,posts,myPost,yesterdayPosts){
   unheardBtn.style.marginBottom='12px';
   unheardBtn.addEventListener('click',()=>{showUnheardOnly=!showUnheardOnly;renderFeed(el,posts,myPost,yesterdayPosts);});
   el.appendChild(unheardBtn);
+  // sort order
+  const sortRow=document.createElement('div');
+  sortRow.style.cssText='display:flex;gap:6px;margin-bottom:12px';
+  [['新着順','newest'],['人気順','popular']].forEach(([label,order])=>{
+    const btn=document.createElement('button');
+    btn.className='filter-chip'+(feedSortOrder===order?' active':'');
+    btn.textContent=label;
+    btn.addEventListener('click',()=>{feedSortOrder=order;renderFeed(el,posts,myPost,yesterdayPosts);});
+    sortRow.appendChild(btn);
+  });
+  el.appendChild(sortRow);
   // caption search
   const searchInput=document.createElement('input');
   searchInput.type='text';
@@ -974,6 +986,10 @@ function renderFeed(el,posts,myPost,yesterdayPosts){
   if(captionSearchQuery){
     const q=captionSearchQuery.toLowerCase();
     filteredPosts=filteredPosts.filter(p=>(p.caption||'').toLowerCase().includes(q));
+  }
+  if(feedSortOrder==='popular'){
+    const rmap=await loadReactions(filteredPosts.map(p=>p.id));
+    filteredPosts=[...filteredPosts].sort((a,b)=>(rmap[b.id]?.count||0)-(rmap[a.id]?.count||0));
   }
   const hasFriendPosts=filteredPosts.length>0;
   friendSection.innerHTML=`<p class="section-title">フレンドの声</p>`;
