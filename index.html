@@ -363,6 +363,9 @@
     <!-- Bookmarks Tab -->
     <div id="tabBookmarks" class="tab-content" style="display:none;flex-direction:column;flex:1">
       <div class="topbar"><h1>ブックマーク</h1></div>
+      <div style="padding:8px 16px 0">
+        <input id="bmSearchInput" type="text" class="caption-search" placeholder="キャプションで絞り込む" aria-label="ブックマークをキャプションで絞り込む">
+      </div>
       <div class="content" id="bookmarkContent">
         <div class="spinner"></div>
       </div>
@@ -1536,16 +1539,30 @@ $('btnRefreshFeed').addEventListener('click',()=>loadFeed());
 })();
 
 // bookmarks
+let bookmarkedPosts=[];
+function renderBookmarkList(){
+  const q=($('bmSearchInput')?.value||'').trim().toLowerCase();
+  const el=$('bookmarkContent');
+  const filtered=q?bookmarkedPosts.filter(p=>(p.caption||'').toLowerCase().includes(q)):bookmarkedPosts;
+  if(!filtered.length){
+    el.innerHTML=q?'<p style="color:var(--text2)">該当する投稿がありません</p>':'<p style="color:var(--text2)">ブックマークはありません</p>';
+    return;
+  }
+  el.innerHTML='';
+  filtered.forEach(p=>el.appendChild(buildFeedCard(p)));
+}
 async function loadBookmarks(){
   const el=$('bookmarkContent');
   el.innerHTML='<div class="spinner"></div>';
   const{data:bms}=await sb.from('bookmarks').select('post_id').eq('user_id',me.id);
-  if(!bms||!bms.length){el.innerHTML='<p style="color:var(--text2)">ブックマークはありません</p>';return;}
+  if(!bms||!bms.length){bookmarkedPosts=[];renderBookmarkList();return;}
   const postIds=bms.map(b=>b.post_id);
   const{data:posts}=await sb.from('friend_feed').select('*').in('id',postIds);
-  el.innerHTML='';
-  if(!posts||!posts.length){el.innerHTML='<p style="color:var(--text2)">投稿が見つかりません</p>';return;}
-  posts.forEach(p=>el.appendChild(buildFeedCard(p)));
+  if(!posts||!posts.length){bookmarkedPosts=[];renderBookmarkList();return;}
+  bookmarkedPosts=posts;
+  const inp=$('bmSearchInput');
+  if(inp) inp.oninput=renderBookmarkList;
+  renderBookmarkList();
 }
 
 // profile
