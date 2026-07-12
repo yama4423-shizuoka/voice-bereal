@@ -150,6 +150,12 @@
       border-radius:var(--radius);padding:12px 16px;margin-bottom:16px;display:flex;
       align-items:center;gap:10px}
     .streak-text{font-weight:700;font-size:1rem}
+    .milestone-banner{background:linear-gradient(135deg,#f5a623,#f7c948);color:#1a1a1a;border-radius:var(--radius);padding:14px 16px;margin-bottom:16px;display:flex;align-items:center;gap:12px}
+    .milestone-icon{font-size:1.5rem;flex-shrink:0}
+    .milestone-body{display:flex;flex-direction:column;gap:2px;flex:1}
+    .milestone-days{font-weight:800;font-size:1.05rem}
+    .milestone-sub{font-size:.8rem;opacity:.75}
+    .milestone-close{background:none;border:none;font-size:1.1rem;cursor:pointer;color:inherit;opacity:.7;padding:0 4px;line-height:1;align-self:flex-start}
     /* calendar */
     .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-top:8px}
     .cal-cell{aspect-ratio:1;border-radius:4px;background:var(--surface2);
@@ -871,6 +877,21 @@ async function renderFeed(el,posts,myPost,yesterdayPosts){
     b.className='streak-banner';
     b.innerHTML=`<span style="font-size:1.3rem">*</span><span class="streak-text">${streak}日連続！すごい！</span>`;
     el.appendChild(b);
+  }
+  // milestone banner (7/14/30/100 days)
+  {
+    const MILESTONES=[7,14,30,100];
+    const shownMs=JSON.parse(localStorage.getItem('vbr_milestones_shown')||'[]');
+    const hit=MILESTONES.find(m=>streak===m&&!shownMs.includes(m));
+    if(hit){
+      shownMs.push(hit);
+      localStorage.setItem('vbr_milestones_shown',JSON.stringify(shownMs));
+      const mb=document.createElement('div');
+      mb.className='milestone-banner';
+      const msgs={7:'7日連続達成！',14:'2週間連続達成！',30:'30日連続達成！',100:'100日連続達成！'};
+      mb.innerHTML='<span class="milestone-icon">*</span><div class="milestone-body"><span class="milestone-days">'+msgs[hit]+'</span><span class="milestone-sub">すばらしい記録です</span></div><button class="milestone-close" aria-label="閉じる" onclick="this.parentElement.remove()">x</button>';
+      el.appendChild(mb);
+    }
   }
   // week progress bar
   {
