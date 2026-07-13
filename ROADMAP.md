@@ -85,7 +85,7 @@
 - [x] 今日の声をOS共有: 自分のきょうの投稿をnavigator.share APIでシェア(非対応ブラウザはクリップボードコピーにフォールバック)。DB変更なし
 - [x] フレンドコードのQRコード表示: フレンドコード欄横のボタンでvanilla JS+SVGによるQRコードモーダルを表示。ライブラリ不要。DB変更なし
 - [x] フィードの「おすすめの声」: 未再生のフレンド投稿のうち聴いたよ数が最多の1件をフィード最上部に「今日のおすすめ」として固定表示。DB変更なし
-- [ ] 録音マイク設定(ノイズ抑制・エコーキャンセル): getUserMediaのnoiseSuppression/echoCancellationをプロフィール画面のトグルで切り替え。localStorageで保存。DB変更なし
+- [x] 録音マイク設定(ノイズ抑制・エコーキャンセル): getUserMediaのnoiseSuppression/echoCancellationをプロフィール画面のトグルで切り替え。localStorageで保存。DB変更なし
 
 ## ルール
 
