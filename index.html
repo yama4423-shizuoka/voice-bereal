@@ -1027,9 +1027,31 @@ async function renderFeed(el,posts,myPost,yesterdayPosts){
     mySection.innerHTML+='<p style="color:var(--text2);font-size:.9rem">まだ声を残していません</p>';
   }
   el.appendChild(mySection);
+  // recommended: unplayed post with most reactions
+  let recPostId=null;
+  {
+    const recPlayed=getPlayedSet();
+    const recCandidates=(posts||[]).filter(p=>!recPlayed.has(p.id)&&!p.reacted_by_me);
+    if(recCandidates.length>0){
+      const recRmap=await loadReactions(recCandidates.map(p=>p.id));
+      const recPost=recCandidates.reduce((best,p)=>
+        (recRmap[p.id]?.count||0)>(recRmap[best.id]?.count||0)?p:best
+      ,recCandidates[0]);
+      recPostId=recPost.id;
+      const recSection=document.createElement('div');
+      recSection.style.marginBottom='8px';
+      const recTitle=document.createElement('p');
+      recTitle.className='section-title';
+      recTitle.textContent='今日のおすすめ';
+      recSection.appendChild(recTitle);
+      recSection.appendChild(buildFeedCard(recPost));
+      el.appendChild(recSection);
+    }
+  }
   // friends
   const friendSection=document.createElement('div');
   let filteredPosts=posts||[];
+  if(recPostId) filteredPosts=filteredPosts.filter(p=>p.id!==recPostId);
   if(activeFriendFilter) filteredPosts=filteredPosts.filter(p=>p.user_id===activeFriendFilter);
   if(activeTagFilter) filteredPosts=filteredPosts.filter(p=>p.tag===activeTagFilter);
   if(showUnheardOnly){
