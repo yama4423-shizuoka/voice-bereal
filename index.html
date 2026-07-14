@@ -177,6 +177,8 @@
     .new-posts-banner{position:sticky;top:0;z-index:10;background:var(--accent);
       color:#fff;text-align:center;padding:8px 16px;font-size:.85rem;font-weight:600;
       cursor:pointer;border-radius:var(--radius-sm);margin-bottom:8px}
+    /* caught-up banner */
+    .caught-up-banner{background:var(--success);color:#000;border-radius:var(--radius);padding:12px 16px;margin:8px 0 16px;text-align:center;font-weight:600;font-size:.9rem}
     /* onboarding */
     .onb-step{display:flex;align-items:flex-start;gap:12px;margin-bottom:16px}
     .onb-num{width:28px;height:28px;border-radius:50%;background:var(--accent);
@@ -893,6 +895,8 @@ function updateFeedBadge(){
   if(!badge) return;
   if(n>0){badge.textContent=n;badge.style.display='flex';}
   else{badge.style.display='none';}
+  const cub=$('caughtUpBanner');
+  if(cub){const allDone=todayFriendPostIds.length>0&&todayFriendPostIds.every(id=>played.has(id));cub.style.display=allDone?'block':'none';}
 }
 let activeTagFilter='';
 let showUnheardOnly=false;
@@ -1144,6 +1148,13 @@ async function renderFeed(el,posts,myPost,yesterdayPosts){
     friendSection.innerHTML+='<p style="color:var(--text2);font-size:.9rem">フレンドの投稿はまだありません</p>';
   }
   el.appendChild(friendSection);
+  const cub=document.createElement('div');
+  cub.id='caughtUpBanner';
+  cub.className='caught-up-banner';
+  cub.textContent='今日のフレンドの声を全部聴いたよ！';
+  cub.style.display='none';
+  el.appendChild(cub);
+  updateFeedBadge();
   // yesterday section
   const ySection=document.createElement('details');
   ySection.style.marginTop='16px';
