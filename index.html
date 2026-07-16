@@ -578,6 +578,22 @@ async function ensureProfile(user){
   return data;
 }
 
+function checkInviteParam(){
+  const params=new URLSearchParams(window.location.search);
+  const add=params.get('add');
+  if(!add) return;
+  history.replaceState({},'',window.location.pathname);
+  setTimeout(()=>{
+    switchTab('Profile');
+    setTimeout(()=>{
+      const inp=$('inputFriendCode');
+      inp.value=add.toUpperCase();
+      inp.scrollIntoView({behavior:'smooth',block:'center'});
+      showToast('フレンドコード '+add.toUpperCase()+' を自動入力しました。確認後「追加」を押してください');
+    },400);
+  },200);
+}
+
 sb.auth.onAuthStateChange(async(event,session)=>{
   if(event==='SIGNED_IN'||event==='INITIAL_SESSION'){
     if(!session){showScreen('screenAuth');return;}
@@ -589,6 +605,7 @@ sb.auth.onAuthStateChange(async(event,session)=>{
     } else {
       showScreen('screenApp');
       switchTab('Feed');
+      checkInviteParam();
     }
   } else if(event==='SIGNED_OUT'){
     me=null;myProfile=null;
@@ -627,12 +644,14 @@ $('btnOnbDone').addEventListener('click',()=>{
   localStorage.setItem('onb_shown','1');
   showScreen('screenApp');
   switchTab('Feed');
+  checkInviteParam();
   requestNotifPermission();
 });
 $('btnOnbSkip').addEventListener('click',()=>{
   localStorage.setItem('onb_shown','1');
   showScreen('screenApp');
   switchTab('Feed');
+  checkInviteParam();
 });
 $('btnShowOnboarding').addEventListener('click',()=>{
   showOnboarding();
@@ -2085,7 +2104,7 @@ $('btnAddFriend').addEventListener('click',async()=>{
 
 $('btnCopyInvite').addEventListener('click',()=>{
   const code=myProfile?.friend_code||'';
-  const text=`コエリアルで一緒に声を残しませんか？\nフレンドコード: ${code}\nhttps://voice-bereal.vercel.app`;
+  const text=`コエリアルで一緒に声を残しませんか？\nフレンドコード: ${code}\nhttps://voice-bereal.vercel.app/?add=${code}`;
   navigator.clipboard.writeText(text).then(()=>showToast('招待テキストをコピーしました')).catch(()=>showToast('コピーに失敗しました'));
 });
 
