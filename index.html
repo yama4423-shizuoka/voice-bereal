@@ -84,7 +84,12 @@
     .profile-bio{font-size:.85rem;color:var(--text2);margin-top:2px}
     /* record */
     .rec-wrap{display:flex;flex-direction:column;align-items:center;justify-content:center;
-      flex:1;gap:24px;padding:40px 0}
+      flex:1;gap:24px;padding:40px 0;position:relative}
+    #countdownOverlay{position:absolute;inset:0;flex-direction:column;align-items:center;
+      justify-content:center;background:var(--bg);z-index:10;gap:20px}
+    .countdown-num{font-size:6rem;font-weight:900;color:var(--accent);
+      animation:countPulse .9s ease-out forwards}
+    @keyframes countPulse{0%{transform:scale(1.7);opacity:.3}100%{transform:scale(1);opacity:1}}
     .rec-btn{width:96px;height:96px;border-radius:50%;border:none;cursor:pointer;
       background:var(--accent);display:flex;align-items:center;justify-content:center;
       transition:transform .15s,opacity .15s;flex-shrink:0}
@@ -270,6 +275,10 @@
             <svg viewBox="0 0 24 24"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.3-3c0 3-2.54 5.1-5.3 5.1S6.7 14 6.7 11H5c0 3.41 2.72 6.23 6 6.72V21h2v-3.28c3.28-.49 6-3.31 6-6.72h-1.7z"/></svg>
           </button>
           <div id="recTimer" class="rec-time" aria-live="polite">00:00</div>
+          <div id="countdownOverlay" style="display:none" aria-live="assertive">
+            <div id="countdownNum" class="countdown-num">3</div>
+            <button id="btnCancelCountdown" class="btn btn-secondary">キャンセル</button>
+          </div>
         </div>
         <div id="previewScreen" class="rec-wrap" style="display:none">
           <div class="preview-wrap">
@@ -774,14 +783,33 @@ $('recCaption').addEventListener('input',()=>{
 });
 
 // record
+let countdownTimer=null;
 $('btnRecord').addEventListener('click',async()=>{
   if(mediaRecorder&&mediaRecorder.state==='recording'){
     mediaRecorder.stop();
-  } else {
-    try{
-      const noiseSupp=localStorage.getItem('vbr_noiseSupp')!=='off';
-      const echoCancel=localStorage.getItem('vbr_echoCancel')!=='off';
-      const stream=await navigator.mediaDevices.getUserMedia({audio:{noiseSuppression:noiseSupp,echoCancellation:echoCancel}});
+    return;
+  }
+  if(countdownTimer) return;
+  try{
+    const noiseSupp=localStorage.getItem('vbr_noiseSupp')!=='off';
+    const echoCancel=localStorage.getItem('vbr_echoCancel')!=='off';
+    const stream=await navigator.mediaDevices.getUserMedia({audio:{noiseSuppression:noiseSupp,echoCancellation:echoCancel}});
+    // countdown 3→2→1
+    const overlay=$('countdownOverlay');
+    const numEl=$('countdownNum');
+    let cnt=3;
+    numEl.textContent=cnt;
+    numEl.classList.remove('countdown-num');void numEl.offsetWidth;numEl.classList.add('countdown-num');
+    overlay.style.display='flex';
+    $('btnCancelCountdown').onclick=()=>{
+      clearInterval(countdownTimer);
+      countdownTimer=null;
+      overlay.style.display='none';
+      stream.getTracks().forEach(t=>t.stop());
+    };
+    const beginRecording=()=>{
+      overlay.style.display='none';
+      countdownTimer=null;
       audioChunks=[];
       const AudioContext=window.AudioContext||window.webkitAudioContext;
       const actx=new AudioContext();
@@ -835,8 +863,16 @@ $('btnRecord').addEventListener('click',async()=>{
         $('recTimer').textContent=`${m}:${s}`;
         if(recSeconds>=maxRecSec){mediaRecorder.stop();clearInterval(recInterval);}
       },1000);
-    } catch(e){ showToast('マイクのアクセスを許可してください'); }
-  }
+    };
+    countdownTimer=setInterval(()=>{
+      cnt--;
+      if(cnt<=0){clearInterval(countdownTimer);beginRecording();}
+      else{
+        numEl.textContent=cnt;
+        numEl.classList.remove('countdown-num');void numEl.offsetWidth;numEl.classList.add('countdown-num');
+      }
+    },1000);
+  } catch(e){ showToast('マイクのアクセスを許可してください'); }
 });
 
 $('btnRetake').addEventListener('click',()=>{
