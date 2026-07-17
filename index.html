@@ -255,6 +255,9 @@
         </div>
       </div>
       <div id="ptrBar" style="height:0;overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:.8rem;color:var(--text2);background:var(--surface);flex-shrink:0"></div>
+      <div id="dailyPromptFeedBanner" style="display:none;background:var(--surface2);border-bottom:1px solid var(--border);padding:7px 16px;font-size:.82rem">
+        <span style="font-size:.7rem;color:var(--text2)">今日のお題: </span><span id="dailyPromptFeedText" style="font-weight:600;color:var(--text1)"></span>
+      </div>
       <div class="content" id="feedContent" style="flex:1;overflow-y:auto">
         <div class="spinner"></div>
       </div>
@@ -266,6 +269,10 @@
       <div class="content" style="display:flex;flex-direction:column;flex:1">
         <div id="recScreen" class="rec-wrap">
           <div id="tagPicker" style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center"></div>
+            <div id="dailyPromptRec" style="display:none;width:100%;max-width:340px;background:var(--surface2);border-radius:10px;padding:10px 14px;margin-bottom:6px;text-align:center">
+              <div style="font-size:.68rem;color:var(--text2);margin-bottom:3px;letter-spacing:.04em">今日のお題</div>
+              <div id="dailyPromptRecText" style="font-size:.9rem;font-weight:600;color:var(--text1);line-height:1.4"></div>
+            </div>
           <div id="vizWrap" style="display:flex;align-items:center;gap:3px;height:48px;width:100%"></div>
           <div class="rec-caption-wrap" style="width:100%;max-width:340px">
             <textarea id="recCaption" class="input rec-caption" placeholder="ひとこと(任意・50文字以内)" maxlength="50" rows="2" style="resize:none" aria-label="キャプション"></textarea>
@@ -535,6 +542,7 @@ function switchTab(name){
   if(name==='Feed') loadFeed();
   if(name==='Profile') loadProfile();
   if(name==='Bookmarks') loadBookmarks();
+  if(name==='Record') updateDailyPromptUI();
 }
 
 // auth
@@ -999,6 +1007,46 @@ let activeFriendFilter='';
 let feedSortOrder='newest';
 let tcPost7=null,tcPost30=null;
 
+const DAILY_PROMPTS=[
+  '今日一番印象に残ったことは？',
+  '今の気分を一言で表すと？',
+  '今日誰かにありがとうと言いましたか？',
+  '最近ハマっていることは？',
+  '今日のランチは何でしたか？',
+  '今週一番嬉しかったことは？',
+  '最近見た映画や読んだ本は？',
+  '今日の天気と気分はリンクしてた？',
+  '最近誰かに言ってほしかった言葉は？',
+  '今日一番笑ったことは？',
+  '最近の悩みを声にしてみよう',
+  '今日の自分に一言かけるとしたら？',
+  '最近挑戦したことはある？',
+  '今日いちばん集中できた時間帯は？',
+  '最近気になっているニュースは？',
+  '今の自分の調子を10点満点で言うと？',
+  '今日やって良かったことは？',
+  '最近新しく覚えたことは？',
+  '今夜の楽しみは何？',
+  '最近の口癖はなんだろう？',
+  '今週末にやりたいことは？',
+  '最近一人でこっそり楽しんでいることは？',
+  '今日のBGMは何でしたか？',
+  '最近おいしかったものは？',
+  '今日もっとやりたかったことは？',
+  '最近誰かのどんなところが好きだと思った？',
+  '今日の空はどんな色だった？',
+  '最近ゆっくりできた瞬間は？',
+  '今日の声のトーンはどんな感じ？',
+  '最近やめてみたいことはある？'
+];
+function getDailyPrompt(){const d=new Date();const seed=d.getFullYear()*10000+(d.getMonth()+1)*100+d.getDate();return DAILY_PROMPTS[seed%DAILY_PROMPTS.length];}
+function updateDailyPromptUI(){
+  const prompt=getDailyPrompt();
+  const fb=$('dailyPromptFeedBanner'),ft=$('dailyPromptFeedText');
+  const rb=$('dailyPromptRec'),rt=$('dailyPromptRecText');
+  if(fb&&ft){ft.textContent=prompt;fb.style.display='block';}
+  if(rb&&rt){rt.textContent=prompt;rb.style.display='block';}
+}
 async function loadFeed(){
   const el=$('feedContent');
   el.innerHTML='<div class="spinner"></div>';
@@ -1021,7 +1069,7 @@ async function loadFeed(){
     sb.from('posts').select('*').eq('user_id',me.id).eq('post_date',d30).maybeSingle()
   ]);
   tcPost7=p7||null;tcPost30=(p30&&p30.post_date!==d7)?p30:null;
-  renderFeed(el,todayPosts||[],myPost,yesterdayPosts||[]);
+  renderFeed(el,todayPosts||[],myPost,yesterdayPosts||[]);updateDailyPromptUI();
 }
 async function pollNewPosts(){
   const today=new Date().toISOString().split('T')[0];
