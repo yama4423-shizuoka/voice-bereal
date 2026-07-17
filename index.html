@@ -113,6 +113,7 @@
     .feed-bio{font-size:.75rem;color:var(--text2);margin-top:1px}
     .feed-tag{font-size:.7rem;background:var(--surface2);color:var(--text2);
       border-radius:4px;padding:2px 6px;display:inline-block;margin-bottom:6px}
+    .feed-title{font-size:1rem;font-weight:700;margin-bottom:4px}
     .feed-caption{font-size:.9rem;margin-bottom:10px}
     .waveform{display:flex;align-items:center;gap:2px;height:40px;margin-bottom:10px;cursor:pointer}
     .waveform-bar{flex:1;background:var(--surface2);border-radius:2px;transition:background .15s}
@@ -285,6 +286,10 @@
           <div class="preview-wrap">
             <p style="font-size:1rem;font-weight:600;text-align:center">この声で投稿しますか？</p>
             <audio id="previewAudio" controls style="width:100%;margin:8px 0"></audio>
+            <div class="rec-caption-wrap" style="width:100%">
+              <input id="previewTitle" class="input" type="text" maxlength="15" placeholder="声のタイトル(任意・15文字以内)" aria-label="声のタイトル" style="padding-right:40px">
+              <span id="previewTitleCount" class="rec-caption-counter" style="bottom:50%;transform:translateY(50%)">15</span>
+            </div>
             <button class="btn btn-primary" id="btnSubmitPost">この声で投稿する</button>
             <button class="btn btn-secondary" id="btnRetake" style="margin-top:8px">撮り直す</button>
           </div>
@@ -496,7 +501,7 @@ let feedPosts=[],currentPlayingAudio=null,currentPlayingCard=null;
 let olderFeedOffset=0;
 let playQueue=[],playQueueIndex=-1,isPlayingAll=false;
 let lastFeedIds=new Set(),feedPollInterval=null;
-let pendingBlob=null,pendingCaption='',pendingTag='';
+let pendingBlob=null,pendingCaption='',pendingTag='',pendingTitle='';
 let myPostDates=[];
 
 // theme
@@ -802,6 +807,9 @@ function renderTagPicker(){
 $('recCaption').addEventListener('input',()=>{
   $('recCaptionCount').textContent=50-$('recCaption').value.length;
 });
+$('previewTitle').addEventListener('input',()=>{
+  $('previewTitleCount').textContent=15-$('previewTitle').value.length;
+});
 
 // record
 let countdownTimer=null;
@@ -868,6 +876,8 @@ $('btnRecord').addEventListener('click',async()=>{
         const blob=new Blob(audioChunks,{type:'audio/webm'});
         pendingBlob=blob;
         pendingCaption=$('recCaption').value.trim();
+        $('previewTitle').value='';
+        $('previewTitleCount').textContent='15';
         const url=URL.createObjectURL(blob);
         $('previewAudio').src=url;
         $('recScreen').style.display='none';
@@ -920,7 +930,8 @@ $('btnRecord').addEventListener('click',async()=>{
 });
 
 $('btnRetake').addEventListener('click',()=>{
-  pendingBlob=null;
+  pendingBlob=null;pendingTitle='';
+  $('previewTitle').value='';$('previewTitleCount').textContent='15';
   $('previewScreen').style.display='none';
   $('recScreen').style.display='flex';
   $('btnRecord').classList.remove('recording');
@@ -940,11 +951,12 @@ $('btnSubmitPost').addEventListener('click',async()=>{
   const fname=`${me.id}/${today}.webm`;
   const{error:upErr}=await sb.storage.from('voice-posts').upload(fname,pendingBlob,{upsert:true});
   if(upErr){showToast('アップロード失敗: '+upErr.message);$('btnSubmitPost').disabled=false;$('btnSubmitPost').textContent='この声で投稿する';return;}
-  const{error:dbErr}=await sb.from('posts').upsert({user_id:me.id,post_date:today,caption:pendingCaption,tag:pendingTag||null},{onConflict:'user_id,post_date'});
+  pendingTitle=$('previewTitle').value.trim();
+  const{error:dbErr}=await sb.from('posts').upsert({user_id:me.id,post_date:today,caption:pendingCaption,tag:pendingTag||null,title:pendingTitle||null},{onConflict:'user_id,post_date'});
   if(dbErr){showToast('保存失敗: '+dbErr.message);}
   else{
     showToast('投稿しました！');
-    pendingBlob=null;pendingCaption='';pendingTag='';
+    pendingBlob=null;pendingCaption='';pendingTag='';pendingTitle='';
     $('previewScreen').style.display='none';
     $('recScreen').style.display='flex';
     $('btnRecord').classList.remove('recording');
@@ -1326,6 +1338,12 @@ function buildMyCard(post){
   const card=document.createElement('div');
   card.className='card';
   let editMode=false;
+  if(post.title){
+    const titleEl=document.createElement('p');
+    titleEl.className='feed-title';
+    titleEl.textContent=post.title;
+    card.appendChild(titleEl);
+  }
   const captionEl=document.createElement('p');
   captionEl.style.cssText='font-size:.9rem;margin-bottom:8px';
   captionEl.textContent=post.caption||'';
@@ -1534,6 +1552,12 @@ function buildFeedCard(post){
     tagEl.className='feed-tag';
     tagEl.textContent=post.tag;
     card.appendChild(tagEl);
+  }
+  if(post.title){
+    const titleEl=document.createElement('div');
+    titleEl.className='feed-title';
+    titleEl.textContent=post.title;
+    card.appendChild(titleEl);
   }
   if(post.caption){
     const capEl=document.createElement('div');
