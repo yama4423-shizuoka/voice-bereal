@@ -255,7 +255,7 @@
         </div>
       </div>
       <div id="ptrBar" style="height:0;overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:.8rem;color:var(--text2);background:var(--surface);flex-shrink:0"></div>
-      <div id="dailyPromptFeedBanner" style="display:none;background:var(--surface2);border-bottom:1px solid var(--border);padding:7px 16px;font-size:.82rem">
+      <div id="dailyPromptFeedBanner" style="display:none;background:var(--surface2);border-bottom:1px solid var(--border);padding:7px 16px;font-size:.82rem;cursor:pointer" role="button" tabindex="0" aria-label="お題一覧を開く">
         <span style="font-size:.7rem;color:var(--text2)">今日のお題: </span><span id="dailyPromptFeedText" style="font-weight:600;color:var(--text1)"></span>
       </div>
       <div class="content" id="feedContent" style="flex:1;overflow-y:auto">
@@ -496,6 +496,17 @@
     </div>
     <div id="qrCodeDisplay" style="display:flex;justify-content:center;margin-bottom:12px"></div>
     <div id="qrCodeLabel" style="font-size:.9rem;color:var(--text2)"></div>
+  </div>
+</div>
+
+<!-- Topic List Modal -->
+<div id="topicListModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:200;align-items:center;justify-content:center" role="dialog" aria-modal="true" aria-label="お題一覧">
+  <div style="background:var(--surface);border-radius:14px;padding:20px 24px;max-width:360px;width:90%;max-height:72vh;overflow-y:auto">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+      <span style="font-weight:700;font-size:1rem">お題カレンダー</span>
+      <button id="btnCloseTopicList" style="background:none;border:none;font-size:1.3rem;cursor:pointer;color:var(--text1);line-height:1" aria-label="閉じる">x</button>
+    </div>
+    <div id="topicListContent"></div>
   </div>
 </div>
 
@@ -2590,5 +2601,42 @@ $('btnShowQR').addEventListener('click',()=>{
 });
 $('btnCloseQR').addEventListener('click',()=>{$('qrModal').style.display='none';});
 $('qrModal').addEventListener('click',e=>{if(e.target===$('qrModal'))$('qrModal').style.display='none';});
+
+function showTopicListModal(){
+  const today=new Date();
+  const content=$('topicListContent');
+  content.innerHTML='';
+  for(let offset=-7;offset<=3;offset++){
+    const d=new Date(today);
+    d.setDate(d.getDate()+offset);
+    const seed=d.getFullYear()*10000+(d.getMonth()+1)*100+d.getDate();
+    const promptText=DAILY_PROMPTS[seed%DAILY_PROMPTS.length];
+    const isToday=offset===0;
+    const isFuture=offset>0;
+    let label;
+    if(offset===0)label='今日';
+    else if(offset===1)label='明日';
+    else if(offset===2)label='2日後';
+    else if(offset===3)label='3日後';
+    else if(offset===-1)label='昨日';
+    else label=Math.abs(offset)+'日前';
+    const row=document.createElement('div');
+    row.style.cssText='display:flex;gap:10px;padding:9px 4px;border-bottom:1px solid var(--border);align-items:flex-start'+(isToday?';background:var(--surface2);margin:0 -4px;padding:9px 8px;border-radius:8px':'');
+    const labelEl=document.createElement('span');
+    labelEl.style.cssText='font-size:.72rem;font-weight:'+(isToday?'700':'400')+';color:'+(isToday?'var(--accent)':'var(--text2)')+';white-space:nowrap;min-width:40px;padding-top:2px';
+    labelEl.textContent=label;
+    const pEl=document.createElement('span');
+    pEl.style.cssText='font-size:.87rem;color:'+(isFuture?'var(--text2)':'var(--text1)')+';font-weight:'+(isToday?'600':'400')+';line-height:1.4';
+    pEl.textContent=promptText;
+    row.appendChild(labelEl);
+    row.appendChild(pEl);
+    content.appendChild(row);
+  }
+  $('topicListModal').style.display='flex';
+}
+$('dailyPromptFeedBanner').addEventListener('click',showTopicListModal);
+$('dailyPromptFeedBanner').addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' ')showTopicListModal();});
+$('btnCloseTopicList').addEventListener('click',()=>{$('topicListModal').style.display='none';});
+$('topicListModal').addEventListener('click',e=>{if(e.target===$('topicListModal'))$('topicListModal').style.display='none';});
 </script>
 </body>
