@@ -391,6 +391,8 @@
         <div id="monthlyGraph" style="margin-bottom:20px"></div>
         <p class="section-title">曜日別の声</p>
         <div id="weekdayGraph" style="margin-bottom:20px"></div>
+        <p class="section-title">声の時間帯</p>
+        <div id="hourlyGraph" style="margin-bottom:20px"></div>
         <p class="section-title">最近のリアクション</p>
         <div id="reactionList" style="margin-bottom:20px"></div>
         <p class="section-title">最近のコメント</p>
@@ -1961,7 +1963,7 @@ async function loadProfile(){
   renderDurationPicker();
   await updateNotifToggle();
   // stats
-  const{data:allPosts}=await sb.from('posts').select('post_date,tag').eq('user_id',me.id).order('post_date',{ascending:true});
+  const{data:allPosts}=await sb.from('posts').select('post_date,tag,created_at').eq('user_id',me.id).order('post_date',{ascending:true});
   const dates=(allPosts||[]).map(p=>p.post_date);
   $('statTotalPosts').textContent=dates.length;
   $('statMaxStreak').textContent=calcMaxStreak(dates)+'日';
@@ -2033,6 +2035,39 @@ async function loadProfile(){
       const pct=Math.round(count/maxDay*100);
       return `<div style="margin-bottom:8px"><div style="display:flex;justify-content:space-between;font-size:.82rem;margin-bottom:3px"><span>${DAYS[i]}曜日</span><span style="color:var(--text2)">${count}回</span></div><div style="height:8px;background:var(--surface2);border-radius:4px;overflow:hidden"><div style="width:${pct}%;height:100%;background:var(--accent);border-radius:4px;transition:width .4s"></div></div></div>`;
     }).join('');
+  }
+  // hourly heatmap
+  {
+    const hourCounts=new Array(24).fill(0);
+    (allPosts||[]).forEach(p=>{
+      if(!p.created_at) return;
+      const h=(new Date(p.created_at).getUTCHours()+9)%24;
+      hourCounts[h]++;
+    });
+    const maxCnt=Math.max(...hourCounts,1);
+    const el=$('hourlyGraph');
+    if(el){
+      const hmBars=document.createElement('div');
+      hmBars.style.cssText='display:flex;align-items:flex-end;gap:2px;height:40px;margin-bottom:4px';
+      hourCounts.forEach((cnt,h)=>{
+        const bar=document.createElement('div');
+        const ratio=cnt/maxCnt;
+        const barH=cnt>0?Math.max(4,Math.round(ratio*40)):2;
+        bar.style.cssText=`flex:1;height:${barH}px;background:${cnt>0?'var(--accent)':'var(--surface2)'};border-radius:2px 2px 0 0;opacity:${cnt>0?(0.35+0.65*ratio).toFixed(2):1}`;
+        bar.title=`${h}時: ${cnt}件`;
+        hmBars.appendChild(bar);
+      });
+      const hmLabels=document.createElement('div');
+      hmLabels.style.cssText='display:flex;justify-content:space-between';
+      ['0','6','12','18','23'].forEach(t=>{
+        const lbl=document.createElement('span');
+        lbl.style.cssText='font-size:.55rem;color:var(--text2)';
+        lbl.textContent=t+'時';
+        hmLabels.appendChild(lbl);
+      });
+      el.appendChild(hmBars);
+      el.appendChild(hmLabels);
+    }
   }
   // reactions
   const{data:myPostsR}=await sb.from('posts').select('id,post_date').eq('user_id',me.id);
