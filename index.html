@@ -385,6 +385,8 @@
             <div style="font-size:.75rem;color:var(--text2)">フレンド</div>
           </div>
         </div>
+        <p class="section-title">今週のまとめ</p>
+        <div id="weeklySummary" style="display:flex;gap:8px;margin-bottom:20px"></div>
         <p class="section-title">今月のまとめ</p>
         <div id="monthlySummary" style="display:flex;gap:8px;margin-bottom:20px"></div>
         <p class="section-title">声の傾向</p>
@@ -2018,6 +2020,26 @@ async function loadProfile(){
   const dates=(allPosts||[]).map(p=>p.post_date);
   $('statTotalPosts').textContent=dates.length;
   $('statMaxStreak').textContent=calcMaxStreak(dates)+'日';
+  // weekly summary
+  {
+    const now=new Date();
+    const dow=now.getDay();
+    const monday=new Date(now);
+    monday.setDate(now.getDate()+(dow===0?-6:1-dow));
+    const weekStart=`${monday.getFullYear()}-${String(monday.getMonth()+1).padStart(2,'0')}-${String(monday.getDate()).padStart(2,'0')}`;
+    const{data:weekPostsW}=await sb.from('posts').select('id').eq('user_id',me.id).gte('post_date',weekStart);
+    const wpids=(weekPostsW||[]).map(p=>p.id);
+    let weekPostCnt=wpids.length,weekReactCnt=0,weekCommentCnt=0;
+    if(wpids.length){
+      const[wr1,wr2]=await Promise.all([
+        sb.from('reactions').select('*',{count:'exact',head:true}).in('post_id',wpids),
+        sb.from('comments').select('*',{count:'exact',head:true}).in('post_id',wpids)
+      ]);
+      weekReactCnt=wr1.count||0;weekCommentCnt=wr2.count||0;
+    }
+    $('weeklySummary').innerHTML=[['投稿',weekPostCnt],['聴いたよ',weekReactCnt],['コメント',weekCommentCnt]]
+      .map(([l,v])=>`<div style="flex:1;background:var(--surface);border-radius:var(--radius-sm);padding:12px;text-align:center"><div style="font-size:1.4rem;font-weight:700">${v}</div><div style="font-size:.7rem;color:var(--text2)">${l}</div></div>`).join('');
+  }
   // monthly summary
   {
     const now=new Date();
