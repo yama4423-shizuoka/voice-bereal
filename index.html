@@ -417,6 +417,8 @@
         <div id="reactionList" style="margin-bottom:20px"></div>
         <p class="section-title">最近のコメント</p>
         <div id="commentNotifList" style="margin-bottom:20px"></div>
+        <p class="section-title">最近の返声</p>
+        <div id="replyNotifList" style="margin-bottom:20px"></div>
         <p class="section-title">フレンド一覧</p>
         <input id="friendSearchInput" type="text" class="caption-search" placeholder="名前で絞り込む" aria-label="フレンド名で絞り込む" style="display:none">
         <div id="friendList" style="margin-bottom:20px"></div>
@@ -2214,9 +2216,26 @@ async function loadProfile(){
     }).join('')||'<p style="color:var(--text2);font-size:.85rem">まだありません</p>';
   } else { commentNotifHtml='<p style="color:var(--text2);font-size:.85rem">まだありません</p>'; }
   $('commentNotifList').innerHTML=commentNotifHtml;
+  // reply notifications
+  let replyNotifHtml='';
+  if(myPostIds.length){
+    const{data:repPosts}=await sb.from('posts').select('user_id,created_at,reply_to,title,caption').in('reply_to',myPostIds).neq('user_id',me.id).order('created_at',{ascending:false}).limit(10);
+    const repUserIds=[...new Set((repPosts||[]).map(r=>r.user_id))];
+    let repUserMap={};
+    if(repUserIds.length){
+      const{data:rpu}=await sb.from('profiles').select('id,username').in('id',repUserIds);
+      (rpu||[]).forEach(p=>repUserMap[p.id]=p.username);
+    }
+    replyNotifHtml=(repPosts||[]).map(r=>{
+      const d=new Date(r.created_at);
+      const label=r.title||r.caption||'声';
+      return `<div style="font-size:.82rem;padding:4px 0;border-bottom:1px solid var(--surface2)">${repUserMap[r.user_id]||'?'} が ${myPostDateMap[r.reply_to]||'?'} の声に返声: <span style="color:var(--text2)">${label.slice(0,20)}</span><span style="color:var(--text2);font-size:.75rem;margin-left:6px">${d.getMonth()+1}/${d.getDate()}</span></div>`;
+    }).join('')||'<p style="color:var(--text2);font-size:.85rem">まだありません</p>';
+  } else { replyNotifHtml='<p style="color:var(--text2);font-size:.85rem">まだありません</p>'; }
+  $('replyNotifList').innerHTML=replyNotifHtml;
   // profile tab badge
   const lastSeen=parseInt(localStorage.getItem('lastSeenNotifCount')||'0');
-  const totalNotifs=((reactionHtml.match(/聴いたよ/g)||[]).length)+((commentNotifHtml.match(/コメント:/g)||[]).length);
+  const totalNotifs=((reactionHtml.match(/聴いたよ/g)||[]).length)+((commentNotifHtml.match(/コメント:/g)||[]).length)+((replyNotifHtml.match(/返声:/g)||[]).length);
   if(totalNotifs>lastSeen){
     $('profileTabBadge').textContent=totalNotifs-lastSeen;
     $('profileTabBadge').style.display='flex';
