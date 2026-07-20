@@ -281,6 +281,13 @@
               <div id="dailyPromptRecText" style="font-size:.9rem;font-weight:600;color:var(--text1);line-height:1.4"></div>
             </div>
           <div id="replyBanner" style="display:none;font-size:.85rem;color:var(--accent);font-weight:600;text-align:center;padding:6px 12px;background:var(--surface2);border-radius:8px;width:100%;max-width:340px;margin-bottom:6px"></div>
+          <div id="voiceRequestBanner" style="display:none;flex-direction:column;align-items:center;gap:6px;font-size:.85rem;padding:8px 12px;background:var(--surface2);border-radius:8px;width:100%;max-width:340px;margin-bottom:6px">
+            <span id="voiceRequestBannerText" style="color:var(--accent);font-weight:600;text-align:center"></span>
+            <div style="display:flex;gap:6px">
+              <button id="btnUseRequest" class="action-btn" style="font-size:.75rem">タイトルに使う</button>
+              <button id="btnDismissRequest" class="action-btn" style="font-size:.75rem;color:var(--text2)">閉じる</button>
+            </div>
+          </div>
           <div id="vizWrap" style="display:flex;align-items:center;gap:3px;height:48px;width:100%"></div>
           <div class="rec-caption-wrap" style="width:100%;max-width:340px">
             <textarea id="recCaption" class="input rec-caption" placeholder="ひとこと(任意・50文字以内)" maxlength="50" rows="2" style="resize:none" aria-label="キャプション"></textarea>
@@ -546,6 +553,26 @@ let olderFeedOffset=0;
 let playQueue=[],playQueueIndex=-1,isPlayingAll=false;
 let lastFeedIds=new Set(),feedPollInterval=null;
 let pendingBlob=null,pendingCaption='',pendingTag='',pendingTitle='',pendingReplyTo=null,pendingReplyToName='';
+let pendingRequestId=null,pendingRequestFromName='',voiceRequestTitle='';
+async function loadVoiceRequests(){
+  if(!me) return;
+  try{
+    const{data:reqs}=await sb.from('voice_requests').select('id,from_user_id').eq('to_user_id',me.id).order('created_at',{ascending:false}).limit(1);
+    const req=reqs&&reqs[0];
+    const banner=$('voiceRequestBanner');
+    if(!banner) return;
+    if(req){
+      const{data:prof}=await sb.from('profiles').select('username').eq('id',req.from_user_id).single();
+      pendingRequestId=req.id;
+      pendingRequestFromName=prof?.username||'?';
+      $('voiceRequestBannerText').textContent=pendingRequestFromName+'さんから声をリクエストされています';
+      banner.style.display='flex';
+    } else {
+      pendingRequestId=null;pendingRequestFromName='';
+      banner.style.display='none';
+    }
+  }catch(e){}
+}
 let myPostDates=[];
 
 // theme
@@ -598,10 +625,22 @@ function switchTab(name){
   if(name==='Feed') loadFeed();
   if(name==='Profile') loadProfile();
   if(name==='Bookmarks') loadBookmarks();
-  if(name==='Record'){updateDailyPromptUI();const rb=$('replyBanner');if(rb){rb.style.display=pendingReplyTo?'block':'none';rb.textContent=pendingReplyTo?pendingReplyToName+'さんへの返声':'';}}
+  if(name==='Record'){updateDailyPromptUI();const rb=$('replyBanner');if(rb){rb.style.display=pendingReplyTo?'block':'none';rb.textContent=pendingReplyTo?pendingReplyToName+'さんへの返声':'';}loadVoiceRequests();}
 }
 
 // auth
+$('btnUseRequest')?.addEventListener('click',()=>{
+  if(!pendingRequestId||!pendingRequestFromName) return;
+  voiceRequestTitle=(pendingRequestFromName+'への声').slice(0,15);
+  showToast('録音後にタイトルを設定します');
+  $('voiceRequestBanner').style.display='none';
+  sb.from('voice_requests').delete().eq('id',pendingRequestId).then(()=>{});
+  pendingRequestId=null;
+});
+$('btnDismissRequest')?.addEventListener('click',()=>{
+  $('voiceRequestBanner').style.display='none';
+  pendingRequestId=null;pendingRequestFromName='';
+});
 $('btnLogin').addEventListener('click',async()=>{
   const email=$('inputEmail').value.trim();
   const pass=$('inputPassword').value;
@@ -945,8 +984,8 @@ $('btnRecord').addEventListener('click',async()=>{
         const blob=new Blob(audioChunks,{type:'audio/webm'});
         pendingBlob=blob;
         pendingCaption=$('recCaption').value.trim();
-        $('previewTitle').value='';
-        $('previewTitleCount').textContent='15';
+        $('previewTitle').value=voiceRequestTitle||'';
+        $('previewTitleCount').textContent=voiceRequestTitle?String(15-voiceRequestTitle.length):'15';if(voiceRequestTitle){voiceRequestTitle='';}
         const url=URL.createObjectURL(blob);
         $('previewAudio').src=url;
         $('recScreen').style.display='none';
@@ -2323,10 +2362,12 @@ async function loadProfile(){
     const fids=friendships.map(f=>f.friend_id);
     const{data:fps}=await sb.from('profiles').select('id,username').in('id',fids);
     const today=new Date().toISOString().split('T')[0];
-    const[{data:todayPosts},{data:friendAllPosts}]=await Promise.all([
+    const[{data:todayPosts},{data:friendAllPosts},{data:sentReqs}]=await Promise.all([
       sb.from('posts').select('user_id').eq('post_date',today).in('user_id',fids),
-      sb.from('friend_feed').select('user_id,post_date').in('user_id',fids)
+      sb.from('friend_feed').select('user_id,post_date').in('user_id',fids),
+      sb.from('voice_requests').select('to_user_id').eq('from_user_id',me.id).in('to_user_id',fids).catch(()=>({data:[]}))
     ]);
+    const sentRequestSet=new Set((sentReqs||[]).map(r=>r.to_user_id));
     const postedToday=new Set((todayPosts||[]).map(p=>p.user_id));
     const friendDateMap={};
     (friendAllPosts||[]).forEach(p=>{
@@ -2351,6 +2392,7 @@ async function loadProfile(){
         ${fstreak>0?`<span style="font-size:.75rem;color:var(--accent);font-weight:600">${fstreak}日</span>`:''}
         ${posted?'<span style="font-size:.7rem;background:var(--success);color:#fff;padding:2px 6px;border-radius:4px">投稿済</span>':''}
         <button class="action-btn" data-mute="${f.id}" style="font-size:.75rem;${isMuted?'background:var(--warning);color:#111':''}">  ${isMuted?'ミュート中':'ミュート'}</button>
+        <button class="action-btn" data-request="${f.id}" ${sentRequestSet.has(f.id)?'disabled':''} style="font-size:.75rem${sentRequestSet.has(f.id)?';opacity:.5':''}">声を送ってね${sentRequestSet.has(f.id)?'(送り済)':''}</button>
         <button class="action-btn" data-remove="${f.id}" style="color:var(--danger);font-size:.75rem">解除</button>
       </div>`;
     }).join('');
@@ -2377,6 +2419,15 @@ async function loadProfile(){
       myProfile={...myProfile,muted_friends:newMuted};
       showToast(muted.has(fid)?'ミュートしました':'ミュートを解除しました');
       loadProfile();
+    });
+  });
+  $('friendList').querySelectorAll('[data-request]').forEach(btn=>{
+    btn.addEventListener('click',async()=>{
+      const toId=btn.dataset.request;
+      btn.disabled=true;
+      const{error}=await sb.from('voice_requests').insert({from_user_id:me.id,to_user_id:toId});
+      if(error){btn.disabled=false;if(error.code==='23505')showToast('すでにリクエスト済みです');else showToast('送信できませんでした');}
+      else{btn.textContent='声を送ってね(送り済)';btn.style.opacity='.5';showToast('声のリクエストを送りました');}
     });
   });
   // calendar
