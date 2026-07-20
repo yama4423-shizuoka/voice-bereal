@@ -2387,12 +2387,13 @@ async function loadProfile(){
       const isMuted=muted.has(f.id);
       const posted=postedToday.has(f.id);
       const fstreak=friendStreaks[f.id]||0;
+      const reqBtn=sentRequestSet.has(f.id)?('<span style="font-size:.75rem;color:var(--text2)">送り済 <button class="action-btn" data-cancel-request="'+f.id+'" style="font-size:.7rem;color:var(--danger);padding:2px 5px">取消</button></span>'):('<button class="action-btn" data-request="'+f.id+'" style="font-size:.75rem">声を送ってね</button>');
       return `<div data-fname="${f.username}" style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--surface2)">
         <span style="flex:1;font-size:.9rem">${f.username}</span>
         ${fstreak>0?`<span style="font-size:.75rem;color:var(--accent);font-weight:600">${fstreak}日</span>`:''}
         ${posted?'<span style="font-size:.7rem;background:var(--success);color:#fff;padding:2px 6px;border-radius:4px">投稿済</span>':''}
         <button class="action-btn" data-mute="${f.id}" style="font-size:.75rem;${isMuted?'background:var(--warning);color:#111':''}">  ${isMuted?'ミュート中':'ミュート'}</button>
-        <button class="action-btn" data-request="${f.id}" ${sentRequestSet.has(f.id)?'disabled':''} style="font-size:.75rem${sentRequestSet.has(f.id)?';opacity:.5':''}">声を送ってね${sentRequestSet.has(f.id)?'(送り済)':''}</button>
+        ${reqBtn}
         <button class="action-btn" data-remove="${f.id}" style="color:var(--danger);font-size:.75rem">解除</button>
       </div>`;
     }).join('');
@@ -2423,11 +2424,18 @@ async function loadProfile(){
   });
   $('friendList').querySelectorAll('[data-request]').forEach(btn=>{
     btn.addEventListener('click',async()=>{
-      const toId=btn.dataset.request;
-      btn.disabled=true;
+      const toId=btn.dataset.request;btn.disabled=true;
       const{error}=await sb.from('voice_requests').insert({from_user_id:me.id,to_user_id:toId});
       if(error){btn.disabled=false;if(error.code==='23505')showToast('すでにリクエスト済みです');else showToast('送信できませんでした');}
-      else{btn.textContent='声を送ってね(送り済)';btn.style.opacity='.5';showToast('声のリクエストを送りました');}
+      else{showToast('声のリクエストを送りました');loadProfile();}
+    });
+  });
+  $('friendList').querySelectorAll('[data-cancel-request]').forEach(btn=>{
+    btn.addEventListener('click',async()=>{
+      const toId=btn.dataset.cancelRequest;btn.disabled=true;
+      const{error}=await sb.from('voice_requests').delete().eq('from_user_id',me.id).eq('to_user_id',toId);
+      if(error){btn.disabled=false;showToast('取り消しできませんでした');}
+      else{showToast('リクエストを取り消しました');loadProfile();}
     });
   });
   // calendar
