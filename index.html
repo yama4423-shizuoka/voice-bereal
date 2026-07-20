@@ -401,6 +401,8 @@
             <div style="font-size:.75rem;color:var(--text2)">フレンド</div>
           </div>
         </div>
+        <p class="section-title">一番聴かれた声</p>
+        <div id="mostListenedVoice" style="margin-bottom:20px"></div>
         <p class="section-title">今週のまとめ</p>
         <div id="weeklySummary" style="display:flex;gap:8px;margin-bottom:20px"></div>
         <p class="section-title">今月のまとめ</p>
@@ -2071,10 +2073,36 @@ async function loadProfile(){
   renderDurationPicker();
   await updateNotifToggle();
   // stats
-  const{data:allPosts}=await sb.from('posts').select('post_date,tag,created_at').eq('user_id',me.id).order('post_date',{ascending:true});
+  const{data:allPosts}=await sb.from('posts').select('id,post_date,tag,created_at,title').eq('user_id',me.id).order('post_date',{ascending:true});
   const dates=(allPosts||[]).map(p=>p.post_date);
   $('statTotalPosts').textContent=dates.length;
   $('statMaxStreak').textContent=calcMaxStreak(dates)+'日';
+  // most listened voice
+  {
+    const postIds=(allPosts||[]).map(p=>p.id).filter(Boolean);
+    let mlHtml='<p style="color:var(--text2);font-size:.85rem">まだ聴いたよがありません</p>';
+    if(postIds.length){
+      const{data:rxnRows}=await sb.from('reactions').select('post_id').in('post_id',postIds);
+      if(rxnRows&&rxnRows.length){
+        const cnts={};
+        rxnRows.forEach(r=>{cnts[r.post_id]=(cnts[r.post_id]||0)+1;});
+        let bestId=null,bestCnt=0;
+        Object.entries(cnts).forEach(([pid,c])=>{if(c>bestCnt){bestCnt=c;bestId=pid;}});
+        const bestPost=(allPosts||[]).find(p=>p.id===bestId);
+        if(bestPost){
+          const d=bestPost.post_date||'';
+          const dateStr=d?`${d.slice(0,4)}年${parseInt(d.slice(5,7))}月${parseInt(d.slice(8,10))}日`:'';
+          const titleStr=bestPost.title||(bestPost.post_date?`${bestPost.post_date}の声`:'');
+          mlHtml=`<div style="background:var(--surface);border-radius:var(--radius-sm);padding:14px">
+            <div style="font-size:.75rem;color:var(--text2);margin-bottom:4px">${dateStr}</div>
+            <div style="font-weight:700;margin-bottom:6px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${titleStr}</div>
+            <div style="font-size:.85rem;color:var(--accent)">聴いたよ ${bestCnt}回</div>
+          </div>`;
+        }
+      }
+    }
+    $('mostListenedVoice').innerHTML=mlHtml;
+  }
   // weekly summary
   {
     const now=new Date();
