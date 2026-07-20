@@ -1380,12 +1380,38 @@ async function renderFeed(el,posts,myPost,yesterdayPosts){
     });
     topPosts.forEach(post=>{
       friendSection.appendChild(buildFeedCard(post));
-      (replyChildren[post.id]||[]).forEach(r=>{
-        const w=document.createElement('div');
-        w.style.cssText='margin-left:20px;border-left:2px solid var(--accent);padding-left:8px;margin-top:4px';
-        w.appendChild(buildFeedCard(r));
-        friendSection.appendChild(w);
-      });
+      const replies=(replyChildren[post.id]||[]);
+      if(replies.length>=3){
+        const wFirst=document.createElement('div');
+        wFirst.style.cssText='margin-left:20px;border-left:2px solid var(--accent);padding-left:8px;margin-top:4px';
+        wFirst.appendChild(buildFeedCard(replies[0]));
+        friendSection.appendChild(wFirst);
+        const restReplies=replies.slice(1);
+        const expandBtn=document.createElement('button');
+        expandBtn.style.cssText='margin-left:20px;margin-top:4px;font-size:.82rem;color:var(--accent);background:none;border:none;cursor:pointer;padding:2px 0';
+        expandBtn.textContent='返声をもっと見る('+restReplies.length+'件)';
+        const restContainer=document.createElement('div');
+        restContainer.style.display='none';
+        restReplies.forEach(r=>{
+          const w=document.createElement('div');
+          w.style.cssText='margin-left:20px;border-left:2px solid var(--accent);padding-left:8px;margin-top:4px';
+          w.appendChild(buildFeedCard(r));
+          restContainer.appendChild(w);
+        });
+        expandBtn.onclick=()=>{
+          restContainer.style.display='';
+          expandBtn.style.display='none';
+        };
+        friendSection.appendChild(expandBtn);
+        friendSection.appendChild(restContainer);
+      } else {
+        replies.forEach(r=>{
+          const w=document.createElement('div');
+          w.style.cssText='margin-left:20px;border-left:2px solid var(--accent);padding-left:8px;margin-top:4px';
+          w.appendChild(buildFeedCard(r));
+          friendSection.appendChild(w);
+        });
+      }
     });
   } else {
     friendSection.innerHTML+='<p style="color:var(--text2);font-size:.9rem">フレンドの投稿はまだありません</p>';
