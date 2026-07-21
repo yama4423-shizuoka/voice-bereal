@@ -2376,6 +2376,8 @@ async function loadProfile(){
     });
     const friendStreaks={};
     fids.forEach(fid=>{friendStreaks[fid]=calcCurrentStreakFromDates(friendDateMap[fid]||[]);});
+    const friendLastPost={};
+    fids.forEach(fid=>{const dates=friendDateMap[fid]||[];friendLastPost[fid]=dates.length?[...dates].sort().at(-1):null;});
     const mutedRaw=myProfile?.muted_friends||[];
     const muted=new Set(Array.isArray(mutedRaw)?mutedRaw:[]);
     const sortedFps=[...(fps||[])].sort((a,b)=>{
@@ -2388,8 +2390,11 @@ async function loadProfile(){
       const posted=postedToday.has(f.id);
       const fstreak=friendStreaks[f.id]||0;
       const reqBtn=sentRequestSet.has(f.id)?('<span style="font-size:.75rem;color:var(--text2)">送り済 <button class="action-btn" data-cancel-request="'+f.id+'" style="font-size:.7rem;color:var(--danger);padding:2px 5px">取消</button></span>'):('<button class="action-btn" data-request="'+f.id+'" style="font-size:.75rem">声を送ってね</button>');
+      const lp=friendLastPost[f.id];
+      const lpDiff=lp?Math.round((new Date(today).getTime()-new Date(lp).getTime())/86400000):null;
+      const lastPostText=lp?(lpDiff===0?'最終投稿: 今日':lpDiff===1?'最終投稿: 昨日':'最終投稿: '+lpDiff+'日前'):'最終投稿: なし';
       return `<div data-fname="${f.username}" style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--surface2)">
-        <span style="flex:1;font-size:.9rem">${f.username}</span>
+        <span style="flex:1;min-width:0"><span style="display:block;font-size:.9rem">${f.username}</span><span style="display:block;font-size:.72rem;color:var(--text2)">${lastPostText}</span></span>
         ${fstreak>0?`<span style="font-size:.75rem;color:var(--accent);font-weight:600">${fstreak}日</span>`:''}
         ${posted?'<span style="font-size:.7rem;background:var(--success);color:#fff;padding:2px 6px;border-radius:4px">投稿済</span>':''}
         <button class="action-btn" data-mute="${f.id}" style="font-size:.75rem;${isMuted?'background:var(--warning);color:#111':''}">  ${isMuted?'ミュート中':'ミュート'}</button>
