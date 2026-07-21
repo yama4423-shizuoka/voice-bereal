@@ -134,6 +134,11 @@
 .reactors-list-item:last-child{border-bottom:none}
 .action-btn.reacted{background:var(--accent);color:#fff}
     .action-btn.bookmarked{background:var(--warning);color:#111}
+    /* long-press action sheet */
+    .lp-sheet-item{display:block;width:100%;background:none;border:none;padding:14px 0;
+      font-size:1rem;color:var(--text);text-align:center;cursor:pointer;border-bottom:1px solid var(--border)}
+    .lp-sheet-item:last-child{border-bottom:none}
+    .lp-sheet-item:active{opacity:.6}
     .speed-btn{background:var(--surface2);border:none;border-radius:var(--radius-sm);
       padding:6px 10px;color:var(--text2);font-size:.75rem;cursor:pointer;font-weight:600}
     .speed-btn.active{color:var(--accent)}
@@ -1969,6 +1974,44 @@ function buildFeedCard(post){
   card.appendChild(actionsRow);
   // comments
   commentCountBtn.addEventListener('click',()=>toggleComments(card,post));
+  // long-press action menu (500ms)
+  let lpTimer=null;
+  let lpStartY=0;
+  function cancelLp(){if(lpTimer){clearTimeout(lpTimer);lpTimer=null;}}
+  function showLpMenu(){
+    const overlay=document.createElement('div');
+    overlay.className='modal-overlay';
+    const sheet=document.createElement('div');
+    sheet.className='modal-sheet';
+    const handle=document.createElement('div');
+    handle.className='modal-handle';
+    sheet.appendChild(handle);
+    const items=[
+      {label:'聴いたよ',action:()=>{reactToPost();}},
+      {label:'返声する',action:()=>{pendingReplyTo=post.id;pendingReplyToName=post.username||'?';switchTab('Record');}},
+    ];
+    items.forEach(({label,action})=>{
+      const btn=document.createElement('button');
+      btn.className='lp-sheet-item';
+      btn.textContent=label;
+      btn.addEventListener('click',()=>{document.body.removeChild(overlay);action();});
+      sheet.appendChild(btn);
+    });
+    overlay.appendChild(sheet);
+    overlay.addEventListener('click',(e)=>{if(e.target===overlay) document.body.removeChild(overlay);});
+    document.body.appendChild(overlay);
+  }
+  card.addEventListener('touchstart',(e)=>{
+    if(e.target.closest('button')||e.target.closest('.waveform')) return;
+    lpStartY=e.touches[0].clientY;
+    lpTimer=setTimeout(()=>{lpTimer=null;showLpMenu();},500);
+  },{passive:true});
+  card.addEventListener('touchmove',(e)=>{
+    if(!lpTimer) return;
+    if(Math.abs(e.touches[0].clientY-lpStartY)>10) cancelLp();
+  },{passive:true});
+  card.addEventListener('touchend',cancelLp,{passive:true});
+  card.addEventListener('touchcancel',cancelLp,{passive:true});
   return card;
 }
 
