@@ -416,7 +416,18 @@
         <p class="section-title">一番聴かれた声</p>
         <div id="mostListenedVoice" style="margin-bottom:20px"></div>
         <p class="section-title">今週のまとめ</p>
-        <div id="weeklySummary" style="display:flex;gap:8px;margin-bottom:20px"></div>
+        <div id="weeklySummary" style="display:flex;gap:8px;margin-bottom:12px"></div>
+        <div id="weekGoalSection" style="margin-bottom:20px">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+            <span style="font-size:.8rem;color:var(--text2)">今週の目標</span>
+            <div style="display:flex;gap:4px">
+              <button class="week-goal-btn" data-goal="3" style="font-size:.75rem;padding:3px 10px;border:1px solid var(--border);border-radius:99px;background:transparent;color:var(--text);cursor:pointer">3回</button>
+              <button class="week-goal-btn" data-goal="5" style="font-size:.75rem;padding:3px 10px;border:1px solid var(--border);border-radius:99px;background:transparent;color:var(--text);cursor:pointer">5回</button>
+              <button class="week-goal-btn" data-goal="7" style="font-size:.75rem;padding:3px 10px;border:1px solid var(--border);border-radius:99px;background:transparent;color:var(--text);cursor:pointer">7回</button>
+            </div>
+          </div>
+          <div id="weekGoalProgress"></div>
+        </div>
         <p class="section-title">今月のまとめ</p>
         <div id="monthlySummary" style="display:flex;gap:8px;margin-bottom:20px"></div>
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
@@ -2238,6 +2249,24 @@ async function loadProfile(){
     }
     $('weeklySummary').innerHTML=[['投稿',weekPostCnt],['聴いたよ',weekReactCnt],['コメント',weekCommentCnt]]
       .map(([l,v])=>`<div style="flex:1;background:var(--surface);border-radius:var(--radius-sm);padding:12px;text-align:center"><div style="font-size:1.4rem;font-weight:700">${v}</div><div style="font-size:.7rem;color:var(--text2)">${l}</div></div>`).join('');
+    // weekly goal
+    {
+      const GOAL_KEY='vbr_week_goal';
+      let weekGoal=parseInt(localStorage.getItem(GOAL_KEY)||'5',10);
+      const updateGoalUI=()=>{
+        const done=weekPostCnt>=weekGoal;
+        const pct=Math.round(Math.min(weekPostCnt,weekGoal)/weekGoal*100);
+        $('weekGoalProgress').innerHTML=`<div style="display:flex;justify-content:space-between;font-size:.78rem;color:var(--text2);margin-bottom:4px"><span>${weekPostCnt}回 / ${weekGoal}回</span><span style="color:${done?'var(--accent)':'var(--text2)'}">${done?'達成！':'あと'+(weekGoal-weekPostCnt)+'回'}</span></div><div style="height:6px;background:var(--surface2);border-radius:3px;overflow:hidden"><div style="width:${pct}%;height:100%;background:var(--accent);border-radius:3px;transition:width .4s"></div></div>`;
+        document.querySelectorAll('.week-goal-btn').forEach(btn=>{
+          const active=parseInt(btn.dataset.goal)===weekGoal;
+          btn.style.background=active?'var(--accent)':'transparent';
+          btn.style.color=active?'#fff':'var(--text)';
+          btn.style.borderColor=active?'var(--accent)':'var(--border)';
+        });
+      };
+      updateGoalUI();
+      document.querySelectorAll('.week-goal-btn').forEach(btn=>btn.addEventListener('click',()=>{weekGoal=parseInt(btn.dataset.goal);localStorage.setItem(GOAL_KEY,weekGoal);updateGoalUI();}));
+    }
   }
   // monthly summary
   {
