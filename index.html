@@ -1440,7 +1440,11 @@ async function renderFeed(el,posts,myPost,yesterdayPosts){
     filteredPosts=[...filteredPosts].sort((a,b)=>(rmap[b.id]?.count||0)-(rmap[a.id]?.count||0));
   }
   const hasFriendPosts=filteredPosts.length>0;
-  friendSection.innerHTML=`<p class="section-title">フレンドの声</p>`;
+  const _playedForSummary=getPlayedSet();
+  const unheardCnt=(posts||[]).filter(p=>!_playedForSummary.has(p.id)&&!p.reacted_by_me).length;
+  const posterCnt=new Set((posts||[]).map(p=>p.user_id)).size;
+  const summaryHtml=posterCnt>0?` <span style="font-size:.75rem;color:var(--text2);font-weight:400;vertical-align:middle">${posterCnt}人投稿${unheardCnt>0?' · 未聴'+unheardCnt+'件':''}</span>`:'';
+  friendSection.innerHTML=`<p class="section-title">フレンドの声${summaryHtml}</p>`;
   // not-posted friends
   const{data:friendData}=await sb.from('friendships').select('friend_id').eq('user_id',me.id);
   // async workaround — build not-yet-posted list
