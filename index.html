@@ -934,6 +934,7 @@ function renderDurationPicker(){
 
 // tag picker
 const TAGS=['朝','夜','ひとりごと','仕事中'];
+const TAG_COLORS={'朝':'#f5a623','夜':'#5e5ce6','ひとりごと':'#34c759','仕事中':'#ff8c00'};
 function renderTagPicker(){
   const h=new Date().getHours();
   const autoTag=h>=5&&h<12?'朝':h>=18&&h<24?'夜':'';
@@ -2387,7 +2388,8 @@ async function loadProfile(){
       const maxCount=entries[0][1];
       return entries.map(([tag,count])=>{
         const pct=Math.round(count/maxCount*100);
-        return `<div style="margin-bottom:10px"><div style="display:flex;justify-content:space-between;font-size:.82rem;margin-bottom:3px"><span>${tag}</span><span style="color:var(--text2)">${count}回</span></div><div style="height:6px;background:var(--surface2);border-radius:3px;overflow:hidden"><div style="width:${pct}%;height:100%;background:var(--accent);border-radius:3px;transition:width .4s"></div></div></div>`;
+        const barColor=TAG_COLORS[tag]||'var(--accent)';
+        return `<div style="margin-bottom:10px"><div style="display:flex;justify-content:space-between;font-size:.82rem;margin-bottom:3px"><span>${tag}</span><span style="color:var(--text2)">${count}回</span></div><div style="height:6px;background:var(--surface2);border-radius:3px;overflow:hidden"><div style="width:${pct}%;height:100%;background:${barColor};border-radius:3px;transition:width .4s"></div></div></div>`;
       }).join('');
     };
     const monthTagCounts=buildTagCounts((allPosts||[]).filter(p=>p.post_date>=ms));
@@ -2653,7 +2655,7 @@ async function loadProfile(){
     });
   });
   // calendar
-  renderCalendar(dates);
+  renderCalendar(allPosts||[]);
 }
 
 // inline name edit
@@ -2727,8 +2729,8 @@ $('btnLogout').addEventListener('click',async()=>{
 });
 
 // calendar
-function renderCalendar(dates){
-  const posted=new Set(dates);
+function renderCalendar(posts){
+  const tagMap=new Map((posts||[]).map(p=>[p.post_date,p.tag||'']));
   const now=new Date();
   const year=now.getFullYear();
   const month=now.getMonth();
@@ -2750,8 +2752,10 @@ function renderCalendar(dates){
     cell.className='cal-cell';
     cell.textContent=d;
     const dateStr=`${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-    if(posted.has(dateStr)){
+    if(tagMap.has(dateStr)){
       cell.classList.add('posted');
+      const cellTag=tagMap.get(dateStr);
+      if(cellTag&&TAG_COLORS[cellTag])cell.style.background=TAG_COLORS[cellTag];
       cell.setAttribute('role','button');
       cell.setAttribute('aria-label',`${dateStr}の声を再生`);
       cell.addEventListener('click',()=>playArchive(dateStr));
