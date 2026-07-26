@@ -210,6 +210,8 @@
       cursor:pointer;border-radius:var(--radius-sm);margin-bottom:8px}
     /* caught-up banner */
     .caught-up-banner{background:var(--success);color:#000;border-radius:var(--radius);padding:12px 16px;margin:8px 0 16px;text-align:center;font-weight:600;font-size:.9rem}
+    /* evening reminder banner */
+    .reminder-banner{background:linear-gradient(135deg,#c96a00,#f5a623);color:#fff;border-radius:var(--radius);padding:12px 16px;margin-bottom:16px;display:flex;align-items:center;gap:10px}
     /* onboarding */
     .onb-step{display:flex;align-items:flex-start;gap:12px;margin-bottom:16px}
     .onb-num{width:28px;height:28px;border-radius:50%;background:var(--accent);
@@ -1262,6 +1264,25 @@ async function renderFeed(el,posts,myPost,yesterdayPosts){
       const msgs={7:'7日連続達成！',14:'2週間連続達成！',30:'30日連続達成！',100:'100日連続達成！'};
       mb.innerHTML='<span class="milestone-icon">*</span><div class="milestone-body"><span class="milestone-days">'+msgs[hit]+'</span><span class="milestone-sub">すばらしい記録です</span></div><button class="milestone-close" aria-label="閉じる" onclick="this.parentElement.remove()">x</button>';
       el.appendChild(mb);
+    }
+  }
+  // evening reminder: show when not posted today and 19:00+ JST
+  if(!myPost){
+    const _jstH=(new Date().getUTCHours()+9)%24;
+    const _todayStr=new Date().toISOString().split('T')[0];
+    const _dismissKey='vbr_reminder_'+_todayStr;
+    if(_jstH>=19&&!localStorage.getItem(_dismissKey)){
+      let _ydStreak=0;
+      const _yd=new Date(Date.now()-86400000).toISOString().split('T')[0];
+      if(myPostDates.includes(_yd)){
+        let _tmp=new Date(Date.now()-86400000);
+        while(myPostDates.includes(_tmp.toISOString().split('T')[0])){_ydStreak++;_tmp=new Date(_tmp.getTime()-86400000);}
+      }
+      const _rb=document.createElement('div');
+      _rb.className='reminder-banner';
+      const _msg=_ydStreak>=3?`今日まだ声がないよ。${_ydStreak}日連続が途切れそう！`:'今日まだ声を残していないよ';
+      _rb.innerHTML=`<span style="flex:1;font-weight:700;font-size:.9rem">${_msg}</span><button style="background:rgba(0,0,0,.25);border:none;border-radius:8px;color:#fff;padding:4px 12px;font-size:.82rem;cursor:pointer;white-space:nowrap" onclick="switchTab('Record')">録音する</button><button class="milestone-close" aria-label="閉じる" onclick="localStorage.setItem('${_dismissKey}','1');this.parentElement.remove()">x</button>`;
+      el.appendChild(_rb);
     }
   }
   // week progress bar
