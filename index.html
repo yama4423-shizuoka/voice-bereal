@@ -142,6 +142,9 @@
     .speed-btn{background:var(--surface2);border:none;border-radius:var(--radius-sm);
       padding:6px 10px;color:var(--text2);font-size:.75rem;cursor:pointer;font-weight:600}
     .speed-btn.active{color:var(--accent)}
+    .play-pause-btn{background:var(--accent);border:none;border-radius:var(--radius-sm);
+      padding:6px 14px;color:#fff;font-size:.8rem;cursor:pointer;font-weight:600;min-width:54px;text-align:center}
+    .play-pause-btn.is-paused{background:var(--surface2);color:var(--text)}
     .duration-label{font-size:.72rem;color:var(--text2);margin-left:auto}
     /* comments */
     .comments-section{margin-top:8px;border-top:1px solid var(--surface2);padding-top:8px}
@@ -1887,6 +1890,41 @@ function buildFeedCard(post){
     localStorage.setItem('playSpeed',sp);
     if(audio) audio.playbackRate=sp;
   });
+  const playPauseBtn=document.createElement('button');
+  playPauseBtn.className='play-pause-btn is-paused';
+  playPauseBtn.setAttribute('aria-label','再生');
+  playPauseBtn.textContent='再生';
+  function updatePlayPauseBtn(){
+    if(audio&&!audio.paused){
+      playPauseBtn.textContent='停止';
+      playPauseBtn.setAttribute('aria-label','一時停止');
+      playPauseBtn.classList.remove('is-paused');
+    } else {
+      playPauseBtn.textContent='再生';
+      playPauseBtn.setAttribute('aria-label','再生');
+      playPauseBtn.classList.add('is-paused');
+    }
+  }
+  playPauseBtn.addEventListener('click',()=>{
+    if(audio&&!audio.paused){
+      audio.pause();
+    } else if(audio&&isLoaded){
+      if(currentPlayingAudio&&currentPlayingAudio!==audio){
+        currentPlayingAudio.pause();
+        if(currentPlayingCard) currentPlayingCard.querySelectorAll('.waveform-bar').forEach(b=>b.classList.remove('played'));
+      }
+      currentPlayingAudio=audio;
+      currentPlayingCard=card;
+      audio.play();
+      if('mediaSession' in navigator){
+        navigator.mediaSession.playbackState='playing';
+        navigator.mediaSession.setActionHandler('play',()=>audio.play());
+        navigator.mediaSession.setActionHandler('pause',()=>audio.pause());
+      }
+    } else {
+      startAudio(null);
+    }
+  });
   const reactBtn=document.createElement('button');
   reactBtn.className='action-btn';
   reactBtn.setAttribute('aria-label','聴いたよ');
@@ -1895,6 +1933,7 @@ function buildFeedCard(post){
   bmBtn.className='action-btn';
   bmBtn.setAttribute('aria-label','ブックマーク');
   bmBtn.textContent='保存';
+  actionsRow.appendChild(playPauseBtn);
   actionsRow.appendChild(speedBtn);
   actionsRow.appendChild(durationLabel);
   actionsRow.appendChild(reactBtn);
@@ -1980,8 +2019,8 @@ function buildFeedCard(post){
         durationLabel.textContent=`${fmtTime(audio.currentTime)} / ${fmtTime(audio.duration)}`;
         if('mediaSession' in navigator){try{navigator.mediaSession.setPositionState({duration:audio.duration,playbackRate:audio.playbackRate,position:audio.currentTime});}catch(e){}}
       });
-      audio.addEventListener('play',()=>{if('mediaSession' in navigator) navigator.mediaSession.playbackState='playing';});
-      audio.addEventListener('pause',()=>{if('mediaSession' in navigator) navigator.mediaSession.playbackState='paused';});
+      audio.addEventListener('play',()=>{if('mediaSession' in navigator) navigator.mediaSession.playbackState='playing';updatePlayPauseBtn();});
+      audio.addEventListener('pause',()=>{if('mediaSession' in navigator) navigator.mediaSession.playbackState='paused';updatePlayPauseBtn();});
       audio.addEventListener('ended',async()=>{
         bars.forEach(b=>b.classList.remove('played'));
         if(audio.duration) durationLabel.textContent=Math.round(audio.duration)+'秒';
@@ -1996,6 +2035,7 @@ function buildFeedCard(post){
           $('btnPlayAll').textContent='全部聴く';
         }
         if('mediaSession' in navigator) navigator.mediaSession.playbackState='none';
+        updatePlayPauseBtn();
       });
     }
     currentPlayingAudio=audio;
