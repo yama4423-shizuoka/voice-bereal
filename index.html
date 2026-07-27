@@ -278,6 +278,7 @@
         <div style="display:flex;gap:8px;align-items:center">
           <span id="todayTimeDisplay" style="font-size:.78rem;color:var(--text2)"></span>
           <button id="btnPlayAll" style="background:var(--surface2);border:none;border-radius:var(--radius-sm);padding:6px 10px;color:var(--text);font-size:.78rem;cursor:pointer;white-space:nowrap">全部聴く</button>
+          <button id="btnShuffle" style="background:var(--surface2);border:none;border-radius:var(--radius-sm);padding:6px 10px;color:var(--text);font-size:.78rem;cursor:pointer;white-space:nowrap">シャッフル</button>
           <button id="btnMarkAllRead" style="background:var(--surface2);border:none;border-radius:var(--radius-sm);padding:6px 10px;color:var(--text);font-size:.78rem;cursor:pointer;white-space:nowrap">全既読</button>
           <button id="btnRefreshFeed" style="background:var(--surface2);border:none;border-radius:var(--radius-sm);padding:6px 10px;color:var(--text);font-size:.78rem;cursor:pointer">更新</button>
         </div>
@@ -2055,6 +2056,7 @@ function buildFeedCard(post){
         } else if(isPlayingAll){
           isPlayingAll=false;
           $('btnPlayAll').textContent='全部聴く';
+          $('btnShuffle').textContent='シャッフル';
         }
         if('mediaSession' in navigator) navigator.mediaSession.playbackState='none';
         updatePlayPauseBtn();
@@ -2213,6 +2215,7 @@ $('btnPlayAll').addEventListener('click',()=>{
     isPlayingAll=false;
     if(currentPlayingAudio) currentPlayingAudio.pause();
     $('btnPlayAll').textContent='全部聴く';
+    $('btnShuffle').textContent='シャッフル';
     return;
   }
   const cards=[...$('feedContent').querySelectorAll('.feed-card:not(.my-card)')];
@@ -2223,6 +2226,23 @@ $('btnPlayAll').addEventListener('click',()=>{
   if(!playQueue.length) return;
   isPlayingAll=true;
   $('btnPlayAll').textContent='停止';
+  playQueueIndex=0;
+  playQueue[0]();
+});
+$('btnShuffle').addEventListener('click',()=>{
+  if(isPlayingAll){
+    isPlayingAll=false;
+    if(currentPlayingAudio) currentPlayingAudio.pause();
+    $('btnPlayAll').textContent='全部聴く';
+    $('btnShuffle').textContent='シャッフル';
+    return;
+  }
+  const cards=[...$('feedContent').querySelectorAll('.feed-card:not(.my-card)')];
+  for(let i=cards.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[cards[i],cards[j]]=[cards[j],cards[i]];}
+  playQueue=cards.map(card=>()=>{const wf=card.querySelector('.waveform');if(wf) wf.click();});
+  if(!playQueue.length) return;
+  isPlayingAll=true;
+  $('btnShuffle').textContent='停止';
   playQueueIndex=0;
   playQueue[0]();
 });
