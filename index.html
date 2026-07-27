@@ -434,6 +434,9 @@
             <div style="font-size:.75rem;color:var(--text2)">聴いた時間</div>
           </div>
         </div>
+        <div style="margin-bottom:20px;text-align:right">
+          <button id="exportCsvBtn" onclick="exportPostsCsv()" style="font-size:.8rem;padding:6px 14px;border:1px solid var(--border);border-radius:99px;background:transparent;color:var(--text2);cursor:pointer">投稿データをエクスポート</button>
+        </div>
         <p class="section-title">一番聴かれた声</p>
         <div id="mostListenedVoice" style="margin-bottom:20px"></div>
         <p class="section-title">今週のまとめ</p>
@@ -2331,6 +2334,37 @@ async function loadBookmarks(){
 }
 
 // profile
+async function exportPostsCsv(){
+  const btn=$('exportCsvBtn');
+  if(btn){btn.textContent='準備中...';btn.disabled=true;}
+  try{
+    const{data:posts}=await sb.from('posts').select('id,post_date,created_at,title,caption,tag').eq('user_id',me.id).order('post_date',{ascending:true});
+    const postIds=(posts||[]).map(p=>p.id).filter(Boolean);
+    const rxnCounts={};
+    if(postIds.length){
+      const{data:rxns}=await sb.from('reactions').select('post_id').in('post_id',postIds);
+      (rxns||[]).forEach(r=>{rxnCounts[r.post_id]=(rxnCounts[r.post_id]||0)+1;});
+    }
+    const rows=(posts||[]).map(p=>{
+      const d=p.post_date||'';
+      const t=p.created_at?new Date(p.created_at).toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit',timeZone:'Asia/Tokyo'}):'';
+      const title=(p.title||'').replace(/"/g,'""');
+      const caption=(p.caption||'').replace(/"/g,'""');
+      return `"${d}","${t}","${title}","${caption}","${p.tag||''}",${rxnCounts[p.id]||0}`;
+    });
+    const csv=['日付,投稿時刻,タイトル,キャプション,気分タグ,聴いたよ数',...rows].join('\n');
+    const blob=new Blob(['﻿'+csv],{type:'text/csv;charset=utf-8'});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a');
+    a.href=url;
+    a.download=`コエリアル_投稿履歴_${new Date().toISOString().slice(0,10)}.csv`;
+    document.body.appendChild(a);a.click();document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    showToast('エクスポートしました');
+  }catch(e){showToast('エクスポートに失敗しました');}
+  if(btn){btn.textContent='投稿データをエクスポート';btn.disabled=false;}
+}
+
 async function loadProfile(){
   $('profileAvatar').textContent=(myProfile?.username||'?')[0].toUpperCase();
   $('profileName').textContent=myProfile?.username||'';
