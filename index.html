@@ -438,6 +438,8 @@
           <button id="exportCsvBtn" onclick="exportPostsCsv()" style="font-size:.8rem;padding:6px 14px;border:1px solid var(--border);border-radius:99px;background:transparent;color:var(--text2);cursor:pointer">投稿データをエクスポート</button>
         </div>
         <div id="streakMilestone" style="margin-bottom:16px"></div>
+        <p class="section-title">達成バッジ</p>
+        <div id="achievementBadges" style="margin-bottom:20px"></div>
         <p class="section-title">一番聴かれた声</p>
         <div id="mostListenedVoice" style="margin-bottom:20px"></div>
         <p class="section-title">今週のまとめ</p>
@@ -2771,6 +2773,32 @@ async function loadProfile(){
       else{showToast('リクエストを取り消しました');loadProfile();}
     });
   });
+  // achievement badges
+  {
+    const totalPosts=dates.length;
+    const maxStreak=calcMaxStreak(dates);
+    const fCount=parseInt($('statFriendCount').textContent)||0;
+    const BDGS=[
+      {label:'初投稿',check:totalPosts>=1,sub:'投稿数 1件'},
+      {label:'10件投稿',check:totalPosts>=10,sub:'投稿数 10件'},
+      {label:'50件投稿',check:totalPosts>=50,sub:'投稿数 50件'},
+      {label:'100件投稿',check:totalPosts>=100,sub:'投稿数 100件'},
+      {label:'3日連続',check:maxStreak>=3,sub:'最長連続 3日'},
+      {label:'7日連続',check:maxStreak>=7,sub:'最長連続 7日'},
+      {label:'14日連続',check:maxStreak>=14,sub:'最長連続 14日'},
+      {label:'30日連続',check:maxStreak>=30,sub:'最長連続 30日'},
+      {label:'100日連続',check:maxStreak>=100,sub:'最長連続 100日'},
+      {label:'フレンド1人',check:fCount>=1,sub:'フレンド 1人'},
+      {label:'フレンド5人',check:fCount>=5,sub:'フレンド 5人'},
+      {label:'フレンド10人',check:fCount>=10,sub:'フレンド 10人'},
+    ];
+    const badgeEl=$('achievementBadges');
+    if(badgeEl){
+      badgeEl.innerHTML='<div style="display:flex;flex-wrap:wrap;gap:8px">'+
+        BDGS.map(b=>`<div title="${b.sub}" style="padding:5px 11px;border-radius:99px;font-size:.78rem;font-weight:600;border:1px solid ${b.check?'var(--accent)':'var(--border)'};background:${b.check?'var(--surface)':'transparent'};color:${b.check?'var(--accent)':'var(--text2)'}">${b.check?'\u2713 ':''} ${b.label}</div>`).join('')+
+        '</div>';
+    }
+  }
   // calendar
   renderCalendar(allPosts||[]);
 }
