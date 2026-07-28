@@ -177,6 +177,11 @@
       .feed-compact .waveform{height:22px;margin-bottom:4px}
       .feed-compact .feed-actions{gap:4px}
       .feed-compact .action-btn{padding:4px 8px;font-size:.75rem}
+.memo-section{margin-top:8px;display:none}
+.memo-section.open{display:block}
+.memo-area{width:100%;box-sizing:border-box;background:var(--surface2);border:1px solid transparent;border-radius:var(--radius-sm);color:var(--text);font-size:.82rem;padding:6px 8px;resize:none;font-family:inherit;min-height:52px}
+.memo-save-btn{margin-top:4px;background:var(--accent);border:none;border-radius:var(--radius-sm);padding:4px 12px;color:#fff;font-size:.78rem;cursor:pointer}
+.memo-indicator{font-size:.72rem;color:var(--text2);margin-top:4px;white-space:pre-wrap;word-break:break-all}
       .feed-compact .reply-thread{padding-left:12px}
     /* streaks */
     .streak-banner{background:linear-gradient(135deg,var(--accent),#5e5ce6);
@@ -2097,8 +2102,43 @@ function buildFeedCard(post){
   replyBtn.textContent='返声する';
   replyBtn.addEventListener('click',()=>{pendingReplyTo=post.id;pendingReplyToName=post.username||'?';switchTab('Record');});
   actionsRow.appendChild(replyBtn);
+  const memoKey=`voicememo_${me.id}_${post.id}`;
+  const memoBtn=document.createElement('button');
+  memoBtn.className='action-btn';
+  memoBtn.textContent='メモ';
+  const savedMemo=localStorage.getItem(memoKey)||'';
+  if(savedMemo) memoBtn.textContent='メモ*';
+  actionsRow.appendChild(memoBtn);
   card.appendChild(wf);
   card.appendChild(actionsRow);
+  const memoSection=document.createElement('div');
+  memoSection.className='memo-section';
+  const memoArea=document.createElement('textarea');
+  memoArea.className='memo-area';
+  memoArea.maxLength=100;
+  memoArea.rows=2;
+  memoArea.placeholder='自分だけのメモ(100文字以内)';
+  if(savedMemo) memoArea.value=savedMemo;
+  const memoSaveBtn=document.createElement('button');
+  memoSaveBtn.className='memo-save-btn';
+  memoSaveBtn.textContent='保存';
+  const memoIndicator=document.createElement('div');
+  memoIndicator.className='memo-indicator';
+  if(savedMemo) memoIndicator.textContent=savedMemo;
+  memoSaveBtn.addEventListener('click',()=>{
+    const v=memoArea.value.trim();
+    if(v){localStorage.setItem(memoKey,v);memoIndicator.textContent=v;memoBtn.textContent='メモ*';}
+    else{localStorage.removeItem(memoKey);memoIndicator.textContent='';memoBtn.textContent='メモ';}
+    memoSection.classList.remove('open');
+  });
+  memoBtn.addEventListener('click',()=>{
+    memoSection.classList.toggle('open');
+    if(memoSection.classList.contains('open')) memoArea.focus();
+  });
+  memoSection.appendChild(memoArea);
+  memoSection.appendChild(memoSaveBtn);
+  card.appendChild(memoSection);
+  card.appendChild(memoIndicator);
   // comments
   commentCountBtn.addEventListener('click',()=>toggleComments(card,post));
   // long-press action menu (500ms)
