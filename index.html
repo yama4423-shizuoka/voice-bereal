@@ -437,6 +437,7 @@
         <div style="margin-bottom:20px;text-align:right">
           <button id="exportCsvBtn" onclick="exportPostsCsv()" style="font-size:.8rem;padding:6px 14px;border:1px solid var(--border);border-radius:99px;background:transparent;color:var(--text2);cursor:pointer">投稿データをエクスポート</button>
         </div>
+        <div id="streakMilestone" style="margin-bottom:16px"></div>
         <p class="section-title">一番聴かれた声</p>
         <div id="mostListenedVoice" style="margin-bottom:20px"></div>
         <p class="section-title">今週のまとめ</p>
@@ -2378,6 +2379,32 @@ async function loadProfile(){
   const dates=(allPosts||[]).map(p=>p.post_date);
   $('statTotalPosts').textContent=dates.length;
   $('statMaxStreak').textContent=calcMaxStreak(dates)+'日';
+  // streak milestone progress
+  {
+    const cur=calcCurrentStreak(dates);
+    const milestones=[7,14,30,100];
+    const next=milestones.find(m=>m>cur);
+    const el=$('streakMilestone');
+    if(el){
+      if(next){
+        const idx=milestones.indexOf(next);
+        const prev=idx>0?milestones[idx-1]:0;
+        const pct=prev===next?100:Math.min(100,Math.round((cur-prev)/(next-prev)*100));
+        el.innerHTML='<div style="background:var(--surface);border-radius:var(--radius-sm);padding:12px">'
+          +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">'
+          +'<span style="font-size:.8rem;color:var(--text2)">次の目標: '+next+'日連続</span>'
+          +'<span style="font-size:.8rem;font-weight:700">'+cur+'/'+next+'日</span>'
+          +'</div>'
+          +'<div style="background:var(--border);border-radius:99px;height:6px;overflow:hidden">'
+          +'<div style="width:'+pct+'%;height:100%;background:var(--accent);border-radius:99px"></div>'
+          +'</div>'
+          +'<div style="font-size:.75rem;color:var(--text2);margin-top:4px">あと'+(next-cur)+'日で達成</div>'
+          +'</div>';
+      }else if(cur>=100){
+        el.innerHTML='<div style="background:var(--surface);border-radius:var(--radius-sm);padding:12px;text-align:center;font-size:.85rem;font-weight:700;color:var(--accent)">100日連続達成!</div>';
+      }
+    }
+  }
   // most listened voice
   {
     const postIds=(allPosts||[]).map(p=>p.id).filter(Boolean);
