@@ -122,6 +122,7 @@
       border-radius:4px;padding:2px 6px;display:inline-block;margin-bottom:6px}
     .feed-title{font-size:1rem;font-weight:700;margin-bottom:4px}
     .feed-caption{font-size:.9rem;margin-bottom:10px}
+    .feed-title mark,.feed-caption mark{background:var(--accent);color:var(--surface0);border-radius:2px;padding:0 1px;font-style:normal}
     .waveform{display:flex;align-items:center;gap:2px;height:40px;margin-bottom:10px;cursor:pointer}
     .waveform-bar{flex:1;background:var(--surface2);border-radius:2px;transition:background .15s}
     .waveform-bar.played{background:var(--accent)}
@@ -906,6 +907,12 @@ $('btnEchoCancel').addEventListener('click',()=>{
 });
 
 function fmtTime(s){const m=Math.floor(s/60);return `${m}:${String(Math.floor(s%60)).padStart(2,'0')}`;}
+function _hlText(text,query){
+  if(!query||!text) return null;
+  const esc=text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  const escQ=query.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+  return esc.replace(new RegExp('('+escQ+')','gi'),'<mark>$1</mark>');
+}
 
 // today time display
 function getTodayPostTime(){
@@ -1413,8 +1420,8 @@ async function renderFeed(el,posts,myPost,yesterdayPosts){
   const searchInput=document.createElement('input');
   searchInput.type='text';
   searchInput.className='caption-search';
-  searchInput.placeholder='キャプションで絞り込む';
-  searchInput.setAttribute('aria-label','キャプションで絞り込む');
+  searchInput.placeholder='タイトル・キャプションで絞り込む';
+  searchInput.setAttribute('aria-label','タイトル・キャプションで絞り込む');
   searchInput.value=captionSearchQuery;
   searchInput.addEventListener('input',()=>{
     captionSearchQuery=searchInput.value;
@@ -1477,7 +1484,7 @@ async function renderFeed(el,posts,myPost,yesterdayPosts){
   }
   if(captionSearchQuery){
     const q=captionSearchQuery.toLowerCase();
-    filteredPosts=filteredPosts.filter(p=>(p.caption||'').toLowerCase().includes(q));
+    filteredPosts=filteredPosts.filter(p=>(p.caption||'').toLowerCase().includes(q)||(p.title||'').toLowerCase().includes(q));
   }
   if(feedSortOrder==='popular'){
     const rmap=await loadReactions(filteredPosts.map(p=>p.id));
@@ -1871,13 +1878,15 @@ function buildFeedCard(post){
   if(post.title){
     const titleEl=document.createElement('div');
     titleEl.className='feed-title';
-    titleEl.textContent=post.title;
+    const hlT=captionSearchQuery?_hlText(post.title,captionSearchQuery):null;
+    if(hlT) titleEl.innerHTML=hlT; else titleEl.textContent=post.title;
     card.appendChild(titleEl);
   }
   if(post.caption){
     const capEl=document.createElement('div');
     capEl.className='feed-caption';
-    capEl.textContent=post.caption;
+    const hlC=captionSearchQuery?_hlText(post.caption,captionSearchQuery):null;
+    if(hlC) capEl.innerHTML=hlC; else capEl.textContent=post.caption;
     card.appendChild(capEl);
   }
   // waveform
