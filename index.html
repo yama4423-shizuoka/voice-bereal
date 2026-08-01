@@ -551,6 +551,7 @@
     </div>
     <div id="mpWeekDots" style="margin-bottom:16px"></div>
     <div id="mpHeatmap" style="margin-bottom:16px"></div>
+    <div id="mpTagTrend" style="margin-bottom:16px"></div>
     <button id="btnCloseMiniProfile" class="btn btn-secondary">閉じる</button>
     <button id="btnViewFriendCal" class="btn btn-ghost" style="margin-top:8px">投稿カレンダーを見る</button>
   </div>
@@ -3019,7 +3020,7 @@ function calcMaxStreak(dates){
 async function showMiniProfile(userId){
   const{data:prof}=await sb.from('profiles').select('*').eq('id',userId).single();
   if(!prof) return;
-  const{data:posts}=await sb.from('posts').select('post_date,created_at').eq('user_id',userId);
+  const{data:posts}=await sb.from('posts').select('post_date,created_at,tag').eq('user_id',userId);
   $('mpAvatar').textContent=(prof.username||'?')[0].toUpperCase();
   $('mpName').textContent=prof.username||'?';
   $('mpBio').textContent=prof.bio||'';
@@ -3111,6 +3112,30 @@ async function showMiniProfile(userId){
     hmWrap.appendChild(hmBars);
     hmWrap.appendChild(hmLabels);
     mpHM.appendChild(hmWrap);
+  }
+  // tag tendency bars
+  const mpTT=$('mpTagTrend');
+  mpTT.innerHTML='';
+  const tagCounts={};
+  (allPosts||[]).forEach(p=>{if(p.tag)tagCounts[p.tag]=(tagCounts[p.tag]||0)+1;});
+  const tagEntries=Object.entries(tagCounts).sort((a,b)=>b[1]-a[1]);
+  if(tagEntries.length>0){
+    const maxCnt=tagEntries[0][1];
+    const ttWrap=document.createElement('div');
+    ttWrap.style.cssText='background:var(--surface1);border-radius:8px;padding:10px 12px';
+    const ttTitle=document.createElement('div');
+    ttTitle.style.cssText='font-size:.72rem;color:var(--text2);margin-bottom:8px';
+    ttTitle.textContent='声の傾向';
+    ttWrap.appendChild(ttTitle);
+    tagEntries.forEach(([tag,count])=>{
+      const pct=Math.round(count/maxCnt*100);
+      const barColor=TAG_COLORS[tag]||'var(--accent)';
+      const row=document.createElement('div');
+      row.style.cssText='margin-bottom:7px';
+      row.innerHTML=`<div style="display:flex;justify-content:space-between;font-size:.78rem;margin-bottom:3px"><span>${tag}</span><span style="color:var(--text2)">${count}回</span></div><div style="height:5px;background:var(--surface2);border-radius:3px;overflow:hidden"><div style="width:${pct}%;height:100%;background:${barColor};border-radius:3px"></div></div>`;
+      ttWrap.appendChild(row);
+    });
+    mpTT.appendChild(ttWrap);
   }
   $('miniProfileModal').style.display='flex';
   $('miniProfileModal').dataset.userId=userId;
