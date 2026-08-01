@@ -308,6 +308,10 @@
               <div style="font-size:.68rem;color:var(--text2);margin-bottom:3px;letter-spacing:.04em">今日のお題</div>
               <div id="dailyPromptRecText" style="font-size:.9rem;font-weight:600;color:var(--text1);line-height:1.4"></div>
             </div>
+          <div id="friendHintBanner" style="display:none;width:100%;max-width:340px;background:var(--surface2);border-radius:8px;padding:7px 12px;margin-bottom:6px;text-align:center">
+            <div style="font-size:.65rem;color:var(--text2);margin-bottom:3px;letter-spacing:.04em">最近のフレンドの声</div>
+            <div id="friendHintText" style="font-size:.84rem;color:var(--text2);font-style:italic;line-height:1.4"></div>
+          </div>
           <div id="replyBanner" style="display:none;font-size:.85rem;color:var(--accent);font-weight:600;text-align:center;padding:6px 12px;background:var(--surface2);border-radius:8px;width:100%;max-width:340px;margin-bottom:6px"></div>
           <div id="voiceRequestBanner" style="display:none;flex-direction:column;align-items:center;gap:6px;font-size:.85rem;padding:8px 12px;background:var(--surface2);border-radius:8px;width:100%;max-width:340px;margin-bottom:6px">
             <span id="voiceRequestBannerText" style="color:var(--accent);font-weight:600;text-align:center"></span>
@@ -632,6 +636,20 @@ async function loadVoiceRequests(){
     }
   }catch(e){}
 }
+async function loadFriendHint(){
+  const banner=$('friendHintBanner');
+  if(!banner||!me) return;
+  try{
+    const{data}=await sb.from('friend_feed').select('title,username').not('title','is',null).neq('title','').order('created_at',{ascending:false}).limit(1);
+    const post=data&&data[0];
+    if(post&&post.title){
+      $('friendHintText').textContent=post.username+'さん「'+post.title+'」';
+      banner.style.display='block';
+    } else {
+      banner.style.display='none';
+    }
+  }catch(e){banner.style.display='none';}
+}
 let myPostDates=[];
 
 // theme
@@ -684,7 +702,7 @@ function switchTab(name){
   if(name==='Feed'){_restoreFeedScroll=true;loadFeed();}
   if(name==='Profile') loadProfile();
   if(name==='Bookmarks') loadBookmarks();
-  if(name==='Record'){updateDailyPromptUI();const rb=$('replyBanner');if(rb){rb.style.display=pendingReplyTo?'block':'none';rb.textContent=pendingReplyTo?pendingReplyToName+'さんへの返声':'';}loadVoiceRequests();const _cd=localStorage.getItem('vbr_captionDraft');if(_cd&&!$('recCaption').value){$('recCaption').value=_cd;$('recCaptionCount').textContent=String(50-_cd.length);}}
+  if(name==='Record'){updateDailyPromptUI();loadFriendHint();const rb=$('replyBanner');if(rb){rb.style.display=pendingReplyTo?'block':'none';rb.textContent=pendingReplyTo?pendingReplyToName+'さんへの返声':'';}loadVoiceRequests();const _cd=localStorage.getItem('vbr_captionDraft');if(_cd&&!$('recCaption').value){$('recCaption').value=_cd;$('recCaptionCount').textContent=String(50-_cd.length);}}
 }
 
 // auth
