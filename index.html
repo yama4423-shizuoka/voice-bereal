@@ -2506,7 +2506,8 @@ async function loadProfile(){
       ]);
       weekReactCnt=wr1.count||0;weekCommentCnt=wr2.count||0;
     }
-    $('weeklySummary').innerHTML=[['投稿',weekPostCnt],['聴いたよ',weekReactCnt],['コメント',weekCommentCnt]]
+    const{count:weekGivenReactCnt}=await sb.from('reactions').select('*',{count:'exact',head:true}).eq('user_id',me.id).gte('created_at',weekStart);
+    $('weeklySummary').innerHTML=[['投稿',weekPostCnt],['聴いたよ',weekReactCnt],['コメント',weekCommentCnt],['聴き届けた',weekGivenReactCnt||0]]
       .map(([l,v])=>`<div style="flex:1;background:var(--surface);border-radius:var(--radius-sm);padding:12px;text-align:center"><div style="font-size:1.4rem;font-weight:700">${v}</div><div style="font-size:.7rem;color:var(--text2)">${l}</div></div>`).join('');
     // weekly goal
     {
