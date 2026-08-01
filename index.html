@@ -1873,6 +1873,13 @@ function buildFeedCard(post){
     const tagEl=document.createElement('div');
     tagEl.className='feed-tag';
     tagEl.textContent=post.tag;
+    tagEl.style.cursor='pointer';
+    tagEl.title=post.tag+'で絞り込む';
+    tagEl.addEventListener('click',(e)=>{
+      e.stopPropagation();
+      const chip=document.querySelector('.filter-chip[data-tag="'+post.tag+'"]');
+      if(chip) chip.click();
+    });
     card.appendChild(tagEl);
   }
   if(post.title){
