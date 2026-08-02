@@ -506,6 +506,7 @@
       <div style="padding:8px 16px 0">
         <input id="bmSearchInput" type="text" class="caption-search" placeholder="キャプションで絞り込む" aria-label="ブックマークをキャプションで絞り込む">
       </div>
+      <div id="bmTagFilter" style="display:none;gap:6px;overflow-x:auto;padding:4px 16px 0;flex-wrap:nowrap;scrollbar-width:none"></div>
       <div style="padding:4px 16px 8px">
         <button id="btnBmPlayAll" style="background:var(--surface2);border:none;border-radius:20px;padding:6px 14px;font-size:13px;cursor:pointer;color:var(--text1);display:none" aria-label="ブックマークを全部再生">全部聴く</button>
       </div>
@@ -2429,14 +2430,39 @@ $('btnRefreshFeed').addEventListener('click',()=>{sessionStorage.removeItem('fee
 
 // bookmarks
 let bookmarkedPosts=[];
+let bmActiveTagFilter='';
+function buildBmTagChips(){
+  const div=$('bmTagFilter');
+  if(!div) return;
+  const usedTags=TAGS.filter(t=>bookmarkedPosts.some(p=>p.tag===t));
+  if(!usedTags.length){div.innerHTML='';div.style.display='none';return;}
+  div.innerHTML='';
+  div.style.display='flex';
+  const allBtn=document.createElement('button');
+  allBtn.className='filter-chip'+(bmActiveTagFilter===''?' active':'');
+  allBtn.textContent='全て';
+  allBtn.setAttribute('aria-label','ブックマーク全てのタグ');
+  allBtn.onclick=()=>{bmActiveTagFilter='';div.querySelectorAll('.filter-chip').forEach(c=>c.classList.remove('active'));allBtn.classList.add('active');renderBookmarkList();};
+  div.appendChild(allBtn);
+  usedTags.forEach(t=>{
+    const b=document.createElement('button');
+    b.className='filter-chip'+(bmActiveTagFilter===t?' active':'');
+    b.textContent=t;
+    b.setAttribute('aria-label','ブックマーク '+t+' タグで絞り込む');
+    b.onclick=()=>{bmActiveTagFilter=t;div.querySelectorAll('.filter-chip').forEach(c=>c.classList.remove('active'));b.classList.add('active');renderBookmarkList();};
+    div.appendChild(b);
+  });
+}
 function renderBookmarkList(){
   const btn=$('btnBmPlayAll');
   if(btn) btn.style.display=bookmarkedPosts.length?'':'none';
   const q=($('bmSearchInput')?.value||'').trim().toLowerCase();
   const el=$('bookmarkContent');
-  const filtered=q?bookmarkedPosts.filter(p=>(p.caption||'').toLowerCase().includes(q)):bookmarkedPosts;
+  let filtered=bookmarkedPosts;
+  if(bmActiveTagFilter) filtered=filtered.filter(p=>p.tag===bmActiveTagFilter);
+  if(q) filtered=filtered.filter(p=>(p.caption||'').toLowerCase().includes(q)||(p.title||'').toLowerCase().includes(q));
   if(!filtered.length){
-    el.innerHTML=q?'<p style="color:var(--text2)">該当する投稿がありません</p>':'<p style="color:var(--text2)">ブックマークはありません</p>';
+    el.innerHTML='<p style="color:var(--text2)">該当する投稿がありません</p>';
     return;
   }
   el.innerHTML='';
@@ -2445,14 +2471,16 @@ function renderBookmarkList(){
 async function loadBookmarks(){
   const el=$('bookmarkContent');
   el.innerHTML='<div class="spinner"></div>';
+  bmActiveTagFilter='';
   const{data:bms}=await sb.from('bookmarks').select('post_id').eq('user_id',me.id);
-  if(!bms||!bms.length){bookmarkedPosts=[];renderBookmarkList();return;}
+  if(!bms||!bms.length){bookmarkedPosts=[];buildBmTagChips();renderBookmarkList();return;}
   const postIds=bms.map(b=>b.post_id);
   const{data:posts}=await sb.from('friend_feed').select('*').in('id',postIds);
-  if(!posts||!posts.length){bookmarkedPosts=[];renderBookmarkList();return;}
+  if(!posts||!posts.length){bookmarkedPosts=[];buildBmTagChips();renderBookmarkList();return;}
   bookmarkedPosts=posts;
   const inp=$('bmSearchInput');
   if(inp) inp.oninput=renderBookmarkList;
+  buildBmTagChips();
   renderBookmarkList();
 }
 
