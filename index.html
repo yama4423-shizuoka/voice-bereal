@@ -503,6 +503,9 @@
       <div style="padding:8px 16px 0">
         <input id="bmSearchInput" type="text" class="caption-search" placeholder="キャプションで絞り込む" aria-label="ブックマークをキャプションで絞り込む">
       </div>
+      <div style="padding:4px 16px 8px">
+        <button id="btnBmPlayAll" style="background:var(--surface2);border:none;border-radius:20px;padding:6px 14px;font-size:13px;cursor:pointer;color:var(--text1);display:none" aria-label="ブックマークを全部再生">全部聴く</button>
+      </div>
       <div class="content" id="bookmarkContent">
         <div class="spinner"></div>
       </div>
@@ -2109,6 +2112,7 @@ function buildFeedCard(post){
           isPlayingAll=false;
           $('btnPlayAll').textContent='全部聴く';
           $('btnShuffle').textContent='シャッフル';
+          $('btnBmPlayAll').textContent='全部聴く';
         }
         if('mediaSession' in navigator) navigator.mediaSession.playbackState='none';
         updatePlayPauseBtn();
@@ -2303,6 +2307,7 @@ $('btnPlayAll').addEventListener('click',()=>{
     if(currentPlayingAudio) currentPlayingAudio.pause();
     $('btnPlayAll').textContent='全部聴く';
     $('btnShuffle').textContent='シャッフル';
+    $('btnBmPlayAll').textContent='全部聴く';
     return;
   }
   const cards=[...$('feedContent').querySelectorAll('.feed-card:not(.my-card)')];
@@ -2322,6 +2327,7 @@ $('btnShuffle').addEventListener('click',()=>{
     if(currentPlayingAudio) currentPlayingAudio.pause();
     $('btnPlayAll').textContent='全部聴く';
     $('btnShuffle').textContent='シャッフル';
+    $('btnBmPlayAll').textContent='全部聴く';
     return;
   }
   const cards=[...$('feedContent').querySelectorAll('.feed-card:not(.my-card)')];
@@ -2330,6 +2336,23 @@ $('btnShuffle').addEventListener('click',()=>{
   if(!playQueue.length) return;
   isPlayingAll=true;
   $('btnShuffle').textContent='停止';
+  playQueueIndex=0;
+  playQueue[0]();
+});
+$('btnBmPlayAll').addEventListener('click',()=>{
+  if(isPlayingAll){
+    isPlayingAll=false;
+    if(currentPlayingAudio) currentPlayingAudio.pause();
+    $('btnPlayAll').textContent='全部聴く';
+    $('btnShuffle').textContent='シャッフル';
+    $('btnBmPlayAll').textContent='全部聴く';
+    return;
+  }
+  const cards=[...$('bookmarkContent').querySelectorAll('.feed-card')];
+  playQueue=cards.map(card=>()=>{const wf=card.querySelector('.waveform');if(wf) wf.click();});
+  if(!playQueue.length) return;
+  isPlayingAll=true;
+  $('btnBmPlayAll').textContent='停止';
   playQueueIndex=0;
   playQueue[0]();
 });
@@ -2387,6 +2410,8 @@ $('btnRefreshFeed').addEventListener('click',()=>{sessionStorage.removeItem('fee
 // bookmarks
 let bookmarkedPosts=[];
 function renderBookmarkList(){
+  const btn=$('btnBmPlayAll');
+  if(btn) btn.style.display=bookmarkedPosts.length?'':'none';
   const q=($('bmSearchInput')?.value||'').trim().toLowerCase();
   const el=$('bookmarkContent');
   const filtered=q?bookmarkedPosts.filter(p=>(p.caption||'').toLowerCase().includes(q)):bookmarkedPosts;
