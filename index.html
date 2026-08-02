@@ -489,6 +489,8 @@
         <div id="replyNotifList" style="margin-bottom:20px"></div>
         <p class="section-title">受け取ったリクエスト</p>
         <div id="receivedRequestList" style="margin-bottom:20px"></div>
+        <p class="section-title">よく話すフレンド</p>
+        <div id="topFriendsSection" style="margin-bottom:16px"></div>
         <p class="section-title">フレンド一覧</p>
         <input id="friendSearchInput" type="text" class="caption-search" placeholder="名前で絞り込む" aria-label="フレンド名で絞り込む" style="display:none">
         <div id="friendList" style="margin-bottom:20px"></div>
@@ -2784,12 +2786,15 @@ async function loadProfile(){
     const friendSinceMap=Object.fromEntries(friendships.map(f=>[f.friend_id,f.created_at]));
     const{data:fps}=await sb.from('profiles').select('id,username').in('id',fids);
     const today=new Date().toISOString().split('T')[0];
-    const[{data:todayPosts},{data:friendAllPosts},{data:sentReqs}]=await Promise.all([
+    const[{data:todayPosts},{data:friendAllPosts},{data:sentReqs},{data:myReactPosts},{data:myCommentPosts}]=await Promise.all([
       sb.from('posts').select('user_id').eq('post_date',today).in('user_id',fids),
       sb.from('friend_feed').select('user_id,post_date').in('user_id',fids),
-      sb.from('voice_requests').select('to_user_id').eq('from_user_id',me.id).in('to_user_id',fids).catch(()=>({data:[]}))
+      sb.from('voice_requests').select('to_user_id').eq('from_user_id',me.id).in('to_user_id',fids).catch(()=>({data:[]})),
+      sb.from('reactions').select('post_id').eq('user_id',me.id),
+      sb.from('comments').select('post_id').eq('user_id',me.id)
     ]);
     const sentRequestSet=new Set((sentReqs||[]).map(r=>r.to_user_id));
+    {const pids=[...new Set([...(myReactPosts||[]).map(r=>r.post_id),...(myCommentPosts||[]).map(c=>c.post_id)])];const fpsMap=Object.fromEntries((fps||[]).map(f=>[f.id,f.username]));let tfHtml='<p style="color:var(--text2);font-size:.82rem">まだ交流履歴がありません</p>';if(pids.length){const{data:iP}=await sb.from('posts').select('id,user_id').in('id',pids).in('user_id',fids);const cnt={};(iP||[]).forEach(p=>{cnt[p.user_id]=(cnt[p.user_id]||0)+1;});const top=Object.entries(cnt).sort((a,b)=>b[1]-a[1]).slice(0,3);if(top.length)tfHtml='<div style="display:flex;flex-wrap:wrap;gap:8px">'+top.map(([uid,n])=>`<div style="display:inline-flex;align-items:center;gap:6px;background:var(--surface2);border-radius:20px;padding:5px 12px;font-size:.82rem">${fpsMap[uid]||'?'} <span style="color:var(--accent);font-weight:600">${n}回</span></div>`).join('')+'</div>';}$('topFriendsSection').innerHTML=tfHtml;}
     const postedToday=new Set((todayPosts||[]).map(p=>p.user_id));
     const friendDateMap={};
     (friendAllPosts||[]).forEach(p=>{
