@@ -468,7 +468,19 @@
           <div id="weekGoalProgress"></div>
         </div>
         <p class="section-title">今月のまとめ</p>
-        <div id="monthlySummary" style="display:flex;gap:8px;margin-bottom:20px"></div>
+        <div id="monthlySummary" style="display:flex;gap:8px;margin-bottom:8px"></div>
+        <p id="monthlyComparison" style="font-size:.82rem;color:var(--text2);margin:0 0 12px;text-align:right"></p>
+        <div id="monthGoalSection" style="margin-bottom:20px">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+            <span style="font-size:.8rem;color:var(--text2)">今月の目標</span>
+            <div style="display:flex;gap:4px">
+              <button class="month-goal-btn" data-goal="10" style="font-size:.75rem;padding:3px 10px;border:1px solid var(--border);border-radius:99px;background:transparent;color:var(--text);cursor:pointer">10回</button>
+              <button class="month-goal-btn" data-goal="15" style="font-size:.75rem;padding:3px 10px;border:1px solid var(--border);border-radius:99px;background:transparent;color:var(--text);cursor:pointer">15回</button>
+              <button class="month-goal-btn" data-goal="30" style="font-size:.75rem;padding:3px 10px;border:1px solid var(--border);border-radius:99px;background:transparent;color:var(--text);cursor:pointer">30回</button>
+            </div>
+          </div>
+          <div id="monthGoalProgress"></div>
+        </div>
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
           <p class="section-title" style="margin:0">声の傾向</p>
           <div style="display:flex;gap:4px">
@@ -2729,6 +2741,41 @@ async function loadProfile(){
     }
     $('monthlySummary').innerHTML=[['投稿',monthPostCnt],['聴いたよ',monthReactCnt],['コメント',monthCommentCnt]]
       .map(([l,v])=>`<div style="flex:1;background:var(--surface);border-radius:var(--radius-sm);padding:12px;text-align:center"><div style="font-size:1.4rem;font-weight:700">${v}</div><div style="font-size:.7rem;color:var(--text2)">${l}</div></div>`).join('');
+    // last month comparison
+    {
+      const lmDate=new Date(now.getFullYear(),now.getMonth()-1,1);
+      const lmPrefix=`${lmDate.getFullYear()}-${String(lmDate.getMonth()+1).padStart(2,'0')}`;
+      const lastMonthCnt=(allPosts||[]).filter(p=>p.post_date&&p.post_date.startsWith(lmPrefix)).length;
+      const compEl=$('monthlyComparison');
+      if(compEl){
+        if(lastMonthCnt>0){
+          const diff=monthPostCnt-lastMonthCnt;
+          const sign=diff>=0?'+':'';
+          const col=diff>0?'var(--accent)':diff<0?'#ff453a':'var(--text2)';
+          compEl.innerHTML=`先月比 <span style="color:${col};font-weight:700">${sign}${diff}件</span>`;
+        } else {
+          compEl.textContent='';
+        }
+      }
+    }
+    // monthly goal
+    {
+      const MGOAL_KEY='vbr_month_goal';
+      let monthGoal=parseInt(localStorage.getItem(MGOAL_KEY)||'15',10);
+      const updateMonthGoalUI=()=>{
+        const done=monthPostCnt>=monthGoal;
+        const pct=Math.round(Math.min(monthPostCnt,monthGoal)/monthGoal*100);
+        $('monthGoalProgress').innerHTML=`<div style="display:flex;justify-content:space-between;font-size:.78rem;color:var(--text2);margin-bottom:4px"><span>${monthPostCnt}回 / ${monthGoal}回</span><span style="color:${done?'var(--accent)':'var(--text2)'}">${done?'達成！':'あと'+(monthGoal-monthPostCnt)+'回'}</span></div><div style="height:6px;background:var(--surface2);border-radius:3px;overflow:hidden"><div style="width:${pct}%;height:100%;background:var(--accent);border-radius:3px;transition:width .4s"></div></div>`;
+        document.querySelectorAll('.month-goal-btn').forEach(btn=>{
+          const active=parseInt(btn.dataset.goal)===monthGoal;
+          btn.style.background=active?'var(--accent)':'transparent';
+          btn.style.color=active?'#fff':'var(--text)';
+          btn.style.borderColor=active?'var(--accent)':'var(--border)';
+        });
+      };
+      updateMonthGoalUI();
+      document.querySelectorAll('.month-goal-btn').forEach(btn=>btn.addEventListener('click',()=>{monthGoal=parseInt(btn.dataset.goal);localStorage.setItem(MGOAL_KEY,monthGoal);updateMonthGoalUI();}));
+    }
   }
   // tag stats (today month / all-time tab)
   {
