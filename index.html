@@ -443,6 +443,7 @@
             <div style="font-size:.75rem;color:var(--text2)">聴いた時間</div>
           </div>
         </div>
+        <p id="statBestDow" style="font-size:.85rem;color:var(--text2);margin:-4px 0 16px;text-align:center"></p>
         <div style="margin-bottom:20px;text-align:right">
           <button id="exportCsvBtn" onclick="exportPostsCsv()" style="font-size:.8rem;padding:6px 14px;border:1px solid var(--border);border-radius:99px;background:transparent;color:var(--text2);cursor:pointer">投稿データをエクスポート</button>
         </div>
@@ -2786,6 +2787,11 @@ async function loadProfile(){
       const pct=Math.round(count/maxDay*100);
       return `<div style="margin-bottom:8px"><div style="display:flex;justify-content:space-between;font-size:.82rem;margin-bottom:3px"><span>${DAYS[i]}曜日</span><span style="color:var(--text2)">${count}回</span></div><div style="height:8px;background:var(--surface2);border-radius:4px;overflow:hidden"><div style="width:${pct}%;height:100%;background:var(--accent);border-radius:4px;transition:width .4s"></div></div></div>`;
     }).join('');
+    const bestDowEl=$('statBestDow');
+    if(bestDowEl){
+      const bestIdx=dayCounts.indexOf(Math.max(...dayCounts));
+      bestDowEl.textContent=dayCounts[bestIdx]>0?DAYS[bestIdx]+'曜日によく声を残すね':'';
+    }
   }
   // hourly heatmap
   {
