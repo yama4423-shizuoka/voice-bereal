@@ -1,4 +1,4 @@
-  <meta charset="UTF-8">
+<meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>コエリアル</title>
   <meta name="description" content="声のBeReal。毎日ランダムな時刻に通知が届き、30秒以内にそのときの声を残す。加工なし、フィルターなし。">
@@ -1499,9 +1499,17 @@ async function renderFeed(el,posts,myPost,yesterdayPosts){
       el.appendChild(recSection);
     }
   }
+  // replies to me
+  const repliesToMeIds=new Set((myPost?(posts||[]).filter(p=>p.reply_to===myPost.id):[]).map(p=>p.id));
+  if(repliesToMeIds.size>0){
+    const rSection=document.createElement('div');
+    rSection.innerHTML='<p class="section-title">あなたへの返声</p>';
+    (posts||[]).filter(p=>repliesToMeIds.has(p.id)).forEach(p=>rSection.appendChild(buildFeedCard(p)));
+    el.appendChild(rSection);
+  }
   // friends
   const friendSection=document.createElement('div');
-  let filteredPosts=posts||[];
+  let filteredPosts=(posts||[]).filter(p=>!repliesToMeIds.has(p.id));
   if(recPostId) filteredPosts=filteredPosts.filter(p=>p.id!==recPostId);
   if(activeFriendFilter) filteredPosts=filteredPosts.filter(p=>p.user_id===activeFriendFilter);
   if(activeTagFilter) filteredPosts=filteredPosts.filter(p=>p.tag===activeTagFilter);
