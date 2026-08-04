@@ -35,6 +35,7 @@
     [data-theme=light][data-color=purple]{--accent:#af52de}
     [data-theme=light][data-color=orange]{--accent:#ff9500}
     [data-theme=light][data-color=pink]{--accent:#ff2d55}
+    [data-fontsize=large]{font-size:112%}
     *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
     body{font-family:-apple-system,BlinkMacSystemFont,'Helvetica Neue',sans-serif;
       background:var(--bg);color:var(--text);min-height:100dvh;
@@ -422,6 +423,11 @@
           <button class="color-chip" data-c="orange" aria-label="オレンジ" style="width:30px;height:30px;border-radius:50%;border:3px solid transparent;background:#ff9f0a;cursor:pointer;padding:0;flex-shrink:0"></button>
           <button class="color-chip" data-c="pink"   aria-label="ピンク"   style="width:30px;height:30px;border-radius:50%;border:3px solid transparent;background:#ff375f;cursor:pointer;padding:0;flex-shrink:0"></button>
         </div>
+        <p class="section-title">表示サイズ</p>
+        <div id="fontsizeChipWrap" style="display:flex;gap:8px;margin-bottom:20px">
+          <button class="fontsize-chip" data-fs="normal" style="padding:6px 16px;border-radius:20px;border:none;background:var(--surface2);color:var(--text);font-size:.85rem;cursor:pointer">標準</button>
+          <button class="fontsize-chip" data-fs="large"  style="padding:6px 16px;border-radius:20px;border:none;background:var(--surface2);color:var(--text);font-size:1rem;cursor:pointer">大</button>
+        </div>
         <p class="section-title">プロフィールを再表示</p>
         <button id="btnShowOnboarding" class="btn btn-secondary" style="margin-bottom:20px">ホーム画面追加ガイドを見る</button>
         <p class="section-title">統計</p>
@@ -705,6 +711,23 @@ function applyColorTheme(c){
 })();
 document.querySelectorAll(".color-chip").forEach(btn=>{
   btn.addEventListener("click",()=>applyColorTheme(btn.dataset.c));
+});
+
+// font size setting
+function applyFontSize(fs){
+  if(fs==='large') document.documentElement.setAttribute('data-fontsize','large');
+  else document.documentElement.removeAttribute('data-fontsize');
+  localStorage.setItem('vbr_fontsize',fs);
+  document.querySelectorAll('.fontsize-chip').forEach(btn=>{
+    btn.style.background=btn.dataset.fs===fs?'var(--accent)':'var(--surface2)';
+    btn.style.color=btn.dataset.fs===fs?'#fff':'var(--text)';
+  });
+}
+(function(){
+  applyFontSize(localStorage.getItem('vbr_fontsize')||'normal');
+})();
+document.querySelectorAll('.fontsize-chip').forEach(btn=>{
+  btn.addEventListener('click',()=>applyFontSize(btn.dataset.fs));
 });
 
 function showToast(msg,dur=2500){
