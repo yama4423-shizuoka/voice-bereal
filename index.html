@@ -1242,6 +1242,7 @@ let activeFriendFilter='';
 let feedSortOrder='newest';
 let activeDurationFilter='';
 let myTodayTag='';
+let mutualListenerIds=new Set();
 let feedViewMode=localStorage.getItem('feedViewMode')||'card';
 let tcPost7=null,tcPost30=null;
 
@@ -1307,6 +1308,8 @@ async function loadFeed(){
     sb.from('posts').select('*').eq('user_id',me.id).eq('post_date',d30).maybeSingle()
   ]);
   tcPost7=p7||null;tcPost30=(p30&&p30.post_date!==d7)?p30:null;
+  mutualListenerIds=new Set();
+  if(myPost){const{data:mpr}=await sb.from('reactions').select('user_id').eq('post_id',myPost.id);(mpr||[]).forEach(r=>mutualListenerIds.add(r.user_id));}
   renderFeed(el,todayPosts||[],myPost,yesterdayPosts||[]);updateDailyPromptUI();
   if(_restoreFeedScroll){_restoreFeedScroll=false;const sy=sessionStorage.getItem('feedScrollY');if(sy) requestAnimationFrame(()=>requestAnimationFrame(()=>{el.scrollTop=parseInt(sy)||0;}));}
 }
@@ -1940,6 +1943,7 @@ function buildFeedCard(post){
   nameEl.className='feed-name';
   nameEl.textContent=post.username||'?';
   nameEl.addEventListener('click',()=>showMiniProfile(post.user_id));
+  if(mutualListenerIds.has(post.user_id)){const mb=document.createElement('span');mb.style.cssText='font-size:.6rem;font-weight:700;background:var(--accent);color:#fff;padding:1px 6px;border-radius:99px;margin-left:5px;pointer-events:none;vertical-align:middle';mb.textContent='相互';nameEl.appendChild(mb);}
   const timeEl=document.createElement('div');
   timeEl.className='feed-time';
   const d=new Date(post.created_at);
