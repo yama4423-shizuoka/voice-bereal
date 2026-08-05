@@ -2392,6 +2392,7 @@ $('btnPlayAll').addEventListener('click',()=>{
   }
   const cards=[...$('feedContent').querySelectorAll('.feed-card:not(.my-card)')];
   playQueue=cards.map(card=>()=>{
+    card.scrollIntoView({behavior:'smooth',block:'center'});
     const wf=card.querySelector('.waveform');
     if(wf) wf.click();
   });
@@ -2412,7 +2413,7 @@ $('btnShuffle').addEventListener('click',()=>{
   }
   const cards=[...$('feedContent').querySelectorAll('.feed-card:not(.my-card)')];
   for(let i=cards.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[cards[i],cards[j]]=[cards[j],cards[i]];}
-  playQueue=cards.map(card=>()=>{const wf=card.querySelector('.waveform');if(wf) wf.click();});
+  playQueue=cards.map(card=>()=>{card.scrollIntoView({behavior:'smooth',block:'center'});const wf=card.querySelector('.waveform');if(wf) wf.click();});
   if(!playQueue.length) return;
   isPlayingAll=true;
   $('btnShuffle').textContent='停止';
@@ -2429,7 +2430,7 @@ $('btnBmPlayAll').addEventListener('click',()=>{
     return;
   }
   const cards=[...$('bookmarkContent').querySelectorAll('.feed-card')];
-  playQueue=cards.map(card=>()=>{const wf=card.querySelector('.waveform');if(wf) wf.click();});
+  playQueue=cards.map(card=>()=>{card.scrollIntoView({behavior:'smooth',block:'center'});const wf=card.querySelector('.waveform');if(wf) wf.click();});
   if(!playQueue.length) return;
   isPlayingAll=true;
   $('btnBmPlayAll').textContent='停止';
