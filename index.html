@@ -3069,13 +3069,15 @@ async function loadProfile(){
       const sinceDate=friendSinceMap[f.id];
       const sinceDays=sinceDate?Math.round((Date.now()-new Date(sinceDate).getTime())/86400000):null;
       const sinceText=sinceDays!==null?(sinceDays===0?'今日フレンドになった':sinceDays===1?'1日前からフレンド':sinceDays+'日前からフレンド'):'';
+      const memoText=localStorage.getItem('friendMemo_'+me.id+'_'+f.id)||'';
       return `<div data-fname="${f.username}" style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--surface2)">
-        <span style="flex:1;min-width:0"><span style="display:block;font-size:.9rem">${f.username}</span><span style="display:block;font-size:.72rem;color:var(--text2)">${lastPostText}</span>${sinceText?`<span style="display:block;font-size:.7rem;color:var(--text2);opacity:.7">${sinceText}</span>`:''}</span>
+        <span style="flex:1;min-width:0"><span style="display:block;font-size:.9rem">${f.username}</span><span style="display:block;font-size:.72rem;color:var(--text2)">${lastPostText}</span>${sinceText?`<span style="display:block;font-size:.7rem;color:var(--text2);opacity:.7">${sinceText}</span>`:''}${memoText?`<span class="friend-memo-display" style="display:block;font-size:.7rem;color:var(--text2);font-style:italic">${memoText}</span>`:''}</span>
         ${isMvp?`<span style="font-size:.7rem;background:var(--accent);color:#fff;padding:2px 6px;border-radius:4px;font-weight:600" title="今週最多投稿">今週MVP</span>`:''}
         ${fstreak>0?`<span style="font-size:.75rem;color:var(--accent);font-weight:600">${fstreak}日</span>`:''}
         ${posted?'<span style="font-size:.7rem;background:var(--success);color:#fff;padding:2px 6px;border-radius:4px">投稿済</span>':''}
         <button class="action-btn" data-mute="${f.id}" style="font-size:.75rem;${isMuted?'background:var(--warning);color:#111':''}">  ${isMuted?'ミュート中':'ミュート'}</button>
         ${reqBtn}
+        <button class="action-btn" data-friend-memo="${f.id}" style="font-size:.75rem">${memoText?'メモ*':'メモ'}</button>
         <button class="action-btn" data-remove="${f.id}" style="color:var(--danger);font-size:.75rem">解除</button>
       </div>`;
     }).join('');
@@ -3118,6 +3120,40 @@ async function loadProfile(){
       const{error}=await sb.from('voice_requests').delete().eq('from_user_id',me.id).eq('to_user_id',toId);
       if(error){btn.disabled=false;showToast('取り消しできませんでした');}
       else{showToast('リクエストを取り消しました');loadProfile();}
+    });
+  });
+  $('friendList').querySelectorAll('[data-friend-memo]').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      const fid=btn.dataset.friendMemo;
+      const key='friendMemo_'+me.id+'_'+fid;
+      const card=btn.closest('[data-fname]');
+      const existingInp=card.querySelector('.friend-memo-input');
+      if(existingInp){existingInp.focus();return;}
+      const cur=localStorage.getItem(key)||'';
+      const inp=document.createElement('input');
+      inp.className='friend-memo-input';
+      inp.type='text';
+      inp.maxLength=30;
+      inp.value=cur;
+      inp.placeholder='メモ(30文字以内)';
+      inp.style.cssText='width:100%;margin-top:4px;padding:3px 6px;font-size:.78rem;border:1px solid var(--accent);border-radius:4px;background:var(--surface);color:var(--text);box-sizing:border-box;display:block';
+      const nameSpan=card.querySelector('span[style*="flex:1"]');
+      nameSpan.appendChild(inp);
+      inp.focus();
+      const save=()=>{
+        const val=inp.value.trim().slice(0,30);
+        if(val)localStorage.setItem(key,val);else localStorage.removeItem(key);
+        inp.remove();
+        let memoDisp=nameSpan.querySelector('.friend-memo-display');
+        if(val){
+          if(!memoDisp){memoDisp=document.createElement('span');memoDisp.className='friend-memo-display';memoDisp.style.cssText='display:block;font-size:.7rem;color:var(--text2);font-style:italic';nameSpan.appendChild(memoDisp);}
+          memoDisp.textContent=val;btn.textContent='メモ*';
+        } else {
+          if(memoDisp)memoDisp.remove();btn.textContent='メモ';
+        }
+      };
+      inp.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();save();}if(e.key==='Escape')inp.remove();});
+      inp.addEventListener('blur',save);
     });
   });
   // achievement badges
