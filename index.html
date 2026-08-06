@@ -97,6 +97,10 @@
     .countdown-num{font-size:6rem;font-weight:900;color:var(--accent);
       animation:countPulse .9s ease-out forwards}
     @keyframes countPulse{0%{transform:scale(1.7);opacity:.3}100%{transform:scale(1);opacity:1}}
+    @keyframes deliveredIn{0%{opacity:0;transform:scale(.85)}60%{opacity:1;transform:scale(1.05)}100%{opacity:1;transform:scale(1)}}
+    #deliveredOverlay{position:fixed;inset:0;background:var(--accent);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;pointer-events:none}
+    #deliveredOverlay .delivered-msg{font-size:2rem;font-weight:900;color:#fff;animation:deliveredIn .5s ease-out forwards}
+    #deliveredOverlay .delivered-sub{font-size:.95rem;color:rgba(255,255,255,.75)}
     .rec-btn{width:96px;height:96px;border-radius:50%;border:none;cursor:pointer;
       background:var(--accent);display:flex;align-items:center;justify-content:center;
       transition:transform .15s,opacity .15s;flex-shrink:0}
@@ -236,6 +240,10 @@
 </head>
 <body>
 <div id="toast" class="toast" role="status" aria-live="polite"></div>
+<div id="deliveredOverlay" style="display:none" aria-live="assertive" aria-atomic="true">
+  <div class="delivered-msg">声が届いたよ</div>
+  <div class="delivered-sub">フレンドに届けています...</div>
+</div>
 
 <!-- Auth Screen -->
 <div id="screenAuth" class="screen">
@@ -1199,7 +1207,6 @@ $('btnSubmitPost').addEventListener('click',async()=>{
   const{error:dbErr}=await sb.from('posts').upsert({user_id:me.id,post_date:today,caption:pendingCaption,tag:pendingTag||null,title:pendingTitle||null,reply_to:pendingReplyTo||null},{onConflict:'user_id,post_date'});
   if(dbErr){showToast('保存失敗: '+dbErr.message);}
   else{
-    showToast('投稿しました！');
     pendingBlob=null;pendingCaption='';pendingTag='';pendingTitle='';pendingReplyTo=null;pendingReplyToName='';
     $('previewScreen').style.display='none';
     $('recScreen').style.display='flex';
@@ -1211,7 +1218,7 @@ $('btnSubmitPost').addEventListener('click',async()=>{
     $('tagPicker').querySelectorAll('.filter-chip').forEach(x=>x.classList.remove('active'));
     pendingTag='';
     clearInterval(recInterval);
-    switchTab('Feed');
+    const _ov=$('deliveredOverlay');_ov.style.display='flex';setTimeout(()=>{_ov.style.display='none';switchTab('Feed');},1500);
   }
   $('btnSubmitPost').disabled=false;
   $('btnSubmitPost').textContent='この声で投稿する';
