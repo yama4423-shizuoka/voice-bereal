@@ -1,4 +1,4 @@
-<meta charset="UTF-8">
+[Resource from github at repo://yama4423-shizuoka/voice-bereal/sha/bbb5ed0d243cff7d093f19054b569855ae30f9b9/contents/index.html] <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>コエリアル</title>
   <meta name="description" content="声のBeReal。毎日ランダムな時刻に通知が届き、30秒以内にそのときの声を残す。加工なし、フィルターなし。">
@@ -113,7 +113,7 @@
     .rec-caption-counter{position:absolute;right:10px;bottom:8px;font-size:.72rem;color:var(--text2);pointer-events:none}
     .preview-wrap{display:flex;flex-direction:column;align-items:center;gap:16px;width:100%;padding:0 20px}
     /* feed */
-    .feed-card{background:var(--surface);border-radius:var(--radius);padding:14px;margin-bottom:10px}
+    .feed-card{background:var(--surface);border-radius:var(--radius);padding:14px;margin-bottom:10px;transition:transform .2s ease}
     .feed-card.greyed{opacity:.72}
     .feed-meta{display:flex;align-items:center;gap:10px;margin-bottom:10px}
     .feed-avatar{width:36px;height:36px;border-radius:50%;background:var(--accent);
@@ -2306,6 +2306,32 @@ function buildFeedCard(post){
   },{passive:true});
   card.addEventListener('touchend',cancelLp,{passive:true});
   card.addEventListener('touchcancel',cancelLp,{passive:true});
+  // swipe-right to 聴いたよ
+  let swStartX=0,swStartY=0,swActive=false;
+  card.addEventListener('touchstart',e=>{
+    if(e.target.closest('button')) return;
+    swStartX=e.touches[0].clientX;
+    swStartY=e.touches[0].clientY;
+    swActive=true;
+  },{passive:true});
+  card.addEventListener('touchmove',e=>{
+    if(!swActive) return;
+    const dx=e.touches[0].clientX-swStartX;
+    const dy=Math.abs(e.touches[0].clientY-swStartY);
+    if(dy>30){swActive=false;card.style.transform='';return;}
+    if(dx>10) cancelLp();
+    if(dx>0) card.style.transform=`translateX(${Math.min(dx*0.5,50)}px)`;
+    else card.style.transform='';
+  },{passive:true});
+  card.addEventListener('touchend',e=>{
+    if(!swActive) return;
+    swActive=false;
+    const dx=e.changedTouches[0].clientX-swStartX;
+    const dy=Math.abs(e.changedTouches[0].clientY-swStartY);
+    card.style.transform='';
+    if(dx>60&&dy<30&&!reactBtn.classList.contains('reacted')) reactToPost();
+  },{passive:true});
+  card.addEventListener('touchcancel',()=>{swActive=false;card.style.transform='';},{passive:true});
   return card;
 }
 
