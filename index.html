@@ -1,4 +1,4 @@
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>コエリアル</title>
   <meta name="description" content="声のBeReal。毎日ランダムな時刻に通知が届き、30秒以内にそのときの声を残す。加工なし、フィルターなし。">
   <meta property="og:title" content="コエリアル - 声のBeReal">
@@ -365,6 +365,7 @@
     <div id="tabProfile" class="tab-content" style="display:none;flex-direction:column;flex:1">
       <div class="topbar"><h1>プロフィール</h1>
         <div style="display:flex;gap:8px">
+          <button id="btnRefreshProfile" style="background:none;border:none;color:var(--text2);cursor:pointer;font-size:.85rem" aria-label="プロフィールを更新">更新</button>
           <button id="btnThemeToggle" style="background:none;border:none;color:var(--text2);cursor:pointer;font-size:1.1rem" aria-label="テーマ切替">◑</button>
           <button id="btnLogout" style="background:none;border:none;color:var(--text2);cursor:pointer;font-size:.85rem">ログアウト</button>
         </div>
@@ -3319,6 +3320,11 @@ $('btnCopyInvite').addEventListener('click',()=>{
   const code=myProfile?.friend_code||'';
   const text=`コエリアルで一緒に声を残しませんか？\nフレンドコード: ${code}\nhttps://voice-bereal.vercel.app/?add=${code}`;
   navigator.clipboard.writeText(text).then(()=>showToast('招待テキストをコピーしました')).catch(()=>showToast('コピーに失敗しました'));
+});
+
+$('btnRefreshProfile').addEventListener('click',async()=>{
+  await loadProfile();
+  showToast('更新しました');
 });
 
 $('btnLogout').addEventListener('click',async()=>{
