@@ -1,4 +1,4 @@
-[Resource from github at repo://yama4423-shizuoka/voice-bereal/sha/bbb5ed0d243cff7d093f19054b569855ae30f9b9/contents/index.html] <meta charset="UTF-8">
+ <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>コエリアル</title>
   <meta name="description" content="声のBeReal。毎日ランダムな時刻に通知が届き、30秒以内にそのときの声を残す。加工なし、フィルターなし。">
@@ -526,6 +526,8 @@
         <p class="section-title">フレンド一覧</p>
         <input id="friendSearchInput" type="text" class="caption-search" placeholder="名前で絞り込む" aria-label="フレンド名で絞り込む" style="display:none">
         <div id="friendList" style="margin-bottom:20px"></div>
+        <p class="section-title">タイムトラベル</p>
+        <div id="randomVoiceWrap" style="margin-bottom:20px"></div>
         <p class="section-title">投稿カレンダー</p>
         <div id="calendarWrap" style="margin-bottom:20px"></div>
       </div>
@@ -3214,6 +3216,20 @@ async function loadProfile(){
       badgeEl.innerHTML='<div style="display:flex;flex-wrap:wrap;gap:8px">'+
         BDGS.map(b=>`<div title="${b.sub}" style="padding:5px 11px;border-radius:99px;font-size:.78rem;font-weight:600;border:1px solid ${b.check?'var(--accent)':'var(--border)'};background:${b.check?'var(--surface)':'transparent'};color:${b.check?'var(--accent)':'var(--text2)'}">${b.check?'\u2713 ':''} ${b.label}</div>`).join('')+
         '</div>';
+    }
+  }
+  // random voice
+  {
+    const rvEl=$('randomVoiceWrap');
+    const posts2=allPosts||[];
+    if(rvEl&&posts2.length>0){
+      const pickPost=()=>posts2[Math.floor(Math.random()*posts2.length)];
+      const showRv=(p)=>{
+        rvEl.innerHTML=`<div style="background:var(--surface);border-radius:var(--radius-sm);padding:12px;display:flex;align-items:center;gap:10px"><div style="flex:1;min-width:0"><div style="font-size:.78rem;color:var(--text2)">ランダムに過去の声を聴く</div><div style="font-size:.9rem;font-weight:600;margin-top:2px">${p.post_date}${p.title?' · '+p.title:''}</div></div><button id="rvPlayBtn" style="background:var(--accent);color:#fff;border:none;border-radius:var(--radius-sm);padding:6px 12px;font-size:.82rem;cursor:pointer;flex-shrink:0">再生</button><button id="rvNextBtn" style="background:transparent;border:1px solid var(--border);border-radius:var(--radius-sm);padding:6px 10px;font-size:.78rem;color:var(--text2);cursor:pointer;flex-shrink:0">次の声</button></div>`;
+        $('rvPlayBtn').onclick=()=>playArchive(p.post_date);
+        $('rvNextBtn').onclick=()=>showRv(pickPost());
+      };
+      showRv(pickPost());
     }
   }
   // calendar
