@@ -460,6 +460,7 @@
         </div>
         <p id="statBestDow" style="font-size:.85rem;color:var(--text2);margin:-4px 0 4px;text-align:center"></p>
         <p id="statDaysOn" style="font-size:.82rem;color:var(--text2);margin:0 0 16px;text-align:center"></p>
+        <p id="statPerfectListen" style="font-size:.82rem;color:var(--accent);margin:-12px 0 16px;text-align:center"></p>
         <div style="margin-bottom:20px;text-align:right">
           <button id="exportCsvBtn" onclick="exportPostsCsv()" style="font-size:.8rem;padding:6px 14px;border:1px solid var(--border);border-radius:99px;background:transparent;color:var(--text2);cursor:pointer">投稿データをエクスポート</button>
         </div>
@@ -1237,6 +1238,10 @@ function getPlayedSet(){ try{return new Set(JSON.parse(localStorage.getItem(getP
 function addPlayed(pid){ const s=getPlayedSet();s.add(pid);localStorage.setItem(getPlayedKey(),JSON.stringify([...s]));updateFeedBadge(); }
 function getListenedKey(){ return me?`listenedSecs_${me.id}`:'listenedSecs'; }
 function addListenedSecs(secs){ const prev=parseFloat(localStorage.getItem(getListenedKey()))||0; localStorage.setItem(getListenedKey(),String(prev+secs)); }
+function getPerfectListenKey(){ return me?`perfectListenDays_${me.id}`:'perfectListenDays'; }
+function getPerfectListenDays(){ try{return JSON.parse(localStorage.getItem(getPerfectListenKey())||'[]');}catch{return [];} }
+function markPerfectListenDay(){ const today=new Date().toISOString().split('T')[0]; const days=getPerfectListenDays(); if(!days.includes(today)){ days.push(today); localStorage.setItem(getPerfectListenKey(),JSON.stringify(days)); } }
+function calcPerfectListenStreak(days){ if(!days.length) return 0; const sorted=[...days].sort().reverse(); let streak=0; const d0=new Date(); d0.setHours(12,0,0,0); for(const d of sorted){ if(d===d0.toISOString().split('T')[0]){streak++;d0.setDate(d0.getDate()-1);}else break; } return streak; }
 
 let todayFriendPostIds=[];
 function updateFeedBadge(){
@@ -1248,7 +1253,7 @@ function updateFeedBadge(){
   if(n>0){badge.textContent=n;badge.style.display='flex';}
   else{badge.style.display='none';}
   const cub=$('caughtUpBanner');
-  if(cub){const allDone=todayFriendPostIds.length>0&&todayFriendPostIds.every(id=>played.has(id));cub.style.display=allDone?'block':'none';}
+  if(cub){const allDone=todayFriendPostIds.length>0&&todayFriendPostIds.every(id=>played.has(id));cub.style.display=allDone?'block':'none';if(allDone)markPerfectListenDay();}
 }
 let activeTagFilter='';
 let showUnheardOnly=false;
@@ -2956,6 +2961,13 @@ async function loadProfile(){
       const diff=Math.round((today-first)/(1000*60*60*24));
       el.textContent='コエリアルを始めて '+(diff+1)+' 日目';
     }
+  }
+  // perfect listen streak
+  {
+    const plDays=getPerfectListenDays();
+    const plStreak=calcPerfectListenStreak(plDays);
+    const plEl=$('statPerfectListen');
+    if(plEl){ if(plStreak>=2) plEl.textContent=plStreak+'日連続でフレンドの声を全部聴いた'; else if(plDays.length>0) plEl.textContent='通算'+plDays.length+'日フレンドの声を全部聴いた'; else plEl.textContent=''; }
   }
   // hourly heatmap
   {
