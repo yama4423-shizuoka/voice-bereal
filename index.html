@@ -1,4 +1,4 @@
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+successfully downloaded text file (SHA: 10a2cddaed95aab0ac4399697670ac46130edbfb)[Resource from github at repo://yama4423-shizuoka/voice-bereal/sha/205c9f850206c93d1672df6c645b3841b63976ae/contents/index.html] <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>コエリアル</title>
   <meta name="description" content="声のBeReal。毎日ランダムな時刻に通知が届き、30秒以内にそのときの声を残す。加工なし、フィルターなし。">
   <meta property="og:title" content="コエリアル - 声のBeReal">
@@ -2808,8 +2808,7 @@ async function loadProfile(){
       weekReactCnt=wr1.count||0;weekCommentCnt=wr2.count||0;
     }
     const{count:weekGivenReactCnt}=await sb.from('reactions').select('*',{count:'exact',head:true}).eq('user_id',me.id).gte('created_at',weekStart);
-    $('weeklySummary').innerHTML=[['投稿',weekPostCnt],['聴いたよ',weekReactCnt],['コメント',weekCommentCnt],['聴き届けた',weekGivenReactCnt||0],['返声',weekReplyCnt]]
-      .map(([l,v])=>`<div style="flex:1;background:var(--surface);border-radius:var(--radius-sm);padding:12px;text-align:center"><div style="font-size:1.4rem;font-weight:700">${v}</div><div style="font-size:.7rem;color:var(--text2)">${l}</div></div>`).join('');
+    {const todayStr2=new Date().toISOString().split('T')[0];const weekPerfectDays=getPerfectListenDays().filter(d=>d>=weekStart&&d<=todayStr2).length;$('weeklySummary').style.flexWrap='wrap';$('weeklySummary').innerHTML=[['投稿',weekPostCnt],['聴いたよ',weekReactCnt],['コメント',weekCommentCnt],['聴き届けた',weekGivenReactCnt||0],['返声',weekReplyCnt]].map(([l,v])=>`<div style="flex:1;background:var(--surface);border-radius:var(--radius-sm);padding:12px;text-align:center"><div style="font-size:1.4rem;font-weight:700">${v}</div><div style="font-size:.7rem;color:var(--text2)">${l}</div></div>`).join('')+(weekPerfectDays>0?`<div style="width:100%;text-align:center;font-size:.8rem;color:var(--text2);padding-top:4px">今週フレンドの声を全部聴いた日 <b style="color:var(--accent)">${weekPerfectDays}日</b></div>`:'');}
     // weekly goal
     {
       const GOAL_KEY='vbr_week_goal';
