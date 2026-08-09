@@ -525,6 +525,7 @@
         <div id="topListenersSection" style="margin-bottom:16px"></div>
         <p class="section-title">フレンド一覧</p>
         <input id="friendSearchInput" type="text" class="caption-search" placeholder="名前で絞り込む" aria-label="フレンド名で絞り込む" style="display:none">
+        <div id="friendSortRow" style="display:none;gap:6px;margin:6px 0 4px;flex-wrap:wrap"></div>
         <div id="friendList" style="margin-bottom:20px"></div>
         <p class="section-title">タイムトラベル</p>
         <div id="randomVoiceWrap" style="margin-bottom:20px"></div>
@@ -3109,7 +3110,10 @@ async function loadProfile(){
     const mvpFriendId=maxWkCount>0?fids.find(fid=>weekPostCount[fid]===maxWkCount):null;
     const mutedRaw=myProfile?.muted_friends||[];
     const muted=new Set(Array.isArray(mutedRaw)?mutedRaw:[]);
+    const friendSortMode=localStorage.getItem('friendSortMode')||'streak';
     const sortedFps=[...(fps||[])].sort((a,b)=>{
+      if(friendSortMode==='recent'){const la=friendLastPost[a.id]||'',lb=friendLastPost[b.id]||'';return lb.localeCompare(la);}
+      if(friendSortMode==='since'){const sa2=friendSinceMap[a.id]||'',sb3=friendSinceMap[b.id]||'';return sb3.localeCompare(sa2);}
       const sa=friendStreaks[a.id]||0,sb2=friendStreaks[b.id]||0;
       if(sb2!==sa) return sb2-sa;
       return (postedToday.has(b.id)?1:0)-(postedToday.has(a.id)?1:0);
@@ -3141,6 +3145,7 @@ async function loadProfile(){
   } else { friendHtml='<p style="color:var(--text2);font-size:.85rem">フレンドはまだいません</p>'; }
   $('friendList').innerHTML=friendHtml;
   {const fsi=$('friendSearchInput');if(sortedFps&&sortedFps.length>=2){fsi.style.display='';fsi.value='';fsi.oninput=()=>{const q=fsi.value.toLowerCase();$('friendList').querySelectorAll('[data-fname]').forEach(el=>{el.style.display=q&&!el.dataset.fname.toLowerCase().includes(q)?'none':'';});};} else{fsi.style.display='none';}}
+  {const sortRow=$('friendSortRow');if(sortedFps&&sortedFps.length>=2){const cur=localStorage.getItem('friendSortMode')||'streak';sortRow.style.display='flex';sortRow.innerHTML=[['streak','ストリーク順'],['recent','最近投稿順'],['since','フレンドになった順']].map(([m,l])=>`<button class="action-btn" data-sort-mode="${m}" style="font-size:.75rem;${cur===m?'background:var(--accent);color:#fff':''}">${l}</button>`).join('');sortRow.querySelectorAll('[data-sort-mode]').forEach(btn=>{btn.addEventListener('click',()=>{localStorage.setItem('friendSortMode',btn.dataset.sortMode);loadProfile();});});}else{sortRow.style.display='none';}}
   $('friendList').querySelectorAll('[data-remove]').forEach(btn=>{
     btn.addEventListener('click',async()=>{
       const fid=btn.dataset.remove;
