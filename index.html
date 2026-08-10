@@ -1,4 +1,4 @@
-successfully downloaded text file (SHA: 10a2cddaed95aab0ac4399697670ac46130edbfb)[Resource from github at repo://yama4423-shizuoka/voice-bereal/sha/205c9f850206c93d1672df6c645b3841b63976ae/contents/index.html] <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>コエリアル</title>
   <meta name="description" content="声のBeReal。毎日ランダムな時刻に通知が届き、30秒以内にそのときの声を残す。加工なし、フィルターなし。">
   <meta property="og:title" content="コエリアル - 声のBeReal">
@@ -3153,6 +3153,7 @@ async function loadProfile(){
         <button class="action-btn" data-mute="${f.id}" style="font-size:.75rem;${isMuted?'background:var(--warning);color:#111':''}">  ${isMuted?'ミュート中':'ミュート'}</button>
         ${reqBtn}
         <button class="action-btn" data-friend-memo="${f.id}" style="font-size:.75rem">${memoText?'メモ*':'メモ'}</button>
+        <button class="action-btn" data-feed-friend="${f.id}" style="font-size:.75rem">フィード</button>
         <button class="action-btn" data-remove="${f.id}" style="color:var(--danger);font-size:.75rem">解除</button>
       </div>`;
     }).join('');
@@ -3198,7 +3199,13 @@ async function loadProfile(){
       else{showToast('リクエストを取り消しました');loadProfile();}
     });
   });
-  $('friendList').querySelectorAll('[data-friend-memo]').forEach(btn=>{
+  $('friendList').querySelectorAll('[data-feed-friend]').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    activeFriendFilter=btn.dataset.feedFriend;
+    switchTab('Feed');
+  });
+});
+$('friendList').querySelectorAll('[data-friend-memo]').forEach(btn=>{
     btn.addEventListener('click',()=>{
       const fid=btn.dataset.friendMemo;
       const key='friendMemo_'+me.id+'_'+fid;
