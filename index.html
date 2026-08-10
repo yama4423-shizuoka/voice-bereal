@@ -299,7 +299,7 @@
       </div>
       <div id="ptrBar" style="height:0;overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:.8rem;color:var(--text2);background:var(--surface);flex-shrink:0"></div>
       <div id="dailyPromptFeedBanner" style="display:none;background:var(--surface2);border-bottom:1px solid var(--border);padding:7px 16px;font-size:.82rem;cursor:pointer" role="button" tabindex="0" aria-label="お題一覧を開く">
-        <span style="font-size:.7rem;color:var(--text2)">今日のお題: </span><span id="dailyPromptFeedText" style="font-weight:600;color:var(--text1)"></span>
+        <span style="font-size:.7rem;color:var(--text2)">今日のお題: </span><span id="dailyPromptFeedText" style="font-weight:600;color:var(--text1)"></span><button id="topicPostBtn" style="margin-left:.5rem;padding:.15rem .5rem;font-size:.75rem;border-radius:.4rem;border:1px solid var(--accent);background:transparent;color:var(--accent);cursor:pointer">投稿する</button>
       </div>
       <div class="content" id="feedContent" style="flex:1;overflow-y:auto">
         <div class="spinner"></div>
@@ -3760,5 +3760,11 @@ $('dailyPromptFeedBanner').addEventListener('click',showTopicListModal);
 $('dailyPromptFeedBanner').addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' ')showTopicListModal();});
 $('btnCloseTopicList').addEventListener('click',()=>{$('topicListModal').style.display='none';});
 $('topicListModal').addEventListener('click',e=>{if(e.target===$('topicListModal'))$('topicListModal').style.display='none';});
+const tpb=document.getElementById('topicPostBtn');
+if(tpb)tpb.addEventListener('click',e=>{
+  e.stopPropagation();
+  pendingTitle=getDailyPrompt().slice(0,15);
+  switchTab('Record');
+});
 </script>
 </body>
