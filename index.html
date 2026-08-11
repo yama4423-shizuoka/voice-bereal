@@ -459,8 +459,9 @@
           </div>
         </div>
         <p id="statBestDow" style="font-size:.85rem;color:var(--text2);margin:-4px 0 4px;text-align:center"></p>
-        <p id="statDaysOn" style="font-size:.82rem;color:var(--text2);margin:0 0 16px;text-align:center"></p>
-        <p id="statPerfectListen" style="font-size:.82rem;color:var(--accent);margin:-12px 0 16px;text-align:center"></p>
+        <p id="statDaysOn" style="font-size:.82rem;color:var(--text2);margin:0 0 6px;text-align:center"></p>
+        <p id="statHabitScore" style="font-size:.85rem;color:var(--text2);margin:0 0 10px;text-align:center"></p>
+        <p id="statPerfectListen" style="font-size:.82rem;color:var(--accent);margin:0 0 16px;text-align:center"></p>
         <div style="margin-bottom:20px;text-align:right">
           <button id="exportCsvBtn" onclick="exportPostsCsv()" style="font-size:.8rem;padding:6px 14px;border:1px solid var(--border);border-radius:99px;background:transparent;color:var(--text2);cursor:pointer">投稿データをエクスポート</button>
         </div>
@@ -2962,6 +2963,16 @@ async function loadProfile(){
       const today=new Date();today.setHours(12,0,0,0);
       const diff=Math.round((today-first)/(1000*60*60*24));
       el.textContent='コエリアルを始めて '+(diff+1)+' 日目';
+    }
+  }
+  // habit score (last 30 days)
+  {
+    const el=$('statHabitScore');
+    if(el){
+      const ago=new Date();ago.setDate(ago.getDate()-29);ago.setHours(0,0,0,0);
+      const activeDays=new Set(dates.filter(d=>new Date(d+'T12:00:00')>=ago));
+      const score=Math.round(activeDays.size/30*100);
+      el.innerHTML='習慣スコア <span style="color:var(--accent);font-weight:700">'+score+'</span>点';
     }
   }
   // perfect listen streak
