@@ -547,6 +547,7 @@
         <input id="bmSearchInput" type="text" class="caption-search" placeholder="キャプションで絞り込む" aria-label="ブックマークをキャプションで絞り込む">
       </div>
       <div id="bmTagFilter" style="display:none;gap:6px;overflow-x:auto;padding:4px 16px 0;flex-wrap:nowrap;scrollbar-width:none"></div>
+      <div id="bmSortRow" style="display:none;gap:6px;overflow-x:auto;padding:4px 16px 0;flex-wrap:nowrap;scrollbar-width:none"></div>
       <div style="padding:4px 16px 8px">
         <button id="btnBmPlayAll" style="background:var(--surface2);border:none;border-radius:20px;padding:6px 14px;font-size:13px;cursor:pointer;color:var(--text1);display:none" aria-label="ブックマークを全部再生">全部聴く</button>
       </div>
@@ -2011,6 +2012,7 @@ function buildFeedCard(post){
     titleEl.className='feed-title';
     const hlT=captionSearchQuery?_hlText(post.title,captionSearchQuery):null;
     if(hlT) titleEl.innerHTML=hlT; else titleEl.textContent=post.title;
+    if(post.title===getDailyPrompt().slice(0,15)){const tBadge=document.createElement('span');tBadge.style.cssText='font-size:.6rem;font-weight:700;background:var(--accent);color:#fff;padding:1px 6px;border-radius:99px;margin-left:6px;pointer-events:none;vertical-align:middle';tBadge.textContent='今日のお題';titleEl.appendChild(tBadge);}
     card.appendChild(titleEl);
   }
   if(post.caption){
@@ -2559,6 +2561,7 @@ $('btnRefreshFeed').addEventListener('click',()=>{sessionStorage.removeItem('fee
 // bookmarks
 let bookmarkedPosts=[];
 let bmActiveTagFilter='';
+let bmSortOrder='added';
 function buildBmTagChips(){
   const div=$('bmTagFilter');
   if(!div) return;
@@ -2581,14 +2584,31 @@ function buildBmTagChips(){
     div.appendChild(b);
   });
 }
+function buildBmSortChips(){
+  const row=$('bmSortRow');
+  if(!row) return;
+  if(!bookmarkedPosts.length){row.style.display='none';return;}
+  row.innerHTML='';
+  row.style.display='flex';
+  [['added','追加順'],['post_date','投稿日順'],['name','フレンド名順']].forEach(([key,label])=>{
+    const b=document.createElement('button');
+    b.className='filter-chip'+(bmSortOrder===key?' active':'');
+    b.textContent=label;
+    b.setAttribute('aria-label',label+'で並び替え');
+    b.onclick=()=>{bmSortOrder=key;row.querySelectorAll('.filter-chip').forEach(c=>c.classList.remove('active'));b.classList.add('active');renderBookmarkList();};
+    row.appendChild(b);
+  });
+}
 function renderBookmarkList(){
   const btn=$('btnBmPlayAll');
   if(btn) btn.style.display=bookmarkedPosts.length?'':'none';
   const q=($('bmSearchInput')?.value||'').trim().toLowerCase();
   const el=$('bookmarkContent');
-  let filtered=bookmarkedPosts;
+  let filtered=[...bookmarkedPosts];
   if(bmActiveTagFilter) filtered=filtered.filter(p=>p.tag===bmActiveTagFilter);
   if(q) filtered=filtered.filter(p=>(p.caption||'').toLowerCase().includes(q)||(p.title||'').toLowerCase().includes(q));
+  if(bmSortOrder==='post_date') filtered.sort((a,b)=>(b.post_date||'').localeCompare(a.post_date||''));
+  else if(bmSortOrder==='name') filtered.sort((a,b)=>(a.username||'').localeCompare(b.username||'','ja'));
   if(!filtered.length){
     el.innerHTML='<p style="color:var(--text2)">該当する投稿がありません</p>';
     return;
@@ -2600,15 +2620,20 @@ async function loadBookmarks(){
   const el=$('bookmarkContent');
   el.innerHTML='<div class="spinner"></div>';
   bmActiveTagFilter='';
-  const{data:bms}=await sb.from('bookmarks').select('post_id').eq('user_id',me.id);
-  if(!bms||!bms.length){bookmarkedPosts=[];buildBmTagChips();renderBookmarkList();return;}
+  bmSortOrder='added';
+  const{data:bms}=await sb.from('bookmarks').select('post_id,created_at').eq('user_id',me.id).order('created_at',{ascending:false});
+  if(!bms||!bms.length){bookmarkedPosts=[];buildBmTagChips();buildBmSortChips();renderBookmarkList();return;}
+  const bmDateMap={};
+  bms.forEach(b=>{bmDateMap[b.post_id]=b.created_at||'';});
   const postIds=bms.map(b=>b.post_id);
   const{data:posts}=await sb.from('friend_feed').select('*').in('id',postIds);
-  if(!posts||!posts.length){bookmarkedPosts=[];buildBmTagChips();renderBookmarkList();return;}
-  bookmarkedPosts=posts;
+  if(!posts||!posts.length){bookmarkedPosts=[];buildBmTagChips();buildBmSortChips();renderBookmarkList();return;}
+  bookmarkedPosts=posts.map(p=>({...p,bm_created_at:bmDateMap[p.id]||''}))
+    .sort((a,b)=>(b.bm_created_at||'').localeCompare(a.bm_created_at||''));
   const inp=$('bmSearchInput');
   if(inp) inp.oninput=renderBookmarkList;
   buildBmTagChips();
+  buildBmSortChips();
   renderBookmarkList();
 }
 
