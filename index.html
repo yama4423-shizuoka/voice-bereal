@@ -2865,7 +2865,8 @@ async function loadProfile(){
     const monthStart=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-01`;
     const{data:myMonthPostsM}=await sb.from('posts').select('id').eq('user_id',me.id).gte('post_date',monthStart);
     const mpids=(myMonthPostsM||[]).map(p=>p.id);
-    let monthPostCnt=mpids.length,monthReactCnt=0,monthCommentCnt=0;
+    let monthPostCnt=mpids.length,monthReactCnt=0,monthCommentCnt=0,monthStampCnt=0;
+    try{const{count:_sc}=await sb.from('friend_stamps').select('*',{count:'exact',head:true}).eq('to_user_id',me.id).gte('created_at',monthStart);monthStampCnt=_sc||0;}catch(_){}
     if(mpids.length){
       const[r1,r2]=await Promise.all([
         sb.from('reactions').select('*',{count:'exact',head:true}).in('post_id',mpids),
@@ -2873,7 +2874,7 @@ async function loadProfile(){
       ]);
       monthReactCnt=r1.count||0;monthCommentCnt=r2.count||0;
     }
-    $('monthlySummary').innerHTML=[['投稿',monthPostCnt],['聴いたよ',monthReactCnt],['コメント',monthCommentCnt]]
+    $('monthlySummary').innerHTML=[['投稿',monthPostCnt],['聴いたよ',monthReactCnt],['コメント',monthCommentCnt],['スタンプ',monthStampCnt]]
       .map(([l,v])=>`<div style="flex:1;background:var(--surface);border-radius:var(--radius-sm);padding:12px;text-align:center"><div style="font-size:1.4rem;font-weight:700">${v}</div><div style="font-size:.7rem;color:var(--text2)">${l}</div></div>`).join('');
     // last month comparison
     {
