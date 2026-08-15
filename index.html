@@ -3205,7 +3205,7 @@ async function loadProfile(){
         <div style="display:flex;align-items:center;gap:8px">
           <span style="flex:1;min-width:0"><span style="display:block;font-size:.9rem">${f.username}</span><span style="display:block;font-size:.72rem;color:var(--text2)">${lastPostText}</span>${sinceText?`<span style="display:block;font-size:.7rem;color:var(--text2);opacity:.7">${sinceText}</span>`:''}${memoText?`<span class="friend-memo-display" style="display:block;font-size:.7rem;color:var(--text2);font-style:italic">${memoText}</span>`:''}</span>
           ${isMvp?`<span style="font-size:.7rem;background:var(--accent);color:#fff;padding:2px 6px;border-radius:4px;font-weight:600" title="今週最多投稿">今週MVP</span>`:''}
-          ${fstreak>0?`<span style="font-size:.75rem;color:var(--accent);font-weight:600">${fstreak}日</span>`:''}
+          ${fstreak>0?`<span style="font-size:.75rem;color:${fstreak>=3&&!posted?'var(--danger)':'var(--accent)'};font-weight:600">${fstreak}日${fstreak>=3&&!posted?'<span style="font-size:.62rem;margin-left:3px;background:var(--danger);color:#fff;padding:1px 4px;border-radius:3px">危機</span>':''}</span>`:''}
           ${posted?'<span style="font-size:.7rem;background:var(--success);color:#fff;padding:2px 6px;border-radius:4px">投稿済</span>':''}
           <button class="action-btn" data-mute="${f.id}" style="font-size:.75rem;${isMuted?'background:var(--warning);color:#111':''}">  ${isMuted?'ミュート中':'ミュート'}</button>
           ${reqBtn}
