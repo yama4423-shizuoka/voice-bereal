@@ -3173,7 +3173,7 @@ async function loadProfile(){
     const today=new Date().toISOString().split('T')[0];
     const[{data:todayPosts},{data:friendAllPosts},{data:sentReqs},{data:myReactPosts},{data:myCommentPosts},{data:sentStampsToday}]=await Promise.all([
       sb.from('posts').select('user_id').eq('post_date',today).in('user_id',fids),
-      sb.from('friend_feed').select('user_id,post_date').in('user_id',fids),
+      sb.from('friend_feed').select('user_id,post_date,tag').in('user_id',fids),
       sb.from('voice_requests').select('to_user_id').eq('from_user_id',me.id).in('to_user_id',fids).catch(()=>({data:[]})),
       sb.from('reactions').select('post_id').eq('user_id',me.id),
       sb.from('comments').select('post_id').eq('user_id',me.id),
@@ -3190,6 +3190,7 @@ async function loadProfile(){
       if(!friendDateMap[p.user_id]) friendDateMap[p.user_id]=[];
       friendDateMap[p.user_id].push(p.post_date);
     });
+    const friendFavTag={};fids.forEach(fid=>{const tags=(friendAllPosts||[]).filter(p=>p.user_id===fid&&p.tag).map(p=>p.tag);if(!tags.length)return;const cnt={};tags.forEach(t=>{cnt[t]=(cnt[t]||0)+1;});friendFavTag[fid]=Object.entries(cnt).sort((a,b)=>b[1]-a[1])[0][0];});
     const friendStreaks={};
     fids.forEach(fid=>{friendStreaks[fid]=calcCurrentStreakFromDates(friendDateMap[fid]||[]);});
     const friendLastPost={};
@@ -3223,7 +3224,7 @@ async function loadProfile(){
       const memoText=localStorage.getItem('friendMemo_'+me.id+'_'+f.id)||'';
       return `<div data-fname="${f.username}" style="padding:8px 0;border-bottom:1px solid var(--surface2)">
         <div style="display:flex;align-items:center;gap:8px">
-          <span style="flex:1;min-width:0"><span style="display:block;font-size:.9rem">${f.username}</span><span style="display:block;font-size:.72rem;color:var(--text2)">${lastPostText}</span>${sinceText?`<span style="display:block;font-size:.7rem;color:var(--text2);opacity:.7">${sinceText}</span>`:''}${memoText?`<span class="friend-memo-display" style="display:block;font-size:.7rem;color:var(--text2);font-style:italic">${memoText}</span>`:''}</span>
+          <span style="flex:1;min-width:0"><span style="display:block;font-size:.9rem">${f.username}</span><span style="display:block;font-size:.72rem;color:var(--text2)">${lastPostText}</span>${sinceText?`<span style="display:block;font-size:.7rem;color:var(--text2);opacity:.7">${sinceText}</span>`:''}${friendFavTag[f.id]?`<span style="display:block;font-size:.7rem;color:var(--accent)">推しタグ: ${friendFavTag[f.id]}</span>`:''}${memoText?`<span class="friend-memo-display" style="display:block;font-size:.7rem;color:var(--text2);font-style:italic">${memoText}</span>`:''}</span>
           ${isMvp?`<span style="font-size:.7rem;background:var(--accent);color:#fff;padding:2px 6px;border-radius:4px;font-weight:600" title="今週最多投稿">今週MVP</span>`:''}
           ${fstreak>0?`<span style="font-size:.75rem;color:${fstreak>=3&&!posted?'var(--danger)':'var(--accent)'};font-weight:600">${fstreak}日${fstreak>=3&&!posted?'<span style="font-size:.62rem;margin-left:3px;background:var(--danger);color:#fff;padding:1px 4px;border-radius:3px">危機</span>':''}</span>`:''}
           ${posted?'<span style="font-size:.7rem;background:var(--success);color:#fff;padding:2px 6px;border-radius:4px">投稿済</span>':''}
