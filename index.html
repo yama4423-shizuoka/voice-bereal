@@ -302,7 +302,7 @@
       </div>
       <div id="ptrBar" style="height:0;overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:.8rem;color:var(--text2);background:var(--surface);flex-shrink:0"></div>
       <div id="dailyPromptFeedBanner" style="display:none;background:var(--surface2);border-bottom:1px solid var(--border);padding:7px 16px;font-size:.82rem;cursor:pointer" role="button" tabindex="0" aria-label="お題一覧を開く">
-        <span style="font-size:.7rem;color:var(--text2)">今日のお題: </span><span id="dailyPromptFeedText" style="font-weight:600;color:var(--text1)"></span><button id="topicPostBtn" style="margin-left:.5rem;padding:.15rem .5rem;font-size:.75rem;border-radius:.4rem;border:1px solid var(--accent);background:transparent;color:var(--accent);cursor:pointer">投稿する</button>
+        <span style="font-size:.7rem;color:var(--text2)">今日のお題: </span><span id="dailyPromptFeedText" style="font-weight:600;color:var(--text1)"></span><button id="topicPostBtn" style="margin-left:.5rem;padding:.15rem .5rem;font-size:.75rem;border-radius:.4rem;border:1px solid var(--accent);background:transparent;color:var(--accent);cursor:pointer">投稿する</button><span id="todayMoodSpan" style="display:none;margin-left:1rem;font-size:.75rem;color:var(--text2)">今日みんなの気分: <span id="todayMoodText" style="font-weight:600;color:var(--accent)"></span></span>
       </div>
       <div class="content" id="feedContent" style="flex:1;overflow-y:auto">
         <div class="spinner"></div>
@@ -1308,6 +1308,16 @@ const DAILY_PROMPTS=[
   '今日の声のトーンはどんな感じ？',
   '最近やめてみたいことはある？'
 ];
+function updateTodayMoodBanner(){
+  const tags=feedPosts.map(p=>p.tag).filter(Boolean);
+  const sp=document.getElementById('todayMoodSpan');
+  if(!tags.length){if(sp)sp.style.display='none';return;}
+  const cnt={};tags.forEach(t=>{cnt[t]=(cnt[t]||0)+1;});
+  const top=Object.entries(cnt).sort((a,b)=>b[1]-a[1])[0][0];
+  const tx=document.getElementById('todayMoodText');
+  if(tx)tx.textContent=top;
+  if(sp)sp.style.display='';
+}
 function getDailyPrompt(){const d=new Date();const seed=d.getFullYear()*10000+(d.getMonth()+1)*100+d.getDate();return DAILY_PROMPTS[seed%DAILY_PROMPTS.length];}
 function updateDailyPromptUI(){
   const prompt=getDailyPrompt();
@@ -1327,6 +1337,7 @@ async function loadFeed(){
   const{data:myDatesData}=await sb.from('posts').select('post_date').eq('user_id',me.id);
   myPostDates=(myDatesData||[]).map(p=>p.post_date);
   feedPosts=todayPosts||[];
+  updateTodayMoodBanner();
   lastFeedIds=new Set(feedPosts.map(p=>p.id));
   if(feedPollInterval) clearInterval(feedPollInterval);
   feedPollInterval=setInterval(pollNewPosts,60000);
