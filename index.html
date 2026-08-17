@@ -605,6 +605,10 @@
         <div id="mpPostCount" style="font-size:1.3rem;font-weight:700">-</div>
         <div style="font-size:.72rem;color:var(--text2)">合計投稿</div>
       </div>
+      <div style="flex:1;background:var(--surface2);border-radius:var(--radius-sm);padding:10px;text-align:center">
+        <div id="mpReplyRate" style="font-size:1.3rem;font-weight:700">-</div>
+        <div style="font-size:.72rem;color:var(--text2)">返声率</div>
+      </div>
     </div>
     <div id="mpWeekDots" style="margin-bottom:16px"></div>
     <div id="mpHeatmap" style="margin-bottom:16px"></div>
@@ -3629,11 +3633,15 @@ function calcMaxStreak(dates){
 async function showMiniProfile(userId){
   const{data:prof}=await sb.from('profiles').select('*').eq('id',userId).single();
   if(!prof) return;
-  const{data:posts}=await sb.from('posts').select('post_date,created_at,tag').eq('user_id',userId);
+  const{data:posts}=await sb.from('posts').select('post_date,created_at,tag,reply_to').eq('user_id',userId);
   $('mpAvatar').textContent=(prof.username||'?')[0].toUpperCase();
   $('mpName').textContent=prof.username||'?';
   $('mpBio').textContent=prof.bio||'';
   $('mpPostCount').textContent=posts?.length||0;
+  // reply rate
+  const _totalPosts=posts?.length||0;
+  const _replyCount=(posts||[]).filter(p=>p.reply_to!==null).length;
+  $('mpReplyRate').textContent=_totalPosts>0?`${Math.round(_replyCount/_totalPosts*100)}%`:'-';
   // friend streak
   const pDates=(posts||[]).map(p=>p.post_date).sort();
   let fStreak=0;
