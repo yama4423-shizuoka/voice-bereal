@@ -1,4 +1,3 @@
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>コエリアル</title>
   <meta name="description" content="声のBeReal。毎日ランダムな時刻に通知が届き、30秒以内にそのときの声を残す。加工なし、フィルターなし。">
   <meta property="og:title" content="コエリアル - 声のBeReal">
@@ -464,6 +463,7 @@
         <p id="statBestDow" style="font-size:.85rem;color:var(--text2);margin:-4px 0 4px;text-align:center"></p>
         <p id="statDaysOn" style="font-size:.82rem;color:var(--text2);margin:0 0 6px;text-align:center"></p>
         <p id="statHabitScore" style="font-size:.85rem;color:var(--text2);margin:0 0 10px;text-align:center"></p>
+        <p id="statBestSeason" style="font-size:.85rem;color:var(--text2);margin:0 0 8px;text-align:center"></p>
         <p id="statPerfectListen" style="font-size:.82rem;color:var(--accent);margin:0 0 16px;text-align:center"></p>
         <div style="margin-bottom:20px;text-align:right">
           <button id="exportCsvBtn" onclick="exportPostsCsv()" style="font-size:.8rem;padding:6px 14px;border:1px solid var(--border);border-radius:99px;background:transparent;color:var(--text2);cursor:pointer">投稿データをエクスポート</button>
@@ -3036,6 +3036,22 @@ async function loadProfile(){
       const activeDays=new Set(dates.filter(d=>new Date(d+'T12:00:00')>=ago));
       const score=Math.round(activeDays.size/30*100);
       el.innerHTML='習慣スコア <span style="color:var(--accent);font-weight:700">'+score+'</span>点';
+    }
+  }
+  // best season
+  {
+    const el=$('statBestSeason');
+    if(el){
+      const monthMap={};
+      (allPosts||[]).forEach(p=>{
+        if(p.post_date){const ym=p.post_date.slice(0,7);monthMap[ym]=(monthMap[ym]||0)+1;}
+      });
+      const entries=Object.entries(monthMap);
+      if(entries.length>=2){
+        entries.sort((a,b)=>b[1]-a[1]);
+        const month=parseInt(entries[0][0].split('-')[1],10);
+        el.textContent=month+'月がいちばん声を残してたよ';
+      }else{el.textContent='';}
     }
   }
   // perfect listen streak
