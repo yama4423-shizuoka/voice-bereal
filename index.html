@@ -465,6 +465,7 @@
         <p id="statHabitScore" style="font-size:.85rem;color:var(--text2);margin:0 0 10px;text-align:center"></p>
         <p id="statBestSeason" style="font-size:.85rem;color:var(--text2);margin:0 0 8px;text-align:center"></p>
         <p id="statMyReplyRate" style="font-size:.85rem;color:var(--text2);margin:0 0 8px;text-align:center"></p>
+        <p id="statAvgPace" style="font-size:.85rem;color:var(--text2);margin:0 0 8px;text-align:center"></p>
         <p id="statPerfectListen" style="font-size:.82rem;color:var(--accent);margin:0 0 16px;text-align:center"></p>
         <div style="margin-bottom:20px;text-align:right">
           <button id="exportCsvBtn" onclick="exportPostsCsv()" style="font-size:.8rem;padding:6px 14px;border:1px solid var(--border);border-radius:99px;background:transparent;color:var(--text2);cursor:pointer">投稿データをエクスポート</button>
@@ -3069,6 +3070,27 @@ async function loadProfile(){
           el.textContent='';
         }
       } else { el.textContent=''; }
+    }
+  }
+  // average posting pace
+  {
+    const el=$('statAvgPace');
+    if(el){
+      const dates=(allPosts||[]).map(p=>p.post_date).filter(Boolean);
+      if(dates.length>=2){
+        let totalGap=0;
+        for(let i=1;i<dates.length;i++){
+          totalGap+=(new Date(dates[i])-new Date(dates[i-1]))/86400000;
+        }
+        const avg=totalGap/(dates.length-1);
+        if(avg<1.5){
+          el.textContent='ほぼ毎日声を残してるよ';
+        } else {
+          el.textContent='平均 '+Math.round(avg)+' 日に 1 回声を残してるよ';
+        }
+      } else {
+        el.textContent='';
+      }
     }
   }
   // perfect listen streak
