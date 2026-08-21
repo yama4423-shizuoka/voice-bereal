@@ -1,4 +1,4 @@
-  <title>コエリアル</title>
+   <title>コエリアル</title>
   <meta name="description" content="声のBeReal。毎日ランダムな時刻に通知が届き、30秒以内にそのときの声を残す。加工なし、フィルターなし。">
   <meta property="og:title" content="コエリアル - 声のBeReal">
   <meta property="og:description" content="毎日ランダムな時刻に通知が届き、30秒以内にそのときの声を残す。加工なし、フィルターなし。">
@@ -1741,6 +1741,46 @@ async function renderFeed(el,posts,myPost,yesterdayPosts){
     });
     el.appendChild(tcSec);
   }
+  updateWeekTagRank(el);
+}
+function updateWeekTagRank(el) {
+  // compute start of current week (Monday 00:00 local time)
+  const now = new Date();
+  const dow = now.getDay(); // 0=Sun,1=Mon,...,6=Sat
+  const diffToMon = (dow === 0 ? -6 : 1 - dow);
+  const monday = new Date(now.getFullYear(), now.getMonth(), now.getDate() + diffToMon);
+  const wsStr = monday.getFullYear() + '-' + String(monday.getMonth() + 1).padStart(2, '0') + '-' + String(monday.getDate()).padStart(2, '0');
+
+  const counts = {};
+  (feedPosts || []).forEach(p => {
+    if (!p.tag) return;
+    const d = (p.post_date || '').slice(0, 10);
+    if (d < wsStr) return;
+    counts[p.tag] = (counts[p.tag] || 0) + 1;
+  });
+
+  const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]);
+  if (sorted.length === 0) return;
+
+  const section = document.createElement('section');
+  section.id = 'weekTagRankSection';
+  section.style.cssText = 'margin:16px 0;padding:12px;background:var(--surface);border-radius:12px;';
+  const max = sorted[0][1];
+  section.innerHTML = '<div style="font-size:0.85rem;color:var(--text2);margin-bottom:8px;">今週フレンドが使ったタグ</div>'
+    + '<div id="weekTagRankList">'
+    + sorted.map(([tag, cnt], i) => {
+        const pct = Math.round(cnt / max * 100);
+        return '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">'
+          + '<span style="width:16px;font-size:0.8rem;color:var(--text2);">' + (i + 1) + '</span>'
+          + '<span style="width:56px;font-size:0.85rem;">' + tag + '</span>'
+          + '<div style="flex:1;height:8px;background:var(--surface2);border-radius:4px;overflow:hidden;">'
+          + '<div style="width:' + pct + '%;height:100%;background:var(--accent);border-radius:4px;"></div>'
+          + '</div>'
+          + '<span style="font-size:0.8rem;color:var(--text2);min-width:24px;text-align:right;">' + cnt + '</span>'
+          + '</div>';
+      }).join('')
+    + '</div>';
+  el.appendChild(section);
 }
 async function loadOlderFriendPosts(btn){
   btn.disabled=true;
