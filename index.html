@@ -1,4 +1,4 @@
-   <title>コエリアル</title>
+<title>コエリアル</title>
   <meta name="description" content="声のBeReal。毎日ランダムな時刻に通知が届き、30秒以内にそのときの声を残す。加工なし、フィルターなし。">
   <meta property="og:title" content="コエリアル - 声のBeReal">
   <meta property="og:description" content="毎日ランダムな時刻に通知が届き、30秒以内にそのときの声を残す。加工なし、フィルターなし。">
@@ -610,6 +610,10 @@
       <div style="flex:1;background:var(--surface2);border-radius:var(--radius-sm);padding:10px;text-align:center">
         <div id="mpReplyRate" style="font-size:1.3rem;font-weight:700">-</div>
         <div style="font-size:.72rem;color:var(--text2)">返声率</div>
+      </div>
+      <div style="flex:1;background:var(--surface2);border-radius:var(--radius-sm);padding:10px;text-align:center">
+        <div id="mpInteractionCount" style="font-size:1.3rem;font-weight:700">-</div>
+        <div style="font-size:.72rem;color:var(--text2)">やり取り</div>
       </div>
     </div>
     <div id="mpWeekDots" style="margin-bottom:16px"></div>
@@ -3728,7 +3732,7 @@ function calcMaxStreak(dates){
 async function showMiniProfile(userId){
   const{data:prof}=await sb.from('profiles').select('*').eq('id',userId).single();
   if(!prof) return;
-  const{data:posts}=await sb.from('posts').select('post_date,created_at,tag,reply_to').eq('user_id',userId);
+  const{data:posts}=await sb.from('posts').select('id,post_date,created_at,tag,reply_to').eq('user_id',userId);
   $('mpAvatar').textContent=(prof.username||'?')[0].toUpperCase();
   $('mpName').textContent=prof.username||'?';
   $('mpBio').textContent=prof.bio||'';
@@ -3737,6 +3741,17 @@ async function showMiniProfile(userId){
   const _totalPosts=posts?.length||0;
   const _replyCount=(posts||[]).filter(p=>p.reply_to!==null).length;
   $('mpReplyRate').textContent=_totalPosts>0?`${Math.round(_replyCount/_totalPosts*100)}%`:'-';
+  // interaction count (me -> this friend)
+  const _friendPostIds=(posts||[]).map(p=>p.id).filter(Boolean);
+  let _interaction=0;
+  if(_friendPostIds.length&&me){
+    const[{data:_rxn},{data:_cmt}]=await Promise.all([
+      sb.from('reactions').select('post_id').eq('user_id',me.id).in('post_id',_friendPostIds),
+      sb.from('comments').select('post_id').eq('user_id',me.id).in('post_id',_friendPostIds)
+    ]);
+    _interaction=(_rxn?.length||0)+(_cmt?.length||0);
+  }
+  $('mpInteractionCount').textContent=`${_interaction}回`;
   // friend streak
   const pDates=(posts||[]).map(p=>p.post_date).sort();
   let fStreak=0;
