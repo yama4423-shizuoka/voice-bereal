@@ -466,6 +466,7 @@
         <p id="statBestSeason" style="font-size:.85rem;color:var(--text2);margin:0 0 8px;text-align:center"></p>
         <p id="statMyReplyRate" style="font-size:.85rem;color:var(--text2);margin:0 0 8px;text-align:center"></p>
         <p id="statAvgPace" style="font-size:.85rem;color:var(--text2);margin:0 0 8px;text-align:center"></p>
+        <p id="statFirstVoice" style="font-size:.85rem;color:var(--text2);margin:0 0 8px;text-align:center"></p>
         <p id="statPerfectListen" style="font-size:.82rem;color:var(--accent);margin:0 0 16px;text-align:center"></p>
         <div style="margin-bottom:20px;text-align:right">
           <button id="exportCsvBtn" onclick="exportPostsCsv()" style="font-size:.8rem;padding:6px 14px;border:1px solid var(--border);border-radius:99px;background:transparent;color:var(--text2);cursor:pointer">投稿データをエクスポート</button>
@@ -3132,6 +3133,19 @@ async function loadProfile(){
         } else {
           el.textContent='平均 '+Math.round(avg)+' 日に 1 回声を残してるよ';
         }
+      } else {
+        el.textContent='';
+      }
+    }
+  }
+  // first voice date
+  {
+    const el=$('statFirstVoice');
+    if(el){
+      const first=(allPosts||[]).find(p=>p.post_date);
+      if(first){
+        const d=new Date(first.post_date+'T12:00:00');
+        el.textContent='初声: '+d.getFullYear()+'年'+(d.getMonth()+1)+'月'+d.getDate()+'日';
       } else {
         el.textContent='';
       }
