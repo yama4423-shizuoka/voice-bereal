@@ -618,6 +618,7 @@
       </div>
     </div>
     <div id="mpWeekDots" style="margin-bottom:16px"></div>
+    <div id="mpCoDays" style="margin-bottom:16px"></div>
     <div id="mpHeatmap" style="margin-bottom:16px"></div>
     <div id="mpTagTrend" style="margin-bottom:16px"></div>
     <button id="btnCloseMiniProfile" class="btn btn-secondary">閉じる</button>
@@ -3758,12 +3759,15 @@ async function showMiniProfile(userId){
   // interaction count (me -> this friend)
   const _friendPostIds=(posts||[]).map(p=>p.id).filter(Boolean);
   let _interaction=0;
+  let _myPosts=null;
   if(_friendPostIds.length&&me){
-    const[{data:_rxn},{data:_cmt}]=await Promise.all([
+    const[{data:_rxn},{data:_cmt},{data:_mp}]=await Promise.all([
       sb.from('reactions').select('post_id').eq('user_id',me.id).in('post_id',_friendPostIds),
-      sb.from('comments').select('post_id').eq('user_id',me.id).in('post_id',_friendPostIds)
+      sb.from('comments').select('post_id').eq('user_id',me.id).in('post_id',_friendPostIds),
+      sb.from('posts').select('post_date,tag').eq('user_id',me.id)
     ]);
     _interaction=(_rxn?.length||0)+(_cmt?.length||0);
+    _myPosts=_mp;
   }
   $('mpInteractionCount').textContent=`${_interaction}回`;
   // friend streak
@@ -3814,6 +3818,35 @@ async function showMiniProfile(userId){
   wRow.appendChild(wDots);
   wRow.appendChild(wCount);
   mpWD.appendChild(wRow);
+  // co-posting days
+  const mpCD=$('mpCoDays');
+  mpCD.innerHTML='';
+  if(_myPosts&&_myPosts.length>0){
+    const friendDateTagMap={};
+    (posts||[]).forEach(p=>{if(p.post_date)friendDateTagMap[p.post_date]=p.tag||null;});
+    let coDays=0,coTagDays=0;
+    _myPosts.forEach(p=>{
+      if(p.post_date in friendDateTagMap){
+        coDays++;
+        if(p.tag&&p.tag===friendDateTagMap[p.post_date]) coTagDays++;
+      }
+    });
+    if(coDays>0){
+      const cdWrap=document.createElement('div');
+      cdWrap.style.cssText='background:var(--surface1);border-radius:8px;padding:10px 12px';
+      const cdMain=document.createElement('div');
+      cdMain.style.cssText='font-size:.82rem';
+      cdMain.textContent=`一緒に ${coDays} 日声を残した`;
+      cdWrap.appendChild(cdMain);
+      if(coTagDays>0){
+        const cdSub=document.createElement('div');
+        cdSub.style.cssText='font-size:.72rem;color:var(--text2);margin-top:3px';
+        cdSub.textContent=`うち ${coTagDays} 日は同じ気分だった`;
+        cdWrap.appendChild(cdSub);
+      }
+      mpCD.appendChild(cdWrap);
+    }
+  }
   // hour heatmap (JST)
   const mpHM=$('mpHeatmap');
   mpHM.innerHTML='';
