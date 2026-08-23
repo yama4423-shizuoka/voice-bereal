@@ -467,6 +467,7 @@
         <p id="statMyReplyRate" style="font-size:.85rem;color:var(--text2);margin:0 0 8px;text-align:center"></p>
         <p id="statAvgPace" style="font-size:.85rem;color:var(--text2);margin:0 0 8px;text-align:center"></p>
         <p id="statFirstVoice" style="font-size:.85rem;color:var(--text2);margin:0 0 8px;text-align:center"></p>
+        <p id="statAllTimeRxn" style="font-size:.85rem;color:var(--text2);margin:0 0 8px;text-align:center"></p>
         <p id="statPerfectListen" style="font-size:.82rem;color:var(--accent);margin:0 0 16px;text-align:center"></p>
         <div style="margin-bottom:20px;text-align:right">
           <button id="exportCsvBtn" onclick="exportPostsCsv()" style="font-size:.8rem;padding:6px 14px;border:1px solid var(--border);border-radius:99px;background:transparent;color:var(--text2);cursor:pointer">投稿データをエクスポート</button>
@@ -3149,6 +3150,22 @@ async function loadProfile(){
         el.textContent='初声: '+d.getFullYear()+'年'+(d.getMonth()+1)+'月'+d.getDate()+'日';
       } else {
         el.textContent='';
+      }
+    }
+  }
+  // all-time received reactions + comments
+  {
+    const el=$('statAllTimeRxn');
+    if(el){
+      const myPostIds=(allPosts||[]).map(p=>p.id).filter(Boolean);
+      if(myPostIds.length){
+        const[ar,ac]=await Promise.all([
+          sb.from('reactions').select('*',{count:'exact',head:true}).in('post_id',myPostIds),
+          sb.from('comments').select('*',{count:'exact',head:true}).in('post_id',myPostIds)
+        ]);
+        const rn=ar.count||0,cn=ac.count||0;
+        if(rn>0||cn>0) el.textContent='通算 '+rn+' 回聴いてもらい・'+cn+' 件コメントをもらったよ';
+        else el.textContent='';
       }
     }
   }
