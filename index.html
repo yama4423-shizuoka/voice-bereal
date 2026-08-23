@@ -1635,6 +1635,33 @@ async function renderFeed(el,posts,myPost,yesterdayPosts){
   const posterCnt=new Set((posts||[]).map(p=>p.user_id)).size;
   const summaryHtml=posterCnt>0?` <span style="font-size:.75rem;color:var(--text2);font-weight:400;vertical-align:middle">${posterCnt}人投稿${unheardCnt>0?' · 未聴'+unheardCnt+'件':''}</span>`:'';
   friendSection.innerHTML=`<p class="section-title">フレンドの声${summaryHtml}</p>`;
+  // friend nav chips
+  if((posts||[]).length>0){
+    const _navChips=document.createElement('div');
+    _navChips.style.cssText='display:flex;gap:8px;overflow-x:auto;padding:6px 0 10px;scrollbar-width:none;-webkit-overflow-scrolling:touch;flex-wrap:nowrap';
+    _navChips.setAttribute('aria-label','フレンドに移動');
+    const _seenNav=new Set();const _orderedNav=[];
+    (posts||[]).forEach(p=>{if(!_seenNav.has(p.user_id)){_seenNav.add(p.user_id);_orderedNav.push(p);}});
+    const _playedNav=getPlayedSet();
+    const _TAG_COLORS={朝:'#ff9f0a',夜:'#bf5af2',ひとりごと:'#30d158',仕事中:'#ffd60a'};
+    const _UID_PALETTE=['#0a84ff','#30d158','#bf5af2','#ff9f0a','#ff375f'];
+    const _uidColor=uid=>{let h=0;for(let i=0;i<uid.length;i++){h=(h*31+uid.charCodeAt(i))>>>0;}return _UID_PALETTE[h%_UID_PALETTE.length];};
+    _orderedNav.forEach(p=>{
+      const _allPlayed=(posts||[]).filter(q=>q.user_id===p.user_id).every(q=>_playedNav.has(q.id)||q.reacted_by_me);
+      const _chip=document.createElement('button');
+      _chip.style.cssText=`display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border-radius:20px;border:none;background:var(--surface2);cursor:pointer;white-space:nowrap;flex-shrink:0;font-size:.82rem;color:${_allPlayed?'var(--text2)':'var(--text)'};opacity:${_allPlayed?'0.55':'1'};box-shadow:${_allPlayed?'none':'0 0 0 1.5px var(--accent)'}`;
+      const _av=document.createElement('span');
+      _av.style.cssText=`width:20px;height:20px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:.68rem;font-weight:700;flex-shrink:0;background:${_uidColor(p.user_id)};color:#fff`;
+      _av.textContent=(p.username||'?')[0].toUpperCase();
+      const _nm=document.createElement('span');
+      _nm.textContent=(p.username||'?').slice(0,5);
+      _chip.appendChild(_av);_chip.appendChild(_nm);
+      if(p.tag&&_TAG_COLORS[p.tag]){const _td=document.createElement('span');_td.style.cssText=`width:7px;height:7px;border-radius:50%;background:${_TAG_COLORS[p.tag]};flex-shrink:0`;_chip.appendChild(_td);}
+      _chip.addEventListener('click',()=>{const _t=friendSection.querySelector(`[data-navuid="${p.user_id}"]`);if(_t)_t.scrollIntoView({behavior:'smooth',block:'nearest'});});
+      _navChips.appendChild(_chip);
+    });
+    friendSection.appendChild(_navChips);
+  }
   // not-posted friends
   const{data:friendData}=await sb.from('friendships').select('friend_id').eq('user_id',me.id);
   // async workaround — build not-yet-posted list
@@ -1665,7 +1692,8 @@ async function renderFeed(el,posts,myPost,yesterdayPosts){
       }
     });
     topPosts.forEach(post=>{
-      friendSection.appendChild(buildFeedCard(post));
+      const _fc=buildFeedCard(post);_fc.dataset.navuid=post.user_id;
+      friendSection.appendChild(_fc);
       const replies=(replyChildren[post.id]||[]);
       if(replies.length>=3){
         const wFirst=document.createElement('div');
