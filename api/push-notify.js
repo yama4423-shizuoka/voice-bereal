@@ -29,16 +29,16 @@ module.exports = async function handler(req, res) {
   const nowJst  = new Date(Date.now() + 9 * 3600e3);
   const today   = nowJst.toISOString().slice(0, 10);
   const nowUtcH = new Date().getUTCHours();
+  const nowJstH = (nowUtcH + 9) % 24;
   const targetH = designatedHourUtc(today);
-
-  if (nowUtcH !== targetH) {
-    return res.status(200).json({ skipped: true, target: targetH, current: nowUtcH });
-  }
 
   webpush.setVapidDetails(VAPID_SUBJECT, VAPID_PUBLIC, VAPID_PRIVATE);
 
   const sb = createClient(SB_URL, SB_SERVICE);
-  const { data: subs, error } = await sb.from('push_subscriptions').select('id, endpoint, p256dh, auth').eq('is_active', true);
+  const { data: subs, error } = await sb
+    .from('push_subscriptions')
+    .select('id, endpoint, p256dh, auth, pref_hour_jst')
+    .eq('is_active', true);
   if (error) return res.status(500).json({ error: error.message });
 
   const payload = JSON.stringify({
@@ -51,6 +51,11 @@ module.exports = async function handler(req, res) {
   const expired = [];
 
   await Promise.allSettled((subs ?? []).map(async (sub) => {
+    const prefH = sub.pref_hour_jst ?? null;
+    // pref_hour_jst が設定済みならその時刻のみ、未設定なら全員共通のランダム時刻
+    const shouldSend = prefH !== null ? (prefH === nowJstH) : (nowUtcH === targetH);
+    if (!shouldSend) return;
+
     try {
       await webpush.sendNotification(
         { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
@@ -68,5 +73,5 @@ module.exports = async function handler(req, res) {
     await sb.from('push_subscriptions').delete().in('id', expired);
   }
 
-  return res.status(200).json({ sent, failed, expired: expired.length, date: today });
+  return res.status(200).json({ sent, failed, expired: expired.length, date: today, nowJstH, targetH });
 };

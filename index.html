@@ -422,6 +422,23 @@
           <span style="font-size:.9rem">毎日の通知を受け取る</span>
           <button id="btnNotifToggle" role="switch" style="background:var(--surface2);border:none;border-radius:20px;padding:4px 12px;color:var(--text2);font-size:.8rem;cursor:pointer" aria-checked="false">オフ</button>
         </div>
+        <div id="notifHourWrap" style="display:flex;align-items:center;justify-content:space-between;background:var(--surface);border-radius:var(--radius-sm);padding:12px 14px;margin-bottom:8px">
+          <span style="font-size:.9rem">通知時刻</span>
+          <select id="selNotifHour" disabled style="background:var(--surface2);border:1px solid var(--surface2);border-radius:8px;padding:4px 8px;color:var(--text);font-size:.8rem;cursor:pointer">
+            <option value="">毎日変わる(11~21時)</option>
+            <option value="11">11時</option>
+            <option value="12">12時</option>
+            <option value="13">13時</option>
+            <option value="14">14時</option>
+            <option value="15">15時</option>
+            <option value="16">16時</option>
+            <option value="17">17時</option>
+            <option value="18">18時</option>
+            <option value="19">19時</option>
+            <option value="20">20時</option>
+            <option value="21">21時</option>
+          </select>
+        </div>
         <p class="section-title">マイク設定</p>
         <div style="display:flex;align-items:center;justify-content:space-between;background:var(--surface);border-radius:var(--radius-sm);padding:12px 14px;margin-bottom:8px">
           <span style="font-size:.9rem">ノイズ抑制</span>
@@ -963,11 +980,17 @@ async function updateNotifToggle(){
   const reg=await navigator.serviceWorker.ready.catch(()=>null);
   if(!reg) return;
   const sub=await reg.pushManager.getSubscription().catch(()=>null);
-  if(!sub){$('btnNotifToggle').textContent='オフ';$('btnNotifToggle').setAttribute('aria-checked','false');return;}
-  const{data}=await sb.from('subscriptions').select('is_active').eq('user_id',me.id).eq('endpoint',sub.endpoint).single();
+  const sel=$('selNotifHour');
+  if(!sub){$('btnNotifToggle').textContent='オフ';$('btnNotifToggle').setAttribute('aria-checked','false');if(sel)sel.disabled=true;return;}
+  const{data}=await sb.from('subscriptions').select('is_active,pref_hour_jst').eq('user_id',me.id).eq('endpoint',sub.endpoint).single();
   const active=data?.is_active??false;
   $('btnNotifToggle').textContent=active?'オン':'オフ';
   $('btnNotifToggle').setAttribute('aria-checked',active?'true':'false');
+  if(sel){
+    sel.disabled=!active;
+    const ph=data?.pref_hour_jst;
+    sel.value=ph!=null?String(ph):'';
+  }
 }
 $('btnNotifToggle').addEventListener('click',async()=>{
   const reg=await navigator.serviceWorker.ready.catch(()=>null);
@@ -980,6 +1003,17 @@ $('btnNotifToggle').addEventListener('click',async()=>{
   $('btnNotifToggle').textContent=newVal?'オン':'オフ';
   $('btnNotifToggle').setAttribute('aria-checked',newVal?'true':'false');
   showToast(newVal?'通知をオンにしました':'通知をオフにしました');
+  await updateNotifToggle();
+});
+$('selNotifHour').addEventListener('change',async()=>{
+  const reg=await navigator.serviceWorker.ready.catch(()=>null);
+  if(!reg) return;
+  const sub=await reg.pushManager.getSubscription().catch(()=>null);
+  if(!sub) return;
+  const val=$('selNotifHour').value;
+  const prefH=val===''?null:parseInt(val,10);
+  await sb.from('subscriptions').update({pref_hour_jst:prefH}).eq('user_id',me.id).eq('endpoint',sub.endpoint);
+  showToast(prefH!=null?`通知時刻を${prefH}時に設定しました`:'通知時刻をランダムに戻しました');
 });
 
 // mic settings
