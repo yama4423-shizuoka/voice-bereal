@@ -2095,6 +2095,7 @@ async function loadCommentCounts(postIds){
 function buildFeedCard(post){
   const card=document.createElement('div');
   card.className='feed-card';
+  {const jstH=new Date(new Date(post.created_at).getTime()+9*3600*1000).getUTCHours();card.style.borderLeft='4px solid '+(jstH>=5&&jstH<12?'#f97316':jstH>=12&&jstH<17?'#3b82f6':jstH>=17&&jstH<21?'#9333ea':'#1e3a5f');}
   const played=getPlayedSet();
   if(played.has(post.id)||post.reacted_by_me) card.classList.add('greyed');
   const meta=document.createElement('div');
