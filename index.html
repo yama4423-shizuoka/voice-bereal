@@ -155,7 +155,10 @@
     .comment-text{color:var(--text2)}
     .comment-time{font-size:.7rem;color:var(--text2);flex-shrink:0;margin-left:auto}
     .comment-del{background:none;border:none;color:var(--text2);cursor:pointer;font-size:.8rem;padding:0 2px}
-    .comment-form{display:flex;gap:6px;margin-top:6px}
+    .vc-section { border-top:1px solid var(--surface2); margin-top:10px; padding-top:8px }
+.vc-item { display:flex; align-items:center; gap:6px; font-size:.78rem; color:var(--text2); margin-bottom:4px }
+.vc-rec-btn { margin-top:6px; background:var(--surface2); border:1px solid var(--accent); border-radius:var(--radius-sm); padding:5px 12px; font-size:.78rem; color:var(--accent); cursor:pointer; width:100% }
+.comment-form{display:flex;gap:6px;margin-top:6px}
     .comment-input{flex:1;padding:6px 10px;background:var(--surface2);border:none;
       border-radius:var(--radius-sm);color:var(--text);font-size:.82rem}
     .comment-submit{background:var(--accent);border:none;border-radius:var(--radius-sm);
@@ -2605,6 +2608,105 @@ async function toggleComments(card,post){
     sec.appendChild(form);
   }
   renderComments(comments||[]);
+
+  // voice comments section
+  const vcSec = document.createElement('div');
+  vcSec.className = 'vc-section';
+  let vcRecording = false;
+  let vcMediaRecorder = null;
+  let vcChunks = [];
+  let vcTimer = null;
+  let vcSec_ = 0;
+
+  async function loadVoiceComments() {
+    const { data: vcs, error: vcErr } = await sb.from('voice_comments')
+      .select('id,user_id,audio_path,created_at').eq('post_id', post.id)
+      .order('created_at', { ascending: true });
+    if (vcErr && (vcErr.code === '42P01' || vcErr.code === 'PGRST204')) {
+      vcSec.innerHTML = '';
+      return;
+    }
+    const { data: vcProfs } = (vcs && vcs.length)
+      ? await sb.from('profiles').select('id,username').in('id', [...new Set(vcs.map(v => v.user_id))])
+      : { data: [] };
+    const vcPmap = {};
+    (vcProfs || []).forEach(p => vcPmap[p.id] = p.username);
+    vcSec.innerHTML = '';
+    const h = document.createElement('p');
+    h.style.cssText = 'font-size:.78rem;color:var(--text2);margin:0 0 4px';
+    h.textContent = '声のコメント';
+    vcSec.appendChild(h);
+    (vcs || []).forEach(vc => {
+      const row = document.createElement('div');
+      row.className = 'vc-item';
+      const nm = document.createElement('span');
+      nm.textContent = vcPmap[vc.user_id] || '?';
+      nm.style.minWidth = '4em';
+      row.appendChild(nm);
+      const { data: ud } = sb.storage.from('voice-posts').getPublicUrl(vc.audio_path);
+      const au = document.createElement('audio');
+      au.src = ud.publicUrl;
+      au.controls = true;
+      au.style.cssText = 'height:26px;max-width:160px;vertical-align:middle';
+      row.appendChild(au);
+      if (vc.user_id === me.id) {
+        const db = document.createElement('button');
+        db.textContent = 'x';
+        db.className = 'comment-del-btn';
+        db.addEventListener('click', async () => {
+          await sb.from('voice_comments').delete().eq('id', vc.id);
+          await sb.storage.from('voice-posts').remove([vc.audio_path]);
+          loadVoiceComments();
+        });
+        row.appendChild(db);
+      }
+      vcSec.appendChild(row);
+    });
+    const recBtn = document.createElement('button');
+    recBtn.className = 'vc-rec-btn';
+    recBtn.textContent = '声を残す(15秒以内)';
+    recBtn.addEventListener('click', async () => {
+      if (vcRecording) {
+        if (vcMediaRecorder && vcMediaRecorder.state === 'recording') vcMediaRecorder.stop();
+        return;
+      }
+      let stream;
+      try { stream = await navigator.mediaDevices.getUserMedia({ audio: true }); }
+      catch { showToast('マイクを許可してください'); return; }
+      vcChunks = [];
+      vcSec_ = 0;
+      vcMediaRecorder = new MediaRecorder(stream);
+      vcMediaRecorder.ondataavailable = e => vcChunks.push(e.data);
+      vcMediaRecorder.onstop = async () => {
+        stream.getTracks().forEach(t => t.stop());
+        clearInterval(vcTimer);
+        vcRecording = false;
+        const blob = new Blob(vcChunks, { type: 'audio/webm' });
+        if (blob.size < 500) { recBtn.textContent = '声を残す(15秒以内)'; return; }
+        recBtn.textContent = '投稿中...';
+        recBtn.disabled = true;
+        const path = `vc/${me.id}/${post.id}/${Date.now()}.webm`;
+        const { error: upErr } = await sb.storage.from('voice-posts').upload(path, blob);
+        if (upErr) { showToast('アップロード失敗'); recBtn.textContent = '声を残す(15秒以内)'; recBtn.disabled = false; return; }
+        const { error: dbErr } = await sb.from('voice_comments').insert({ post_id: post.id, user_id: me.id, audio_path: path });
+        if (dbErr) { showToast('保存失敗'); await sb.storage.from('voice-posts').remove([path]); recBtn.textContent = '声を残す(15秒以内)'; recBtn.disabled = false; return; }
+        recBtn.disabled = false;
+        loadVoiceComments();
+      };
+      vcMediaRecorder.start();
+      vcRecording = true;
+      recBtn.textContent = `録音中... 0秒 (再タップで停止)`;
+      vcTimer = setInterval(() => {
+        vcSec_++;
+        recBtn.textContent = `録音中... ${vcSec_}秒 (再タップで停止)`;
+        if (vcSec_ >= 15) vcMediaRecorder.stop();
+      }, 1000);
+    });
+    vcSec.appendChild(recBtn);
+    sec.appendChild(vcSec);
+  }
+  loadVoiceComments();
+
   card.appendChild(sec);
 }
 
