@@ -556,12 +556,14 @@
             <button class="act-tab" data-tab="replies" onclick="switchActTab('replies')">返声</button>
             <button class="act-tab" data-tab="stamps" onclick="switchActTab('stamps')">スタンプ</button>
             <button class="act-tab" data-tab="requests" onclick="switchActTab('requests')">リクエスト</button>
+            <button class="act-tab" data-tab="voicecmts" onclick="switchActTab('voicecmts')">声コメント</button>
           </div>
           <div id="actPane-reactions"><div id="reactionList" style="margin-bottom:20px"></div></div>
           <div id="actPane-comments" style="display:none"><div id="commentNotifList" style="margin-bottom:20px"></div></div>
           <div id="actPane-replies" style="display:none"><div id="replyNotifList" style="margin-bottom:20px"></div></div>
           <div id="actPane-stamps" style="display:none"><div id="receivedStampList" style="margin-bottom:20px"></div></div>
           <div id="actPane-requests" style="display:none"><div id="receivedRequestList" style="margin-bottom:20px"></div></div>
+          <div id="actPane-voicecmts" style="display:none"><div id="voiceCmtNotifList" style="margin-bottom:20px"></div></div>
         </div>
         <p class="section-title">よく話すフレンド</p>
         <div id="topFriendsSection" style="margin-bottom:16px"></div>
@@ -813,7 +815,7 @@ function showScreen(id){
   $(id).classList.add('active');
 }
 function switchActTab(tab){
-  ['reactions','comments','replies','stamps','requests'].forEach(t=>{
+  ['reactions','comments','replies','stamps','requests','voicecmts'].forEach(t=>{
     const p=$('actPane-'+t);
     if(p) p.style.display=t===tab?'':'none';
   });
@@ -3486,9 +3488,37 @@ async function loadProfile(){
     }else{stampNotifHtml='<p style="color:var(--text2);font-size:.85rem">まだありません</p>';}
   }catch(e){stampNotifHtml='<p style="color:var(--text2);font-size:.85rem">まだありません</p>';}
   $('receivedStampList').innerHTML=stampNotifHtml;
+  // received voice comment notifications
+  let voiceCmtNotifHtml='';
+  let voiceCmtCount=0;
+  if(myPostIds.length){
+    try{
+      const{data:recvVcs,error:rvcErr}=await sb.from('voice_comments').select('id,user_id,audio_path,created_at,post_id').in('post_id',myPostIds).neq('user_id',me.id).order('created_at',{ascending:false}).limit(20);
+      if(rvcErr&&(rvcErr.code==='42P01'||rvcErr.code==='PGRST204')){
+        voiceCmtNotifHtml='<p style="color:var(--text2);font-size:.85rem">まだありません</p>';
+      } else if(recvVcs&&recvVcs.length){
+        const vcUids=[...new Set(recvVcs.map(v=>v.user_id))];
+        let vcUmap={};
+        const{data:vcp}=await sb.from('profiles').select('id,username').in('id',vcUids);
+        (vcp||[]).forEach(p=>vcUmap[p.id]=p.username);
+        voiceCmtCount=recvVcs.length;
+        voiceCmtNotifHtml=recvVcs.map(vc=>{
+          const d=new Date(vc.created_at);
+          const{data:ud}=sb.storage.from('voice-posts').getPublicUrl(vc.audio_path);
+          const postLabel=myPostDateMap[vc.post_id]||'?';
+          return `<div style="font-size:.82rem;padding:6px 0;border-bottom:1px solid var(--surface2);display:flex;flex-direction:column;gap:4px"><span>${vcUmap[vc.user_id]||'?'} が ${postLabel} の声に声のコメント<span style="color:var(--text2);font-size:.75rem;margin-left:6px">${d.getMonth()+1}/${d.getDate()}</span></span><audio src="${ud.publicUrl}" controls style="height:28px;max-width:100%;border-radius:4px"></audio></div>`;
+        }).join('');
+      } else {
+        voiceCmtNotifHtml='<p style="color:var(--text2);font-size:.85rem">まだありません</p>';
+      }
+    }catch(e){voiceCmtNotifHtml='<p style="color:var(--text2);font-size:.85rem">まだありません</p>';}
+  } else {
+    voiceCmtNotifHtml='<p style="color:var(--text2);font-size:.85rem">まだありません</p>';
+  }
+  $('voiceCmtNotifList').innerHTML=voiceCmtNotifHtml;
   // profile tab badge
   const lastSeen=parseInt(localStorage.getItem('lastSeenNotifCount')||'0');
-  const totalNotifs=((reactionHtml.match(/聴いたよ/g)||[]).length)+((commentNotifHtml.match(/コメント:/g)||[]).length)+((replyNotifHtml.match(/返声:/g)||[]).length)+((recvReqHtml.match(/リクエストが届いています/g)||[]).length)+((stampNotifHtml.match(/スタンプ/g)||[]).length);
+  const totalNotifs=((reactionHtml.match(/聴いたよ/g)||[]).length)+((commentNotifHtml.match(/コメント:/g)||[]).length)+((replyNotifHtml.match(/返声:/g)||[]).length)+((recvReqHtml.match(/リクエストが届いています/g)||[]).length)+((stampNotifHtml.match(/スタンプ/g)||[]).length)+voiceCmtCount;
   if(totalNotifs>lastSeen){
     $('profileTabBadge').textContent=totalNotifs-lastSeen;
     $('profileTabBadge').style.display='flex';
