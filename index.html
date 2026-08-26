@@ -714,7 +714,7 @@ let me=null,myProfile=null,mediaRecorder=null,audioChunks=[],recInterval=null,re
 let feedPosts=[],currentPlayingAudio=null,currentPlayingCard=null;
 let olderFeedOffset=0;
 let playQueue=[],playQueueIndex=-1,isPlayingAll=false;
-let lastFeedIds=new Set(),feedPollInterval=null;
+let lastFeedIds=new Set(),feedRealtimeChannel=null;
 let _restoreFeedScroll=false;
 let pendingBlob=null,pendingCaption='',pendingTag='',pendingTitle='',pendingReplyTo=null,pendingReplyToName='';
 let pendingRequestId=null,pendingRequestFromName='',voiceRequestTitle='';
@@ -1416,8 +1416,8 @@ async function loadFeed(){
   feedPosts=todayPosts||[];
   updateTodayMoodBanner();
   lastFeedIds=new Set(feedPosts.map(p=>p.id));
-  if(feedPollInterval) clearInterval(feedPollInterval);
-  feedPollInterval=setInterval(pollNewPosts,60000);
+  if(feedRealtimeChannel) sb.removeChannel(feedRealtimeChannel);
+  feedRealtimeChannel=sb.channel('feed-inserts').on('postgres_changes',{event:'INSERT',schema:'public',table:'posts'},()=>{pollNewPosts();}).subscribe();
   olderFeedOffset=0;
   const d7=new Date(Date.now()-7*86400000).toISOString().split('T')[0];
   const d30=new Date(Date.now()-30*86400000).toISOString().split('T')[0];
@@ -3817,7 +3817,7 @@ $('btnRefreshProfile').addEventListener('click',async()=>{
 });
 
 $('btnLogout').addEventListener('click',async()=>{
-  if(feedPollInterval) clearInterval(feedPollInterval);
+  if(feedRealtimeChannel) sb.removeChannel(feedRealtimeChannel);
   await sb.auth.signOut();
 });
 
