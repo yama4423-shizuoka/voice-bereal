@@ -141,9 +141,9 @@
       font-size:1rem;color:var(--text);text-align:center;cursor:pointer;border-bottom:1px solid var(--border)}
     .lp-sheet-item:last-child{border-bottom:none}
     .lp-sheet-item:active{opacity:.6}
-    .speed-btn{background:var(--surface2);border:none;border-radius:var(--radius-sm);
-      padding:6px 10px;color:var(--text2);font-size:.75rem;cursor:pointer;font-weight:600}
-    .speed-btn.active{color:var(--accent)}
+    .speed-slider-wrap{display:flex;align-items:center;gap:4px;min-width:110px}
+    .speed-label{font-size:.72rem;color:var(--text2);font-weight:600;min-width:32px;text-align:right}
+    .speed-slider{width:72px;cursor:pointer;accent-color:var(--accent)}
     .play-pause-btn{background:var(--accent);border:none;border-radius:var(--radius-sm);
       padding:6px 14px;color:#fff;font-size:.8rem;cursor:pointer;font-weight:600;min-width:54px;text-align:center}
     .play-pause-btn.is-paused{background:var(--surface2);color:var(--text)}
@@ -1318,8 +1318,7 @@ $('btnSubmitPost').addEventListener('click',async()=>{
 });
 
 // feed
-const SPEED_OPTIONS=[.75,1,1.5];
-let savedSpeed=parseFloat(localStorage.getItem('playSpeed'))||1;
+let savedSpeed=Math.min(2,Math.max(0.5,parseFloat(localStorage.getItem('playSpeed'))||1));
 function getPlayedKey(){ return `played_${me?.id}_${new Date().toISOString().split('T')[0]}`; }
 function getPlayedSet(){ try{return new Set(JSON.parse(localStorage.getItem(getPlayedKey())||'[]'));}catch{return new Set();} }
 function addPlayed(pid){ const s=getPlayedSet();s.add(pid);localStorage.setItem(getPlayedKey(),JSON.stringify([...s]));updateFeedBadge(); }
@@ -2225,19 +2224,27 @@ function buildFeedCard(post){
   }
   const actionsRow=document.createElement('div');
   actionsRow.className='feed-actions';
-  const speedBtn=document.createElement('button');
-  speedBtn.className='speed-btn';
-  let currentSpeedIdx=SPEED_OPTIONS.indexOf(savedSpeed);
-  if(currentSpeedIdx<0) currentSpeedIdx=1;
-  speedBtn.textContent=`x${SPEED_OPTIONS[currentSpeedIdx]}`;
-  speedBtn.addEventListener('click',()=>{
-    currentSpeedIdx=(currentSpeedIdx+1)%SPEED_OPTIONS.length;
-    const sp=SPEED_OPTIONS[currentSpeedIdx];
-    speedBtn.textContent=`x${sp}`;
+  const speedWrap=document.createElement('div');
+  speedWrap.className='speed-slider-wrap';
+  const speedLabel=document.createElement('span');
+  speedLabel.className='speed-label';
+  speedLabel.setAttribute('aria-live','polite');
+  speedLabel.textContent='x'+String(savedSpeed);
+  const speedSlider=document.createElement('input');
+  speedSlider.type='range';
+  speedSlider.className='speed-slider';
+  speedSlider.min='0.5'; speedSlider.max='2'; speedSlider.step='0.25';
+  speedSlider.value=String(savedSpeed);
+  speedSlider.setAttribute('aria-label','再生速度');
+  speedSlider.addEventListener('input',()=>{
+    const sp=parseFloat(speedSlider.value);
+    speedLabel.textContent='x'+String(sp);
     savedSpeed=sp;
-    localStorage.setItem('playSpeed',sp);
+    localStorage.setItem('playSpeed',String(sp));
     if(audio) audio.playbackRate=sp;
   });
+  speedWrap.appendChild(speedLabel);
+  speedWrap.appendChild(speedSlider);
   const playPauseBtn=document.createElement('button');
   playPauseBtn.className='play-pause-btn is-paused';
   playPauseBtn.setAttribute('aria-label','再生');
@@ -2282,7 +2289,7 @@ function buildFeedCard(post){
   bmBtn.setAttribute('aria-label','ブックマーク');
   bmBtn.textContent='保存';
   actionsRow.appendChild(playPauseBtn);
-  actionsRow.appendChild(speedBtn);
+  actionsRow.appendChild(speedWrap);
   actionsRow.appendChild(durationLabel);
   actionsRow.appendChild(reactBtn);
   actionsRow.appendChild(bmBtn);
@@ -2354,7 +2361,7 @@ function buildFeedCard(post){
       const pdate=post.post_date||today;
       const{data:urlData}=sb.storage.from('voice-posts').getPublicUrl(`${post.user_id}/${pdate}.webm`);
       audio=new Audio(urlData.publicUrl);
-      audio.playbackRate=SPEED_OPTIONS[currentSpeedIdx];
+      audio.playbackRate=savedSpeed;
       audio.addEventListener('loadedmetadata',()=>{
         isLoaded=true;
         durationLabel.textContent=Math.round(audio.duration)+'秒';
