@@ -2503,6 +2503,7 @@ function buildFeedCard(post){
     const items=[
       {label:'聴いたよ',action:()=>{reactToPost();}},
       {label:'返声する',action:()=>{pendingReplyTo=post.id;pendingReplyToName=post.username||'?';switchTab('Record');}},
+      {label:bmBtn.classList.contains('bookmarked')?'ブックマーク解除':'ブックマーク',action:()=>{bmBtn.click();}},
     ];
     items.forEach(({label,action})=>{
       const btn=document.createElement('button');
