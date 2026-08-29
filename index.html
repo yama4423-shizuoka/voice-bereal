@@ -453,6 +453,14 @@
           <span style="font-size:.9rem">エコーキャンセル</span>
           <button id="btnEchoCancel" role="switch" style="background:var(--surface2);border:none;border-radius:20px;padding:4px 12px;color:var(--text2);font-size:.8rem;cursor:pointer" aria-checked="true">オン</button>
         </div>
+        <div style="display:flex;align-items:center;justify-content:space-between;background:var(--surface);border-radius:var(--radius-sm);padding:12px 14px;margin-bottom:8px">
+          <span style="font-size:.9rem">カウントダウン</span>
+          <div id="cdChipWrap" style="display:flex;gap:6px">
+            <button class="cd-chip" data-cd="0" style="border:1px solid var(--border);border-radius:16px;padding:3px 10px;font-size:.8rem;cursor:pointer;background:var(--surface2);color:var(--text2)">なし</button>
+            <button class="cd-chip" data-cd="1" style="border:1px solid var(--border);border-radius:16px;padding:3px 10px;font-size:.8rem;cursor:pointer;background:var(--surface2);color:var(--text2)">1秒</button>
+            <button class="cd-chip" data-cd="3" style="border:1px solid var(--border);border-radius:16px;padding:3px 10px;font-size:.8rem;cursor:pointer;background:var(--surface2);color:var(--text2)">3秒</button>
+          </div>
+        </div>
         <p class="section-title">アクセントカラー</p>
         <div id="colorChipWrap" style="display:flex;gap:12px;margin-bottom:20px;align-items:center">
           <button class="color-chip" data-c="blue"   aria-label="ブルー"   style="width:30px;height:30px;border-radius:50%;border:3px solid transparent;background:#0a84ff;cursor:pointer;padding:0;flex-shrink:0"></button>
@@ -1070,6 +1078,25 @@ $('btnEchoCancel').addEventListener('click',()=>{
   showToast(val?'エコーキャンセルをオンにしました':'エコーキャンセルをオフにしました');
 });
 
+// countdown setting chips
+(function initCountdownChips(){
+  const saved=localStorage.getItem('vbr_countdownSec')||'3';
+  document.querySelectorAll('.cd-chip').forEach(btn=>{
+    const active=btn.dataset.cd===saved;
+    btn.style.background=active?'var(--accent)':'var(--surface2)';
+    btn.style.color=active?'#fff':'var(--text2)';
+    btn.style.borderColor=active?'var(--accent)':'var(--border)';
+    btn.addEventListener('click',()=>{
+      localStorage.setItem('vbr_countdownSec',btn.dataset.cd);
+      document.querySelectorAll('.cd-chip').forEach(b=>{
+        b.style.background='var(--surface2)';b.style.color='var(--text2)';b.style.borderColor='var(--border)';
+      });
+      btn.style.background='var(--accent)';btn.style.color='#fff';btn.style.borderColor='var(--accent)';
+      showToast('カウントダウンを変更しました');
+    });
+  });
+})();
+
 function fmtTime(s){const m=Math.floor(s/60);return `${m}:${String(Math.floor(s%60)).padStart(2,'0')}`;}
 function _hlText(text,query){
   if(!query||!text) return null;
@@ -1166,18 +1193,21 @@ $('btnRecord').addEventListener('click',async()=>{
     const echoCancel=localStorage.getItem('vbr_echoCancel')!=='off';
     const stream=await navigator.mediaDevices.getUserMedia({audio:{noiseSuppression:noiseSupp,echoCancellation:echoCancel}});
     // countdown 3→2→1
+    const cntSec=parseInt(localStorage.getItem('vbr_countdownSec')||'3',10);
     const overlay=$('countdownOverlay');
     const numEl=$('countdownNum');
-    let cnt=3;
-    numEl.textContent=cnt;
-    numEl.classList.remove('countdown-num');void numEl.offsetWidth;numEl.classList.add('countdown-num');
-    overlay.style.display='flex';
-    $('btnCancelCountdown').onclick=()=>{
-      clearInterval(countdownTimer);
-      countdownTimer=null;
-      overlay.style.display='none';
-      stream.getTracks().forEach(t=>t.stop());
-    };
+    let cnt=cntSec;
+    if(cntSec>0){
+      numEl.textContent=cnt;
+      numEl.classList.remove('countdown-num');void numEl.offsetWidth;numEl.classList.add('countdown-num');
+      overlay.style.display='flex';
+      $('btnCancelCountdown').onclick=()=>{
+        clearInterval(countdownTimer);
+        countdownTimer=null;
+        overlay.style.display='none';
+        stream.getTracks().forEach(t=>t.stop());
+      };
+    }
     const beginRecording=()=>{
       overlay.style.display='none';
       countdownTimer=null;
@@ -1263,14 +1293,14 @@ $('btnRecord').addEventListener('click',async()=>{
         if(recSeconds>=maxRecSec){mediaRecorder.stop();clearInterval(recInterval);}
       },1000);
     };
-    countdownTimer=setInterval(()=>{
+    if(cntSec===0){beginRecording();}else{countdownTimer=setInterval(()=>{
       cnt--;
       if(cnt<=0){clearInterval(countdownTimer);beginRecording();}
       else{
         numEl.textContent=cnt;
         numEl.classList.remove('countdown-num');void numEl.offsetWidth;numEl.classList.add('countdown-num');
       }
-    },1000);
+    },1000);}
   } catch(e){ showToast('マイクのアクセスを許可してください'); }
 });
 
