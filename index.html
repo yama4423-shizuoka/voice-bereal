@@ -505,6 +505,7 @@
         <p id="statFirstVoice" style="font-size:.85rem;color:var(--text2);margin:0 0 8px;text-align:center"></p>
         <p id="statAllTimeRxn" style="font-size:.85rem;color:var(--text2);margin:0 0 8px;text-align:center"></p>
         <p id="statPerfectListen" style="font-size:.82rem;color:var(--accent);margin:0 0 16px;text-align:center"></p>
+        <p id="statListenRate" style="font-size:.85rem;color:var(--text2);margin:0 0 8px;text-align:center"></p>
         <div style="margin-bottom:20px;text-align:right">
           <button id="exportCsvBtn" onclick="exportPostsCsv()" style="font-size:.8rem;padding:6px 14px;border:1px solid var(--border);border-radius:99px;background:transparent;color:var(--text2);cursor:pointer">投稿データをエクスポート</button>
         </div>
@@ -3409,6 +3410,21 @@ async function loadProfile(){
     const plStreak=calcPerfectListenStreak(plDays);
     const plEl=$('statPerfectListen');
     if(plEl){ if(plStreak>=2) plEl.textContent=plStreak+'日連続でフレンドの声を全部聴いた'; else if(plDays.length>0) plEl.textContent='通算'+plDays.length+'日フレンドの声を全部聴いた'; else plEl.textContent=''; }
+  }
+  // listen rate
+  {
+    const lrEl=$('statListenRate');
+    if(lrEl){
+      const today=new Date().toISOString().split('T')[0];
+      const{data:ffToday}=await sb.from('friend_feed').select('id').eq('post_date',today);
+      const total=(ffToday||[]).length;
+      if(total>0){
+        const played=getPlayedSet();
+        const cnt=(ffToday||[]).filter(p=>played.has(p.id)).length;
+        const rate=Math.round(cnt/total*100);
+        lrEl.textContent='聴いたよ率 '+rate+'% (今日 '+cnt+'/'+total+'件)';
+      }else{lrEl.style.display='none';}
+    }
   }
   // hourly heatmap
   {
