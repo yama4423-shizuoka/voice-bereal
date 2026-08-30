@@ -339,6 +339,7 @@
             <textarea id="recCaption" class="input rec-caption" placeholder="ひとこと(任意・50文字以内)" maxlength="50" rows="2" style="resize:none" aria-label="キャプション"></textarea>
             <span id="recCaptionCount" class="rec-caption-counter">50</span>
           </div>
+          <div id="captionChips" style="display:flex;gap:6px;flex-wrap:wrap;width:100%;max-width:340px;margin:-2px 0 4px"></div>
           <div id="durationPicker" style="display:flex;gap:8px;justify-content:center;margin:4px 0" aria-label="録音最大時間"></div>
           <button id="btnRecord" class="rec-btn" aria-label="録音開始">
             <svg viewBox="0 0 24 24"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.3-3c0 3-2.54 5.1-5.3 5.1S6.7 14 6.7 11H5c0 3.41 2.72 6.23 6 6.72V21h2v-3.28c3.28-.49 6-3.31 6-6.72h-1.7z"/></svg>
@@ -726,6 +727,7 @@ let playQueue=[],playQueueIndex=-1,isPlayingAll=false;
 let lastFeedIds=new Set(),feedRealtimeChannel=null;
 let _restoreFeedScroll=false;
 let pendingBlob=null,pendingCaption='',pendingTag='',pendingTitle='',pendingReplyTo=null,pendingReplyToName='';
+let latestFriendTitle='';
 let pendingRequestId=null,pendingRequestFromName='',voiceRequestTitle='';
 async function loadVoiceRequests(){
   if(!me) return;
@@ -755,10 +757,39 @@ async function loadFriendHint(){
     if(post&&post.title){
       $('friendHintText').textContent=post.username+'さん「'+post.title+'」';
       banner.style.display='block';
+      latestFriendTitle=post.title;
     } else {
       banner.style.display='none';
+      latestFriendTitle='';
     }
-  }catch(e){banner.style.display='none';}
+  }catch(e){banner.style.display='none';latestFriendTitle='';}
+  updateCaptionChips();
+}
+function updateCaptionChips(){
+  const wrap=$('captionChips');
+  if(!wrap) return;
+  const chips=[];
+  const prompt=getDailyPrompt();
+  if(prompt) chips.push({label:'今日のお題',text:prompt});
+  if(pendingTag) chips.push({label:pendingTag,text:pendingTag});
+  if(latestFriendTitle){const t=latestFriendTitle.slice(0,12);chips.push({label:'「'+t+(latestFriendTitle.length>12?'...':'')+'」',text:latestFriendTitle});}
+  wrap.innerHTML=chips.map((c,i)=>`<button class="filter-chip" data-idx="${i}" style="font-size:.72rem;padding:3px 10px" aria-label="${c.label}をキャプションに挿入">${c.label}</button>`).join('');
+  wrap.querySelectorAll('[data-idx]').forEach(b=>{
+    const idx=Number(b.dataset.idx);
+    b.addEventListener('click',()=>{
+      const ta=$('recCaption');
+      const txt=chips[idx].text;
+      const cur=ta.value;
+      const remaining=50-cur.length;
+      if(remaining<=0) return;
+      const sep=(cur.length>0&&!cur.endsWith(' '))?' ':'';
+      const insert=(sep+txt).slice(0,remaining);
+      ta.value=cur+insert;
+      $('recCaptionCount').textContent=String(50-ta.value.length);
+      localStorage.setItem('vbr_captionDraft',ta.value);
+      ta.focus();
+    });
+  });
 }
 let myPostDates=[];
 let calYear,calMonth,calendarPosts=[];
@@ -839,7 +870,7 @@ function switchTab(name){
   if(name==='Feed'){_restoreFeedScroll=true;loadFeed();}
   if(name==='Profile') loadProfile();
   if(name==='Bookmarks') loadBookmarks();
-  if(name==='Record'){updateDailyPromptUI();loadFriendHint();const rb=$('replyBanner');if(rb){rb.style.display=pendingReplyTo?'block':'none';rb.textContent=pendingReplyTo?pendingReplyToName+'さんへの返声':'';}loadVoiceRequests();const _cd=localStorage.getItem('vbr_captionDraft');if(_cd&&!$('recCaption').value){$('recCaption').value=_cd;$('recCaptionCount').textContent=String(50-_cd.length);}}
+  if(name==='Record'){updateDailyPromptUI();updateCaptionChips();loadFriendHint();const rb=$('replyBanner');if(rb){rb.style.display=pendingReplyTo?'block':'none';rb.textContent=pendingReplyTo?pendingReplyToName+'さんへの返声':'';}loadVoiceRequests();const _cd=localStorage.getItem('vbr_captionDraft');if(_cd&&!$('recCaption').value){$('recCaption').value=_cd;$('recCaptionCount').textContent=String(50-_cd.length);}}
 }
 
 // auth
@@ -1163,6 +1194,7 @@ function renderTagPicker(){
       $('tagPicker').querySelectorAll('.filter-chip').forEach(x=>x.classList.remove('active'));
       if(!selected){b.classList.add('active');pendingTag=b.dataset.tag;}
       else pendingTag='';
+      updateCaptionChips();
     });
   });
 }
