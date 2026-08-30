@@ -1412,6 +1412,7 @@ let feedSortOrder='newest';
 let activeDurationFilter='';
 let myTodayTag='';
 let myTodayPosted=false;
+let hisashiburiUserIds=new Set();
 let mutualListenerIds=new Set();
 let feedViewMode=localStorage.getItem('feedViewMode')||'card';
 let tcPost7=null,tcPost30=null;
@@ -1477,6 +1478,7 @@ async function loadFeed(){
   const{data:myDatesData}=await sb.from('posts').select('post_date').eq('user_id',me.id);
   myPostDates=(myDatesData||[]).map(p=>p.post_date);
   feedPosts=todayPosts||[];
+  {const sevenDaysAgo=new Date(Date.now()-7*86400000).toISOString().split('T')[0];const todayUids=new Set((todayPosts||[]).map(p=>p.user_id));const{data:recentPosts}=await sb.from('friend_feed').select('user_id').gte('post_date',sevenDaysAgo).lt('post_date',today);const recentUids=new Set((recentPosts||[]).map(p=>p.user_id));hisashiburiUserIds=new Set([...todayUids].filter(uid=>!recentUids.has(uid)));}
   updateTodayMoodBanner();
   lastFeedIds=new Set(feedPosts.map(p=>p.id));
   if(feedRealtimeChannel) sb.removeChannel(feedRealtimeChannel);
@@ -2200,6 +2202,7 @@ function buildFeedCard(post){
   nameEl.addEventListener('click',()=>showMiniProfile(post.user_id));
   if(mutualListenerIds.has(post.user_id)){const mb=document.createElement('span');mb.style.cssText='font-size:.6rem;font-weight:700;background:var(--accent);color:#fff;padding:1px 6px;border-radius:99px;margin-left:5px;pointer-events:none;vertical-align:middle';mb.textContent='相互';nameEl.appendChild(mb);}
   if(myTodayPosted){const tb=document.createElement('span');tb.style.cssText='font-size:.6rem;font-weight:700;background:#16a34a;color:#fff;padding:1px 6px;border-radius:99px;margin-left:5px;pointer-events:none;vertical-align:middle';tb.textContent='今日も一緒';nameEl.appendChild(tb);}
+  if(hisashiburiUserIds.has(post.user_id)){const hb=document.createElement('span');hb.style.cssText='font-size:.6rem;font-weight:700;background:#0ea5e9;color:#fff;padding:1px 6px;border-radius:99px;margin-left:5px;pointer-events:none;vertical-align:middle';hb.textContent='久しぶり';nameEl.appendChild(hb);}
   const timeEl=document.createElement('div');
   timeEl.className='feed-time';
   const d=new Date(post.created_at);
