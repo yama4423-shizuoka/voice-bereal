@@ -1553,6 +1553,19 @@ async function renderFeed(el,posts,myPost,yesterdayPosts){
       el.appendChild(mb);
     }
   }
+  // birthday banner: show when a friend's stored birthday matches today
+  {
+    const _todayMD=new Date().toISOString().slice(5,10);
+    const _seen=new Set();
+    const _bdFriends=(posts||[]).filter(p=>{if(_seen.has(p.user_id))return false;_seen.add(p.user_id);return localStorage.getItem('friendBirthday_'+me.id+'_'+p.user_id)===_todayMD;}).map(p=>p.username||'');
+    if(_bdFriends.length>0){
+      const _bb=document.createElement('div');
+      _bb.className='milestone-banner';
+      _bb.style.cssText='background:linear-gradient(135deg,#ff6b9d,#ff9f43);color:#1a1a1a;border-radius:var(--radius);padding:14px 16px;margin-bottom:16px;display:flex;align-items:center;gap:12px';
+      _bb.innerHTML=`<span class="milestone-icon" style="font-size:1.4rem">*</span><div class="milestone-body"><span class="milestone-days">今日は${_bdFriends.join('・')}さんの誕生日！</span><span class="milestone-sub">おめでとうございます</span></div><button class="milestone-close" aria-label="閉じる" onclick="this.parentElement.remove()">x</button>`;
+      el.appendChild(_bb);
+    }
+  }
   // evening reminder: show when not posted today and 19:00+ JST
   if(!myPost){
     const _jstH=(new Date().getUTCHours()+9)%24;
@@ -3767,15 +3780,18 @@ async function loadProfile(){
       const sinceDays=sinceDate?Math.round((Date.now()-new Date(sinceDate).getTime())/86400000):null;
       const sinceText=sinceDays!==null?(sinceDays===0?'今日フレンドになった':sinceDays===1?'1日前からフレンド':sinceDays+'日前からフレンド'):'';
       const memoText=localStorage.getItem('friendMemo_'+me.id+'_'+f.id)||'';
+      const bdVal=localStorage.getItem('friendBirthday_'+me.id+'_'+f.id)||'';
+      const bdDisplay=bdVal?`<span class="friend-bd-display" style="display:block;font-size:.7rem;color:var(--accent)">誕生日: ${parseInt(bdVal.slice(0,2))}月${parseInt(bdVal.slice(3))}日</span>`:'';
       return `<div data-fname="${f.username}" style="padding:8px 0;border-bottom:1px solid var(--surface2)">
         <div style="display:flex;align-items:center;gap:8px">
-          <span style="flex:1;min-width:0"><span style="display:block;font-size:.9rem">${f.username}</span><span style="display:block;font-size:.72rem;color:var(--text2)">${lastPostText}</span>${sinceText?`<span style="display:block;font-size:.7rem;color:var(--text2);opacity:.7">${sinceText}</span>`:''}${friendFavTag[f.id]?`<span style="display:block;font-size:.7rem;color:var(--accent)">推しタグ: ${friendFavTag[f.id]}</span>`:''}${memoText?`<span class="friend-memo-display" style="display:block;font-size:.7rem;color:var(--text2);font-style:italic">${memoText}</span>`:''}</span>
+          <span style="flex:1;min-width:0"><span style="display:block;font-size:.9rem">${f.username}</span><span style="display:block;font-size:.72rem;color:var(--text2)">${lastPostText}</span>${sinceText?`<span style="display:block;font-size:.7rem;color:var(--text2);opacity:.7">${sinceText}</span>`:''}${friendFavTag[f.id]?`<span style="display:block;font-size:.7rem;color:var(--accent)">推しタグ: ${friendFavTag[f.id]}</span>`:''}${memoText?`<span class="friend-memo-display" style="display:block;font-size:.7rem;color:var(--text2);font-style:italic">${memoText}</span>`:''}${bdDisplay}</span>
           ${isMvp?`<span style="font-size:.7rem;background:var(--accent);color:#fff;padding:2px 6px;border-radius:4px;font-weight:600" title="今週最多投稿">今週MVP</span>`:''}
           ${fstreak>0?`<span style="font-size:.75rem;color:${fstreak>=3&&!posted?'var(--danger)':'var(--accent)'};font-weight:600">${fstreak}日${fstreak>=3&&!posted?'<span style="font-size:.62rem;margin-left:3px;background:var(--danger);color:#fff;padding:1px 4px;border-radius:3px">危機</span>':''}</span>`:''}
           ${posted?'<span style="font-size:.7rem;background:var(--success);color:#fff;padding:2px 6px;border-radius:4px">投稿済</span>':''}
           <button class="action-btn" data-mute="${f.id}" style="font-size:.75rem;${isMuted?'background:var(--warning);color:#111':''}">  ${isMuted?'ミュート中':'ミュート'}</button>
           ${reqBtn}
           <button class="action-btn" data-friend-memo="${f.id}" style="font-size:.75rem">${memoText?'メモ*':'メモ'}</button>
+          <button class="action-btn" data-friend-birthday="${f.id}" style="font-size:.75rem">${bdVal?'誕生日*':'誕生日'}</button>
           <button class="action-btn" data-feed-friend="${f.id}" style="font-size:.75rem">フィード</button>
           <button class="action-btn" data-remove="${f.id}" style="color:var(--danger);font-size:.75rem">解除</button>
         </div>
@@ -3872,6 +3888,53 @@ $('friendList').querySelectorAll('[data-friend-memo]').forEach(btn=>{
       };
       inp.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();save();}if(e.key==='Escape')inp.remove();});
       inp.addEventListener('blur',save);
+    });
+  });
+  $('friendList').querySelectorAll('[data-friend-birthday]').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      const fid=btn.dataset.friendBirthday;
+      const key='friendBirthday_'+me.id+'_'+fid;
+      const card=btn.closest('[data-fname]');
+      const existingWrap=card.querySelector('.friend-bd-input');
+      if(existingWrap){existingWrap.remove();return;}
+      const cur=localStorage.getItem(key)||'';
+      const wrap=document.createElement('div');
+      wrap.className='friend-bd-input';
+      wrap.style.cssText='display:flex;gap:4px;align-items:center;margin-top:4px;font-size:.78rem;flex-wrap:wrap';
+      const selM=document.createElement('select');
+      selM.style.cssText='border:1px solid var(--accent);border-radius:4px;background:var(--surface);color:var(--text);padding:2px 4px;font-size:.78rem';
+      selM.innerHTML='<option value="">月</option>'+Array.from({length:12},(_,i)=>`<option value="${String(i+1).padStart(2,'0')}">${i+1}月</option>`).join('');
+      const selD=document.createElement('select');
+      selD.style.cssText='border:1px solid var(--accent);border-radius:4px;background:var(--surface);color:var(--text);padding:2px 4px;font-size:.78rem';
+      selD.innerHTML='<option value="">日</option>'+Array.from({length:31},(_,i)=>`<option value="${String(i+1).padStart(2,'0')}">${i+1}日</option>`).join('');
+      if(cur){selM.value=cur.slice(0,2);selD.value=cur.slice(3);}
+      const saveBtn=document.createElement('button');
+      saveBtn.className='action-btn';saveBtn.textContent='保存';saveBtn.style.fontSize='.75rem';
+      const delBtn=document.createElement('button');
+      delBtn.className='action-btn';delBtn.textContent='削除';delBtn.style.cssText='font-size:.75rem;color:var(--danger)';
+      const nameSpan=card.querySelector('span[style*="flex:1"]');
+      wrap.append(selM,selD,saveBtn,delBtn);
+      nameSpan.appendChild(wrap);
+      selM.focus();
+      saveBtn.addEventListener('click',()=>{
+        if(!selM.value||!selD.value){showToast('月と日を選んでください');return;}
+        const val=selM.value+'-'+selD.value;
+        localStorage.setItem(key,val);
+        wrap.remove();
+        let bdDisp=nameSpan.querySelector('.friend-bd-display');
+        if(!bdDisp){bdDisp=document.createElement('span');bdDisp.className='friend-bd-display';bdDisp.style.cssText='display:block;font-size:.7rem;color:var(--accent)';nameSpan.appendChild(bdDisp);}
+        bdDisp.textContent='誕生日: '+parseInt(selM.value)+'月'+parseInt(selD.value)+'日';
+        btn.textContent='誕生日*';
+        showToast('誕生日を登録しました');
+      });
+      delBtn.addEventListener('click',()=>{
+        localStorage.removeItem(key);
+        wrap.remove();
+        const bdDisp=nameSpan.querySelector('.friend-bd-display');
+        if(bdDisp)bdDisp.remove();
+        btn.textContent='誕生日';
+        showToast('誕生日を削除しました');
+      });
     });
   });
   // achievement badges
