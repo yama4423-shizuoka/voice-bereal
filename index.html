@@ -593,6 +593,8 @@
         <div id="randomVoiceWrap" style="margin-bottom:20px"></div>
         <p class="section-title">年間の声</p>
         <div id="yearGrid" style="margin-bottom:20px"></div>
+        <p class="section-title">声のシーズン</p>
+        <div id="seasonGrid" style="margin-bottom:20px"></div>
         <p class="section-title">投稿カレンダー</p>
         <div id="calendarWrap" style="margin-bottom:20px"></div>
       </div>
@@ -3914,6 +3916,8 @@ $('friendList').querySelectorAll('[data-friend-memo]').forEach(btn=>{
   }
   // year grid
   renderYearGrid(allPosts||[]);
+  // season grid
+  renderSeasonGrid(allPosts||[]);
   // calendar
   renderCalendar(allPosts||[]);
 }
@@ -3992,6 +3996,55 @@ $('btnLogout').addEventListener('click',async()=>{
   if(feedRealtimeChannel) sb.removeChannel(feedRealtimeChannel);
   await sb.auth.signOut();
 });
+
+// season grid
+function renderSeasonGrid(allPosts){
+  const el=$('seasonGrid');
+  if(!el)return;
+  function getSeasonKey(dateStr){
+    const y=parseInt(dateStr.slice(0,4)),m=parseInt(dateStr.slice(5,7));
+    if(m>=3&&m<=5)return y+'-春';
+    if(m>=6&&m<=8)return y+'-夏';
+    if(m>=9&&m<=11)return y+'-秋';
+    return (m===12?y:y-1)+'-冬';
+  }
+  const SORDER={'春':0,'夏':1,'秋':2,'冬':3};
+  function seasonOrder(k){const[y,s]=k.split('-');return parseInt(y)*4+SORDER[s];}
+  const map={};
+  (allPosts||[]).forEach(p=>{
+    if(!p.post_date)return;
+    const k=getSeasonKey(p.post_date);
+    if(!map[k])map[k]=[];
+    map[k].push(p);
+  });
+  const keys=Object.keys(map).sort((a,b)=>seasonOrder(b)-seasonOrder(a)).slice(0,6);
+  if(!keys.length){el.innerHTML='';return;}
+  const curKey=getSeasonKey(new Date().toISOString().split('T')[0]);
+  let h='<div style="display:flex;gap:8px;overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:4px">';
+  keys.forEach(k=>{
+    const[y,s]=k.split('-');
+    const posts=map[k];
+    const tagCnt={};
+    posts.forEach(p=>{if(p.tag)tagCnt[p.tag]=(tagCnt[p.tag]||0)+1;});
+    const topTag=Object.entries(tagCnt).sort((a,b)=>b[1]-a[1])[0];
+    const sdates=[...new Set(posts.map(p=>p.post_date))].sort();
+    let maxStr=sdates.length?1:0,curStr=1;
+    for(let i=1;i<sdates.length;i++){
+      const diff=(new Date(sdates[i]+'T12:00:00')-new Date(sdates[i-1]+'T12:00:00'))/86400000;
+      if(diff===1){curStr++;if(curStr>maxStr)maxStr=curStr;}else curStr=1;
+    }
+    const isCur=k===curKey;
+    h+='<div style="min-width:100px;background:var(--surface);border-radius:var(--radius);padding:10px 12px;flex-shrink:0;border:1.5px solid '+(isCur?'var(--accent)':'var(--border)')+'">';
+    h+='<div style="font-size:.75rem;color:var(--text2)">'+y+'年</div>';
+    h+='<div style="font-size:1.4rem;font-weight:800;color:var(--accent);line-height:1.2;margin-bottom:6px">'+s+'</div>';
+    h+='<div style="font-size:.9rem;font-weight:700">'+posts.length+'件</div>';
+    if(maxStr>1)h+='<div style="font-size:.72rem;color:var(--text2)">最長'+maxStr+'日連続</div>';
+    if(topTag)h+='<div style="font-size:.72rem;color:var(--text2);margin-top:2px">'+topTag[0]+'が多め</div>';
+    h+='</div>';
+  });
+  h+='</div>';
+  el.innerHTML=h;
+}
 
 // year grid
 function renderYearGrid(allPosts){
