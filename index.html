@@ -1563,6 +1563,7 @@ async function renderFeed(el,posts,myPost,yesterdayPosts){
       _bb.className='milestone-banner';
       _bb.style.cssText='background:linear-gradient(135deg,#ff6b9d,#ff9f43);color:#1a1a1a;border-radius:var(--radius);padding:14px 16px;margin-bottom:16px;display:flex;align-items:center;gap:12px';
       _bb.innerHTML=`<span class="milestone-icon" style="font-size:1.4rem">*</span><div class="milestone-body"><span class="milestone-days">今日は${_bdFriends.join('・')}さんの誕生日！</span><span class="milestone-sub">おめでとうございます</span></div><button class="milestone-close" aria-label="閉じる" onclick="this.parentElement.remove()">x</button>`;
+      const _wBtn=document.createElement('button');_wBtn.textContent='声でお祝いする';_wBtn.style.cssText='background:rgba(0,0,0,.2);border:none;border-radius:8px;color:#1a1a1a;padding:4px 12px;font-size:.82rem;cursor:pointer;white-space:nowrap;font-weight:600';_wBtn.addEventListener('click',()=>{pendingTitle=((_bdFriends[0]||'フレンド')+'さんへお誕生日').slice(0,15);_bb.remove();switchTab('Record');});_bb.insertBefore(_wBtn,_bb.querySelector('.milestone-close'));
       el.appendChild(_bb);
     }
   }
