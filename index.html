@@ -585,7 +585,7 @@
         <div id="topListenersSection" style="margin-bottom:16px"></div>
         <p class="section-title">今週の人気の声</p>
         <div id="weeklyPopularSection" style="margin-bottom:16px"></div>
-        <p class="section-title">フレンド一覧</p>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px"><p class="section-title" style="margin:0">フレンド一覧</p><button id="btnShowBdList" class="action-btn" style="font-size:.72rem;display:none">誕生日一覧</button></div>
         <input id="friendSearchInput" type="text" class="caption-search" placeholder="名前で絞り込む" aria-label="フレンド名で絞り込む" style="display:none">
         <div id="friendSortRow" style="display:none;gap:6px;margin:6px 0 4px;flex-wrap:wrap"></div>
         <div id="friendList" style="margin-bottom:20px"></div>
@@ -678,6 +678,16 @@
   </div>
 </div>
 
+<!-- Birthday List Modal -->
+<div id="birthdayListModal" class="modal-overlay" style="display:none" role="dialog" aria-modal="true" aria-label="フレンドの誕生日一覧">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <p style="font-weight:700;font-size:1rem;margin-bottom:16px">フレンドの誕生日一覧</p>
+    <div id="bdListContent" style="overflow-y:auto;max-height:55dvh"></div>
+    <button id="btnCloseBdList" class="btn btn-secondary" style="margin-top:16px">閉じる</button>
+  </div>
+</div>
+
 <!-- Friend Calendar Modal -->
 <div id="reactorsModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:200;align-items:center;justify-content:center" role="dialog" aria-modal="true" aria-label="聴いてくれた人">
   <div style="background:var(--bg2);border-radius:14px;padding:20px 24px;max-width:320px;width:90%;max-height:60vh;overflow-y:auto">
@@ -727,7 +737,7 @@ const SUPABASE_ANON_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYm
 const sb=createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
 const $=id=>document.getElementById(id);
 let me=null,myProfile=null,mediaRecorder=null,audioChunks=[],recInterval=null,recSeconds=0;
-let feedPosts=[],currentPlayingAudio=null,currentPlayingCard=null;
+let feedPosts=[],currentPlayingAudio=null,currentPlayingCard=null,bdFriendList=[];
 let olderFeedOffset=0;
 let playQueue=[],playQueueIndex=-1,isPlayingAll=false;
 let lastFeedIds=new Set(),feedRealtimeChannel=null;
@@ -3768,6 +3778,7 @@ async function loadProfile(){
       if(sb2!==sa) return sb2-sa;
       return (postedToday.has(b.id)?1:0)-(postedToday.has(a.id)?1:0);
     });
+    bdFriendList=sortedFps||[];
     friendHtml=sortedFps.map(f=>{
       const isMuted=muted.has(f.id);
       const posted=postedToday.has(f.id);
@@ -3805,6 +3816,7 @@ async function loadProfile(){
   $('friendList').innerHTML=friendHtml;
   {const fsi=$('friendSearchInput');if(sortedFps&&sortedFps.length>=2){fsi.style.display='';fsi.value='';fsi.oninput=()=>{const q=fsi.value.toLowerCase();$('friendList').querySelectorAll('[data-fname]').forEach(el=>{el.style.display=q&&!el.dataset.fname.toLowerCase().includes(q)?'none':'';});};} else{fsi.style.display='none';}}
   {const sortRow=$('friendSortRow');if(sortedFps&&sortedFps.length>=2){const cur=localStorage.getItem('friendSortMode')||'streak';sortRow.style.display='flex';sortRow.innerHTML=[['streak','ストリーク順'],['recent','最近投稿順'],['since','フレンドになった順']].map(([m,l])=>`<button class="action-btn" data-sort-mode="${m}" style="font-size:.75rem;${cur===m?'background:var(--accent);color:#fff':''}">${l}</button>`).join('');sortRow.querySelectorAll('[data-sort-mode]').forEach(btn=>{btn.addEventListener('click',()=>{localStorage.setItem('friendSortMode',btn.dataset.sortMode);loadProfile();});});}else{sortRow.style.display='none';}}
+  {const bdBtn=$('btnShowBdList');const hasBd=bdFriendList.some(f=>localStorage.getItem('friendBirthday_'+me.id+'_'+f.id));bdBtn.style.display=hasBd?'':'none';}
   $('friendList').querySelectorAll('[data-remove]').forEach(btn=>{
     btn.addEventListener('click',async()=>{
       const fid=btn.dataset.remove;
@@ -4455,6 +4467,29 @@ async function showMiniProfile(userId){
 }
 $('btnCloseMiniProfile').addEventListener('click',()=>{ $('miniProfileModal').style.display='none'; });
 $('miniProfileModal').addEventListener('click',e=>{ if(e.target===$('miniProfileModal')) $('miniProfileModal').style.display='none'; });
+$('btnShowBdList').addEventListener('click',()=>{
+  const today=new Date();
+  const items=bdFriendList.map(f=>{
+    const bd=localStorage.getItem('friendBirthday_'+me.id+'_'+f.id);
+    if(!bd) return null;
+    const bMon=parseInt(bd.slice(0,2))-1;
+    const bDay=parseInt(bd.slice(3));
+    let next=new Date(today.getFullYear(),bMon,bDay);
+    if(next<today&&!(next.getDate()===today.getDate()&&next.getMonth()===today.getMonth())) next=new Date(today.getFullYear()+1,bMon,bDay);
+    const diff=Math.round((next-today)/86400000);
+    return{name:f.username,mon:bMon+1,day:bDay,diff};
+  }).filter(Boolean).sort((a,b)=>a.diff-b.diff);
+  $('bdListContent').innerHTML=items.length===0
+    ?'<p style="color:var(--text2);font-size:.85rem">誕生日が登録されていません</p>'
+    :items.map(it=>{
+      const label=it.diff===0?'今日！':it.diff<=7?'あと'+it.diff+'日':it.diff+'日後';
+      const color=it.diff===0?'var(--accent)':it.diff<=7?'var(--danger)':'var(--text2)';
+      return `<div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--surface2)"><span style="flex:1;font-size:.9rem">${it.name}</span><span style="font-size:.85rem;color:var(--text2)">${it.mon}月${it.day}日</span><span style="font-size:.78rem;color:${color};font-weight:600;min-width:4.5em;text-align:right">${label}</span></div>`;
+    }).join('');
+  $('birthdayListModal').style.display='flex';
+});
+$('btnCloseBdList').addEventListener('click',()=>{ $('birthdayListModal').style.display='none'; });
+$('birthdayListModal').addEventListener('click',e=>{ if(e.target===$('birthdayListModal')) $('birthdayListModal').style.display='none'; });
 $('btnViewFriendCal').addEventListener('click',async()=>{
   const uid=$('miniProfileModal').dataset.userId;
   $('miniProfileModal').style.display='none';
