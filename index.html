@@ -737,7 +737,7 @@ const SUPABASE_ANON_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYm
 const sb=createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
 const $=id=>document.getElementById(id);
 let me=null,myProfile=null,mediaRecorder=null,audioChunks=[],recInterval=null,recSeconds=0;
-let feedPosts=[],currentPlayingAudio=null,currentPlayingCard=null,bdFriendList=[];
+let feedPosts=[],currentPlayingAudio=null,currentPlayingCard=null,bdFriendList=[],feedAnnivFriends=[];
 let olderFeedOffset=0;
 let playQueue=[],playQueueIndex=-1,isPlayingAll=false;
 let lastFeedIds=new Set(),feedRealtimeChannel=null;
@@ -1509,7 +1509,8 @@ async function loadFeed(){
   tcPost7=p7||null;tcPost30=(p30&&p30.post_date!==d7)?p30:null;
   mutualListenerIds=new Set();
   if(myPost){const{data:mpr}=await sb.from('reactions').select('user_id').eq('post_id',myPost.id);(mpr||[]).forEach(r=>mutualListenerIds.add(r.user_id));}
-  renderFeed(el,todayPosts||[],myPost,yesterdayPosts||[]);updateDailyPromptUI();
+  {const _fsAn=await sb.from('friendships').select('friend_id,created_at').eq('user_id',me.id);const _todayAn=new Date();const _tdMDAn=_todayAn.toISOString().slice(5,10);const _yrAn=_todayAn.getFullYear();const _annivFids=(_fsAn.data||[]).filter(f=>f.created_at&&f.created_at.slice(5,10)===_tdMDAn&&_yrAn>parseInt(f.created_at.slice(0,4)));if(_annivFids.length){const{data:_ap}=await sb.from('profiles').select('id,username').in('id',_annivFids.map(f=>f.friend_id));feedAnnivFriends=(_ap||[]).map(p=>{const fs=_annivFids.find(f=>f.friend_id===p.id);return{name:p.username,years:_yrAn-parseInt(fs.created_at.slice(0,4))};});}else{feedAnnivFriends=[];}}
+renderFeed(el,todayPosts||[],myPost,yesterdayPosts||[]);updateDailyPromptUI();
   if(_restoreFeedScroll){_restoreFeedScroll=false;const sy=sessionStorage.getItem('feedScrollY');if(sy) requestAnimationFrame(()=>requestAnimationFrame(()=>{el.scrollTop=parseInt(sy)||0;}));}
 }
 async function pollNewPosts(){
@@ -1577,6 +1578,7 @@ async function renderFeed(el,posts,myPost,yesterdayPosts){
       el.appendChild(_bb);
     }
   }
+  if(feedAnnivFriends&&feedAnnivFriends.length>0){const _annivKey='vbr_anniv_'+me.id+'_'+new Date().toISOString().split('T')[0];if(!localStorage.getItem(_annivKey)){localStorage.setItem(_annivKey,'1');const _ab=document.createElement('div');_ab.style.cssText='background:linear-gradient(135deg,var(--accent),#7c6fc7);color:#fff;border-radius:var(--radius);padding:14px 16px;margin-bottom:16px;display:flex;align-items:center;gap:12px';const _anames=feedAnnivFriends.map(f=>f.name+'さん('+f.years+'周年)').join('・');_ab.innerHTML='<span style="font-size:1.3rem">*</span><div style="flex:1"><div style="font-weight:700;font-size:.95rem">'+_anames+'とフレンドになった記念日！</div><div style="font-size:.8rem;opacity:.85">ずっと一緒に声を残してきたね</div></div><button style="background:none;border:none;color:#fff;font-size:1rem;cursor:pointer;padding:0 4px" onclick="this.parentElement.remove()" aria-label="閉じる">x</button>';el.appendChild(_ab);}}
   // evening reminder: show when not posted today and 19:00+ JST
   if(!myPost){
     const _jstH=(new Date().getUTCHours()+9)%24;
