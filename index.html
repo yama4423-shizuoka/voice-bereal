@@ -524,6 +524,7 @@
         <div id="pinnedVoice" style="margin-bottom:20px"></div>
         <p class="section-title">今週のまとめ</p>
         <div id="weeklySummary" style="display:flex;gap:8px;margin-bottom:12px"></div>
+        <div style="text-align:right;margin-bottom:8px"><button id="btnShareWeekly" class="btn btn-ghost" style="width:auto;padding:6px 14px;font-size:.85rem">今週の声をシェア</button></div>
         <div id="weekGoalSection" style="margin-bottom:20px">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
             <span style="font-size:.8rem;color:var(--text2)">今週の目標</span>
@@ -865,6 +866,18 @@ document.querySelectorAll('.fontsize-chip').forEach(btn=>{
   btn.addEventListener('click',()=>applyFontSize(btn.dataset.fs));
 });
 
+async function shareWeeklySummary(){
+  if(!_weekShareData)return;
+  const{weekPostCnt,weekReactCnt,weekCommentCnt,weekGivenReactCnt,weekReplyCnt,weekPerfectDays}=_weekShareData;
+  const now=new Date();const dow=now.getDay();const mon=new Date(now);mon.setDate(now.getDate()+(dow===0?-6:1-dow));
+  const m=mon.getMonth()+1,d=mon.getDate();
+  const lines=[`今週(${m}/${d}〜)の声活動`,`声を残した: ${weekPostCnt}回`,`聴いたよをもらった: ${weekReactCnt}回`,`コメントをもらった: ${weekCommentCnt}回`,`聴いたよをした: ${weekGivenReactCnt}回`,`返声した: ${weekReplyCnt}回`];
+  if(weekPerfectDays>0)lines.push(`全部聴いた日: ${weekPerfectDays}日`);
+  lines.push('#コエリアル https://voice-bereal.vercel.app/');
+  const text=lines.join('\n');
+  if(navigator.share){await navigator.share({text}).catch(()=>{});}
+  else{await navigator.clipboard.writeText(text).catch(()=>{});showToast('クリップボードにコピーしました');}
+}
 function showToast(msg,dur=2500){
   const t=$('toast');t.textContent=msg;t.classList.add('show');
   setTimeout(()=>t.classList.remove('show'),dur);
@@ -1434,6 +1447,7 @@ let feedSortOrder='newest';
 let activeDurationFilter='';
 let myTodayTag='';
 let myTodayPosted=false;
+let _weekShareData=null;
 let hisashiburiUserIds=new Set();
 let mutualListenerIds=new Set();
 let feedViewMode=localStorage.getItem('feedViewMode')||'card';
@@ -3308,7 +3322,7 @@ async function loadProfile(){
       weekReactCnt=wr1.count||0;weekCommentCnt=wr2.count||0;
     }
     const{count:weekGivenReactCnt}=await sb.from('reactions').select('*',{count:'exact',head:true}).eq('user_id',me.id).gte('created_at',weekStart);
-    {const todayStr2=new Date().toISOString().split('T')[0];const weekPerfectDays=getPerfectListenDays().filter(d=>d>=weekStart&&d<=todayStr2).length;$('weeklySummary').style.flexWrap='wrap';$('weeklySummary').innerHTML=[['投稿',weekPostCnt],['聴いたよ',weekReactCnt],['コメント',weekCommentCnt],['聴き届けた',weekGivenReactCnt||0],['返声',weekReplyCnt]].map(([l,v])=>`<div style="flex:1;background:var(--surface);border-radius:var(--radius-sm);padding:12px;text-align:center"><div style="font-size:1.4rem;font-weight:700">${v}</div><div style="font-size:.7rem;color:var(--text2)">${l}</div></div>`).join('')+(weekPerfectDays>0?`<div style="width:100%;text-align:center;font-size:.8rem;color:var(--text2);padding-top:4px">今週フレンドの声を全部聴いた日 <b style="color:var(--accent)">${weekPerfectDays}日</b></div>`:'');}
+    {const todayStr2=new Date().toISOString().split('T')[0];const weekPerfectDays=getPerfectListenDays().filter(d=>d>=weekStart&&d<=todayStr2).length;$('weeklySummary').style.flexWrap='wrap';$('weeklySummary').innerHTML=[['投稿',weekPostCnt],['聴いたよ',weekReactCnt],['コメント',weekCommentCnt],['聴き届けた',weekGivenReactCnt||0],['返声',weekReplyCnt]].map(([l,v])=>`<div style="flex:1;background:var(--surface);border-radius:var(--radius-sm);padding:12px;text-align:center"><div style="font-size:1.4rem;font-weight:700">${v}</div><div style="font-size:.7rem;color:var(--text2)">${l}</div></div>`).join('')+(weekPerfectDays>0?`<div style="width:100%;text-align:center;font-size:.8rem;color:var(--text2);padding-top:4px">今週フレンドの声を全部聴いた日 <b style="color:var(--accent)">${weekPerfectDays}日</b></div>`:'');_weekShareData={weekPostCnt,weekReactCnt,weekCommentCnt,weekGivenReactCnt:weekGivenReactCnt||0,weekReplyCnt,weekPerfectDays};const _bsw=$('btnShareWeekly');if(_bsw)_bsw.onclick=shareWeeklySummary;}
     // weekly goal
     {
       const GOAL_KEY='vbr_week_goal';
