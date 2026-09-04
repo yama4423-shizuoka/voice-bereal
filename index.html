@@ -311,6 +311,7 @@
       <div class="content" id="feedContent" style="flex:1;overflow-y:auto">
         <div class="spinner"></div>
       </div>
+      <button id="btnScrollTop" style="display:none;position:fixed;bottom:80px;right:16px;width:40px;height:40px;border-radius:50%;background:var(--accent);border:none;color:#fff;font-size:1.2rem;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.25);z-index:90" aria-label="先頭へ">&#x2191;</button>
     </div>
 
     <!-- Record Tab -->
@@ -2999,13 +3000,20 @@ $('btnRefreshFeed').addEventListener('click',()=>{sessionStorage.removeItem('fee
   },{passive:true});
 })();
 
-// Feed scroll position memory
+// Feed scroll position memory + scroll-to-top button
 (function(){
   let t;
-  $('feedContent').addEventListener('scroll',()=>{
+  const fc=$('feedContent'),stb=$('btnScrollTop');
+  fc.addEventListener('scroll',()=>{
     clearTimeout(t);
-    t=setTimeout(()=>sessionStorage.setItem('feedScrollY',$('feedContent').scrollTop),200);
+    t=setTimeout(()=>sessionStorage.setItem('feedScrollY',fc.scrollTop),200);
+    if(stb) stb.style.display=fc.scrollTop>300?'flex':'none';
   },{passive:true});
+  if(stb) stb.addEventListener('click',()=>{
+    fc.scrollTo({top:0,behavior:'smooth'});
+    stb.style.display='none';
+    sessionStorage.removeItem('feedScrollY');
+  });
 })();
 
 // bookmarks
