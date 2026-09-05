@@ -485,6 +485,14 @@
           <button class="fontsize-chip" data-fs="normal" style="padding:6px 16px;border-radius:20px;border:none;background:var(--surface2);color:var(--text);font-size:.85rem;cursor:pointer">標準</button>
           <button class="fontsize-chip" data-fs="large"  style="padding:6px 16px;border-radius:20px;border:none;background:var(--surface2);color:var(--text);font-size:1rem;cursor:pointer">大</button>
         </div>
+        <p class="section-title">デフォルトの気分タグ</p>
+        <div id="defaultTagChipWrap" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px">
+          <button class="dtag-chip" data-dt="" style="padding:4px 12px;border-radius:16px;border:1px solid var(--border);background:var(--surface2);color:var(--text2);font-size:.85rem;cursor:pointer">なし</button>
+          <button class="dtag-chip" data-dt="朝" style="padding:4px 12px;border-radius:16px;border:1px solid var(--border);background:var(--surface2);color:var(--text2);font-size:.85rem;cursor:pointer">朝</button>
+          <button class="dtag-chip" data-dt="夜" style="padding:4px 12px;border-radius:16px;border:1px solid var(--border);background:var(--surface2);color:var(--text2);font-size:.85rem;cursor:pointer">夜</button>
+          <button class="dtag-chip" data-dt="ひとりごと" style="padding:4px 12px;border-radius:16px;border:1px solid var(--border);background:var(--surface2);color:var(--text2);font-size:.85rem;cursor:pointer">ひとりごと</button>
+          <button class="dtag-chip" data-dt="仕事中" style="padding:4px 12px;border-radius:16px;border:1px solid var(--border);background:var(--surface2);color:var(--text2);font-size:.85rem;cursor:pointer">仕事中</button>
+        </div>
         <p class="section-title">プロフィールを再表示</p>
         <button id="btnShowOnboarding" class="btn btn-secondary" style="margin-bottom:20px">ホーム画面追加ガイドを見る</button>
         <p class="section-title">統計</p>
@@ -1169,6 +1177,23 @@ $('btnEchoCancel').addEventListener('click',()=>{
     });
   });
 })();
+(function initDefaultTagChips(){
+  const saved=localStorage.getItem('vbr_defaultTag')||'';
+  document.querySelectorAll('.dtag-chip').forEach(btn=>{
+    const active=btn.dataset.dt===saved;
+    btn.style.background=active?'var(--accent)':'var(--surface2)';
+    btn.style.color=active?'#fff':'var(--text2)';
+    btn.style.borderColor=active?'var(--accent)':'var(--border)';
+    btn.addEventListener('click',()=>{
+      localStorage.setItem('vbr_defaultTag',btn.dataset.dt);
+      document.querySelectorAll('.dtag-chip').forEach(b=>{
+        b.style.background='var(--surface2)';b.style.color='var(--text2)';b.style.borderColor='var(--border)';
+      });
+      btn.style.background='var(--accent)';btn.style.color='#fff';btn.style.borderColor='var(--accent)';
+      showToast('デフォルトタグを変更しました');
+    });
+  });
+})();
 
 function fmtTime(s){const m=Math.floor(s/60);return `${m}:${String(Math.floor(s%60)).padStart(2,'0')}`;}
 function _hlText(text,query){
@@ -1228,6 +1253,7 @@ function renderTagPicker(){
   const h=new Date().getHours();
   const autoTag=h>=5&&h<12?'朝':h>=18&&h<24?'夜':'';
   if(!pendingTag&&autoTag)pendingTag=autoTag;
+  else if(!pendingTag){const _dt=localStorage.getItem('vbr_defaultTag')||'';if(_dt)pendingTag=_dt;}
   $('tagPicker').innerHTML=TAGS.map(t=>`<button class="filter-chip${t===pendingTag?' active':''}" data-tag="${t}">${t}</button>`).join('');
   $('tagPicker').querySelectorAll('.filter-chip').forEach(b=>{
     b.addEventListener('click',()=>{
