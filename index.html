@@ -1736,6 +1736,19 @@ async function renderFeed(el,posts,myPost,yesterdayPosts){
     btn.addEventListener('click',()=>{feedSortOrder=order;renderFeed(el,posts,myPost,yesterdayPosts);});
     sortRow.appendChild(btn);
   });
+  const anyFilterActive=activeTagFilter||activeFriendFilter||showUnheardOnly||captionSearchQuery||activeDurationFilter;
+  if(anyFilterActive){
+    const resetBtn=document.createElement('button');
+    resetBtn.className='filter-chip';
+    resetBtn.style.cssText='color:var(--danger);border-color:var(--danger)';
+    resetBtn.textContent='絞り込みを解除';
+    resetBtn.setAttribute('aria-label','全フィルターを解除');
+    resetBtn.addEventListener('click',()=>{
+      activeTagFilter='';activeFriendFilter='';showUnheardOnly=false;captionSearchQuery='';activeDurationFilter='';
+      renderFeed(el,posts,myPost,yesterdayPosts);
+    });
+    sortRow.appendChild(resetBtn);
+  }
   const viewBtn=document.createElement('button');
   viewBtn.className='filter-chip';
   viewBtn.style.marginLeft='auto';
