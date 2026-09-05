@@ -629,6 +629,7 @@
       </div>
       <div id="bmTagFilter" style="display:none;gap:6px;overflow-x:auto;padding:4px 16px 0;flex-wrap:nowrap;scrollbar-width:none"></div>
       <div id="bmSortRow" style="display:none;gap:6px;overflow-x:auto;padding:4px 16px 0;flex-wrap:nowrap;scrollbar-width:none"></div>
+      <div id="bmLabelFilter" style="display:none;gap:6px;overflow-x:auto;padding:4px 16px 0;flex-wrap:nowrap;scrollbar-width:none"></div>
       <div style="padding:4px 16px 8px">
         <button id="btnBmPlayAll" style="background:var(--surface2);border:none;border-radius:20px;padding:6px 14px;font-size:13px;cursor:pointer;color:var(--text1);display:none" aria-label="ブックマークを全部再生">全部聴く</button>
       </div>
@@ -2681,6 +2682,12 @@ function buildFeedCard(post){
   actionsRow.appendChild(memoBtn);
   card.appendChild(wf);
   card.appendChild(actionsRow);
+  if(bookmarkLabelMap[post.id]){
+    const lb=document.createElement('div');
+    lb.style.cssText='font-size:.7rem;padding:2px 8px;background:var(--surface2);border-radius:99px;display:inline-block;color:var(--text2);margin:4px 0';
+    lb.textContent=bookmarkLabelMap[post.id];
+    card.appendChild(lb);
+  }
   const memoSection=document.createElement('div');
   memoSection.className='memo-section';
   const memoArea=document.createElement('textarea');
@@ -2728,6 +2735,12 @@ function buildFeedCard(post){
       {label:'返声する',action:()=>{pendingReplyTo=post.id;pendingReplyToName=post.username||'?';switchTab('Record');}},
       {label:bmBtn.classList.contains('bookmarked')?'ブックマーク解除':'ブックマーク',action:()=>{bmBtn.click();}},
     ];
+    if(bmBtn.classList.contains('bookmarked')){
+      ['面白い','感動','あとで聴く'].forEach(lbl=>{
+        const cur=bookmarkLabelMap[post.id];
+        items.push({label:(cur===lbl?'['+lbl+'] 解除':lbl+' ラベル'),action:()=>{setBookmarkLabel(post.id,lbl);}});
+      });
+    }
     items.forEach(({label,action})=>{
       const btn=document.createElement('button');
       btn.className='lp-sheet-item';
@@ -3116,6 +3129,8 @@ let bookmarkedPosts=[];
 let bmActiveTagFilter='';
 let bmSortOrder='added';
 let bmGroupMode=(()=>{try{return localStorage.getItem('bmGroupMode')||'time';}catch(e){return 'time';}})();
+let bookmarkLabelMap={};
+let bmActiveLabelFilter='';
 function buildBmTagChips(){
   const div=$('bmTagFilter');
   if(!div) return;
@@ -3170,6 +3185,26 @@ function buildBmSortChips(){
   };
   row.appendChild(grpBtn);
 }
+function buildBmLabelChips(){
+  const div=$('bmLabelFilter');
+  if(!div) return;
+  const ALL_LABELS=['面白い','感動','あとで聴く'];
+  const usedLabels=ALL_LABELS.filter(l=>bookmarkedPosts.some(p=>bookmarkLabelMap[p.id]===l));
+  if(!usedLabels.length){div.innerHTML='';div.style.display='none';return;}
+  div.innerHTML='';div.style.display='flex';
+  const allBtn=document.createElement('button');
+  allBtn.className='filter-chip'+(bmActiveLabelFilter===''?' active':'');
+  allBtn.textContent='全て';
+  allBtn.onclick=()=>{bmActiveLabelFilter='';div.querySelectorAll('.filter-chip').forEach(c=>c.classList.remove('active'));allBtn.classList.add('active');renderBookmarkList();};
+  div.appendChild(allBtn);
+  usedLabels.forEach(l=>{
+    const b=document.createElement('button');
+    b.className='filter-chip'+(bmActiveLabelFilter===l?' active':'');
+    b.textContent=l;
+    b.onclick=()=>{bmActiveLabelFilter=l;div.querySelectorAll('.filter-chip').forEach(c=>c.classList.remove('active'));b.classList.add('active');renderBookmarkList();};
+    div.appendChild(b);
+  });
+}
 function renderBookmarkList(){
   const btn=$('btnBmPlayAll');
   if(btn) btn.style.display=bookmarkedPosts.length?'':'none';
@@ -3177,6 +3212,7 @@ function renderBookmarkList(){
   const el=$('bookmarkContent');
   let filtered=[...bookmarkedPosts];
   if(bmActiveTagFilter) filtered=filtered.filter(p=>p.tag===bmActiveTagFilter);
+  if(bmActiveLabelFilter) filtered=filtered.filter(p=>bookmarkLabelMap[p.id]===bmActiveLabelFilter);
   if(q) filtered=filtered.filter(p=>(p.caption||'').toLowerCase().includes(q)||(p.title||'').toLowerCase().includes(q));
   if(bmSortOrder==='post_date') filtered.sort((a,b)=>(b.post_date||'').localeCompare(a.post_date||''));
   else if(bmSortOrder==='name') filtered.sort((a,b)=>(a.username||'').localeCompare(b.username||'','ja'));
@@ -3208,22 +3244,41 @@ function renderBookmarkList(){
 async function loadBookmarks(){
   const el=$('bookmarkContent');
   el.innerHTML='<div class="spinner"></div>';
-  bmActiveTagFilter='';
+  bmActiveTagFilter='';bmActiveLabelFilter='';
   bmSortOrder='added';
   const{data:bms}=await sb.from('bookmarks').select('post_id,created_at').eq('user_id',me.id).order('created_at',{ascending:false});
-  if(!bms||!bms.length){bookmarkedPosts=[];buildBmTagChips();buildBmSortChips();renderBookmarkList();return;}
+  if(!bms||!bms.length){bookmarkedPosts=[];bookmarkLabelMap={};buildBmTagChips();buildBmSortChips();buildBmLabelChips();renderBookmarkList();return;}
   const bmDateMap={};
   bms.forEach(b=>{bmDateMap[b.post_id]=b.created_at||'';});
   const postIds=bms.map(b=>b.post_id);
   const{data:posts}=await sb.from('friend_feed').select('*').in('id',postIds);
-  if(!posts||!posts.length){bookmarkedPosts=[];buildBmTagChips();buildBmSortChips();renderBookmarkList();return;}
+  if(!posts||!posts.length){bookmarkedPosts=[];bookmarkLabelMap={};buildBmTagChips();buildBmSortChips();buildBmLabelChips();renderBookmarkList();return;}
   bookmarkedPosts=posts.map(p=>({...p,bm_created_at:bmDateMap[p.id]||''}))
     .sort((a,b)=>(b.bm_created_at||'').localeCompare(a.bm_created_at||''));
+  try{
+    const{data:lblData}=await sb.from('bookmark_labels').select('post_id,label').eq('user_id',me.id).in('post_id',postIds);
+    bookmarkLabelMap={};
+    (lblData||[]).forEach(l=>{bookmarkLabelMap[l.post_id]=l.label;});
+  }catch(_){bookmarkLabelMap={};}
   const inp=$('bmSearchInput');
   if(inp) inp.oninput=renderBookmarkList;
   buildBmTagChips();
   buildBmSortChips();
+  buildBmLabelChips();
   renderBookmarkList();
+}
+async function setBookmarkLabel(postId,lbl){
+  try{
+    if(bookmarkLabelMap[postId]===lbl){
+      await sb.from('bookmark_labels').delete().eq('user_id',me.id).eq('post_id',postId);
+      delete bookmarkLabelMap[postId];
+    }else{
+      await sb.from('bookmark_labels').upsert({user_id:me.id,post_id:postId,label:lbl});
+      bookmarkLabelMap[postId]=lbl;
+    }
+    buildBmLabelChips();
+    renderBookmarkList();
+  }catch(_){showToast('ラベルの保存に失敗しました(DB未実行)');}
 }
 
 // profile
