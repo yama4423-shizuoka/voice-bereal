@@ -1473,6 +1473,7 @@ function updateFeedBadge(){
   if(!badge) return;
   if(n>0){badge.textContent=n;badge.style.display='flex';}
   else{badge.style.display='none';}
+  if('setAppBadge' in navigator){if(n>0)navigator.setAppBadge(n).catch(()=>{});else navigator.clearAppBadge().catch(()=>{});}
   const cub=$('caughtUpBanner');
   if(cub){const allDone=todayFriendPostIds.length>0&&todayFriendPostIds.every(id=>played.has(id));cub.style.display=allDone?'block':'none';if(allDone)markPerfectListenDay();}
 }
