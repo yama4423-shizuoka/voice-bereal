@@ -234,6 +234,8 @@
       cursor:pointer;border-radius:var(--radius-sm);margin-bottom:8px}
     /* caught-up banner */
     .caught-up-banner{background:var(--success);color:#000;border-radius:var(--radius);padding:12px 16px;margin:8px 0 16px;text-align:center;font-weight:600;font-size:.9rem}
+    /* all-friends-posted banner */
+    .all-posted-banner{display:flex;align-items:center;gap:10px;background:linear-gradient(135deg,#0a84ff22,#5e5ce622);border-left:3px solid var(--accent);border-radius:var(--radius);padding:12px 16px;margin-bottom:12px;font-size:.9rem;font-weight:600;color:var(--text)}
     /* evening reminder banner */
     .reminder-banner{background:linear-gradient(135deg,#c96a00,#f5a623);color:#fff;border-radius:var(--radius);padding:12px 16px;margin-bottom:16px;display:flex;align-items:center;gap:10px}
     /* onboarding */
@@ -761,6 +763,7 @@ const sb=createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
 const $=id=>document.getElementById(id);
 let me=null,myProfile=null,mediaRecorder=null,audioChunks=[],recInterval=null,recSeconds=0;
 let feedPosts=[],currentPlayingAudio=null,currentPlayingCard=null,bdFriendList=[],feedAnnivFriends=[];
+let allFriendIds=[];
 let olderFeedOffset=0;
 let playQueue=[],playQueueIndex=-1,isPlayingAll=false;
 let lastFeedIds=new Set(),feedRealtimeChannel=null;
@@ -1568,8 +1571,9 @@ async function loadFeed(){
   tcPost7=p7||null;tcPost30=(p30&&p30.post_date!==d7)?p30:null;
   mutualListenerIds=new Set();
   if(myPost){const{data:mpr}=await sb.from('reactions').select('user_id').eq('post_id',myPost.id);(mpr||[]).forEach(r=>mutualListenerIds.add(r.user_id));}
-  {const _fsAn=await sb.from('friendships').select('friend_id,created_at').eq('user_id',me.id);const _todayAn=new Date();const _tdMDAn=_todayAn.toISOString().slice(5,10);const _yrAn=_todayAn.getFullYear();const _annivFids=(_fsAn.data||[]).filter(f=>f.created_at&&f.created_at.slice(5,10)===_tdMDAn&&_yrAn>parseInt(f.created_at.slice(0,4)));if(_annivFids.length){const{data:_ap}=await sb.from('profiles').select('id,username').in('id',_annivFids.map(f=>f.friend_id));feedAnnivFriends=(_ap||[]).map(p=>{const fs=_annivFids.find(f=>f.friend_id===p.id);return{name:p.username,years:_yrAn-parseInt(fs.created_at.slice(0,4))};});}else{feedAnnivFriends=[];}}
+  {const _fsAn=await sb.from('friendships').select('friend_id,created_at').eq('user_id',me.id);allFriendIds=(_fsAn.data||[]).map(f=>f.friend_id);const _todayAn=new Date();const _tdMDAn=_todayAn.toISOString().slice(5,10);const _yrAn=_todayAn.getFullYear();const _annivFids=(_fsAn.data||[]).filter(f=>f.created_at&&f.created_at.slice(5,10)===_tdMDAn&&_yrAn>parseInt(f.created_at.slice(0,4)));if(_annivFids.length){const{data:_ap}=await sb.from('profiles').select('id,username').in('id',_annivFids.map(f=>f.friend_id));feedAnnivFriends=(_ap||[]).map(p=>{const fs=_annivFids.find(f=>f.friend_id===p.id);return{name:p.username,years:_yrAn-parseInt(fs.created_at.slice(0,4))};});}else{feedAnnivFriends=[];}}
 renderFeed(el,todayPosts||[],myPost,yesterdayPosts||[]);updateDailyPromptUI();
+  checkAllFriendsPosted();
   if(_restoreFeedScroll){_restoreFeedScroll=false;const sy=sessionStorage.getItem('feedScrollY');if(sy) requestAnimationFrame(()=>requestAnimationFrame(()=>{el.scrollTop=parseInt(sy)||0;}));}
 }
 async function pollNewPosts(){
@@ -1593,6 +1597,33 @@ async function pollNewPosts(){
       n.onclick=()=>{window.focus();n.close();};
     }
   }
+}
+
+function checkAllFriendsPosted(){
+  if(!me) return;
+  if(allFriendIds.length<=1) return;
+  const today=new Date().toISOString().split('T')[0];
+  const key='vbr_allPosted_'+today;
+  if(localStorage.getItem(key)) return;
+  const postedUids=new Set((feedPosts||[]).map(p=>p.user_id));
+  const allPosted=allFriendIds.length>0&&allFriendIds.every(id=>postedUids.has(id));
+  if(!allPosted) return;
+  const existing=$('feedContent')&&$('feedContent').querySelector('.all-posted-banner');
+  if(existing) return;
+  const banner=document.createElement('div');
+  banner.className='all-posted-banner';
+  const msg=document.createElement('span');
+  msg.style.flex='1';
+  msg.textContent='今日はフレンド全員が声を残してくれたよ！';
+  const closeBtn=document.createElement('button');
+  closeBtn.className='milestone-close';
+  closeBtn.setAttribute('aria-label','閉じる');
+  closeBtn.textContent='x';
+  closeBtn.addEventListener('click',()=>{localStorage.setItem(key,'1');banner.remove();});
+  banner.appendChild(msg);
+  banner.appendChild(closeBtn);
+  const feedEl=$('feedContent');
+  if(feedEl) feedEl.insertBefore(banner,feedEl.firstChild);
 }
 
 async function renderFeed(el,posts,myPost,yesterdayPosts){
